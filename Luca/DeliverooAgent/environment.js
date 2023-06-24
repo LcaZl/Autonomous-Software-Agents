@@ -25,6 +25,13 @@ export class Environment {
       if (delivery) this.FULL_MAP[y][x] = 2
       else this.FULL_MAP[y][x] = 1
     }
+
+    this.deliveryTiles = new Map()
+    for (let el of this.AVAILABLE_MAP){
+      if (el.delivery == true){
+          this.deliveryTiles.set('' + el.x + '-' + el.y, null)
+      }
+    }
   }
 
   printAttributes() {

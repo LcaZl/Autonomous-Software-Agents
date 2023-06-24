@@ -14,6 +14,7 @@ async function main() {
     const success = await agent.init();
     if (success) {
     agent.info();
+    await agent.agentLoop()
     // Continua con il resto del codice se tutte le callback sono state completate con successo
     } else {
     console.error("Initialization failed.");
