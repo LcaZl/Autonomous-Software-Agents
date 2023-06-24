@@ -10,6 +10,7 @@ export class Agent {
       this.client = new DeliverooApi(host,token);
       this.client.onDisconnect(() => console.log("Socket Disconnected!"));
       this.client.onConnect(() => console.log("\n[CONNECTION] Agent Connected to Deliveroo!"));
+      
       this.client.onYou( ( {id, name, x, y, score} ) => {
         this.id = id
         this.name = name
@@ -17,9 +18,20 @@ export class Agent {
         this.y = y
         this.score = score
       } )
+
+      this.client.onParcelsSensing((sensedParcels) => {
+        for(let p of sensedParcels){
+            this.parcels.set(p.id, {
+                'Reward':p.reward,
+                'x': p.x,
+                'y': p.y,
+                'CarriedBy':p.carriedBy
+            })
+        }
+      })
+
       this.host = host;
       this.token = token;
-      this.deliverTiles = new Map()
       this.parcels = new Map()
       this.otherPlayers = new Map()
 
@@ -78,14 +90,6 @@ export class Agent {
           return false; // Indicate failure
         }
       };
-
-      const loadDeliveryTiles = () => {
-        for (let el of this.environment.AVAILABLE_MAP){
-          if (el.delivery == true){
-              deliverTiles.set('' + el.x + '-' + el.y, null)
-          }
-        }
-      }
 
       const logCallbacks = [firstMove, loadEnvironment];
 
@@ -149,16 +153,25 @@ export class Agent {
     return direction
   }
 
+  show_parcels(){
+    if (this.parcels.size == 0) {
+        console.log(' - No parcels detected.')
+    }
+    for (let v of this.parcels){
+        console.log(' - ',v)
+    }
+  }
+
   async agentLoop() {
 
     var count = 0
-    while (count < 1000) {
+    while (count < 100) {
 
-      
+
       this.lastDirection = this.randomDirection()
       console.log('[AGENT][MOVE',(count + 1),'] Start moving', this.lastDirection)
 
-      let move =  this.client.move(this.lastDirection)
+      let move = this.client.move(this.lastDirection)
       await move.then((status) => {
 
           if (status != false){
@@ -173,32 +186,28 @@ export class Agent {
           }
       }) 
 
-      this.client.onParcelsSensing((sensedParcels) => {
-        for(let p of sensedParcels){
-            this.parcels.set(p.id, {
-                'Reward':p.reward,
-                'x': p.x,
-                'y': p.y,
-                'CarriedBy':p.carriedBy
-            })
-        }
-      })
 
+
+      console.log('[AGENT][PARCELS] In memory parcels:\n')
+      this.show_parcels()
+      console.log('\n')
+
+      var parcelToPickup = null
       for(let parcel of this.parcels.values()){
           if(parcel.x == this.x && parcel.y == this.y){
-              var parcelToPickup = parcel;
+              parcelToPickup = parcel;
               break;
             }
       }
 
       if(parcelToPickup != null){
         var pickUp = this.client.pickup()
-        await pickUp.then((parcel) => console.log('[AGENT][PARCEL] Parcel taken ', parcel))
+        await pickUp.then((parcel) => console.log('[AGENT][PARCELS] Parcel', parcelToPickup,'Taken'))
       }
 
       if (this.environment.deliveryTiles.has(''+ this.x + '-' + this.y)){
         var putDown = this.client.putdown() 
-        await putDown.then((success) => console.log('[AGENT][PARCEL] Parcel dropped ', success))
+        await putDown.then((success) => console.log('[AGENT][PARCELS] Parcels dropped ', success))
       }
 
       count++
