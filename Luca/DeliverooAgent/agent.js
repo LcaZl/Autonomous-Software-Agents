@@ -10,31 +10,48 @@ export class Agent {
       this.client = new DeliverooApi(host,token);
       this.client.onDisconnect(() => console.log("Socket Disconnected!"));
       this.client.onConnect(() => console.log("\n[CONNECTION] Agent Connected to Deliveroo!"));
-      
-      this.client.onYou( ( {id, name, x, y, score} ) => {
-        this.id = id
-        this.name = name
-        this.x = x
-        this.y = y
-        this.score = score
-      } )
-
-      this.client.onParcelsSensing((sensedParcels) => {
-        for(let p of sensedParcels){
-            this.parcels.set(p.id, {
-                'Reward':p.reward,
-                'x': p.x,
-                'y': p.y,
-                'CarriedBy':p.carriedBy
-            })
-        }
-      })
 
       this.host = host;
       this.token = token;
       this.parcels = new Map()
       this.otherPlayers = new Map()
 
+      this.client.onYou( ( {id, name, x, y, score} ) => {
+        this.id = id
+        this.name = name
+        this.x = x
+        this.y = y
+        this.score = score
+      })
+
+      this.client.onParcelsSensing((sensedParcels) => {
+        for(let p of sensedParcels){
+            var utility = this.parcelUtility(p.reward, p.x, p.y, this.x, this.y)
+            this.parcels.set(p.id, {
+                'Reward':p.reward,
+                'x': p.x,
+                'y': p.y,
+                'CarriedBy':p.carriedBy,
+                'Utility': parseFloat(utility)
+            })
+          }
+      })
+
+      this.client.onAgentsSensing( (agents) => {
+        for (const a of agents) {
+
+          if ( a.x % 1 != 0 || a.y % 1 != 0 ) // skip intermediate values (0.6 or 0.4)
+          continue;
+
+          console.log('[AGENT] Meet', a.name, '-', a)
+          this.otherPlayers.set(a.id, {
+            'name':a.name,
+            'x': a.x, 
+            'y': a.y,
+            'score': a.score
+          })
+        }
+      })
     }
     catch{
 
@@ -43,6 +60,16 @@ export class Agent {
 
     }
   }
+
+  parcelUtility(reward, px, py, ax, ay){
+    var term1 = reward / (this.distance(ax, ay, px, py) + 1)
+    var term2 = 0
+    for (let a of this.otherPlayers.values()){
+      term2 += 1 / (this.distance(a.x, a.y, px, py) + 1)
+    }
+    return (term1 - term2).toFixed(2)
+  }
+
 
   info(){
 
@@ -57,7 +84,6 @@ export class Agent {
     this.environment.printAttributes()
     console.log('\n[ENVIRONMENT] Environment Map:\n')
     this.environment.printMap(' ') // filler is for inactive cell, insert what char o value show for these cells.
-
   }
 
   async init() {
@@ -123,14 +149,10 @@ export class Agent {
     });
   }
 
-  distance( {x:x1, y:y1}, {x:x2, y:y2}) {
+  distance(x1, y1, x2, y2) {
     const dx = Math.abs( Math.round(x1) - Math.round(x2) )
     const dy = Math.abs( Math.round(y1) - Math.round(y2) )
     return dx + dy;
-  }
-
-  async makeMove(direction){
-        let move = await this.client.move(direction);
   }
 
   randomDirection(){
@@ -158,7 +180,16 @@ export class Agent {
         console.log(' - No parcels detected.')
     }
     for (let v of this.parcels){
-        console.log(' - ',v)
+        console.log('-',v)
+    }
+  }
+
+  show_players(){
+    if (this.otherPlayers.size == 0) {
+        console.log(' - No players detected.')
+    }
+    for (let v of this.otherPlayers){
+        console.log('-',v)
     }
   }
 
@@ -167,12 +198,12 @@ export class Agent {
     var count = 0
     while (count < 100) {
 
-
+      await new Promise(resolve => setTimeout(resolve, 1000));
       this.lastDirection = this.randomDirection()
-      console.log('[AGENT][MOVE',(count + 1),'] Start moving', this.lastDirection)
+      //console.log('[AGENT][MOVE',(count + 1),'] Start moving', this.lastDirection)
 
-      let move = this.client.move(this.lastDirection)
-      await move.then((status) => {
+      //let move = this.client.move(this.lastDirection)
+      /*await move.then((status) => {
 
           if (status != false){
           this.x = status.x 
@@ -184,12 +215,11 @@ export class Agent {
             console.log('[AGENT][MOVE',(count + 1),'] No move done,', this.lastDirection, 'is blocked.')
             console.log('[AGENT][POSITION] Current Position: (' + this.x + ',' + this.y + ')')
           }
-      }) 
-
-
+      }) */
 
       console.log('[AGENT][PARCELS] In memory parcels:\n')
       this.show_parcels()
+      this.show_players()
       console.log('\n')
 
       var parcelToPickup = null

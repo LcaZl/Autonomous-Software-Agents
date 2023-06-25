@@ -37,7 +37,7 @@ export class Environment {
   printAttributes() {
       const attributes = Object.keys(this).sort();
       for (const attribute of attributes) {
-        if (attribute !== 'FULL_MAP' && attribute != 'AVAILABLE_MAP') { console.log(` - ${attribute}: `, this[attribute]) }
+         console.log(` - ${attribute}: `, this[attribute])
       }
   }
 
