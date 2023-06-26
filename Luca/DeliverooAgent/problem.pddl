@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 (define (problem deliveroo-reach-parcel)
     (:domain deliveroo)
     (:objects 
@@ -17,7 +16,7 @@
     )
     (:goal 
         (at a1 t2)
-=======
+
 (define (problem simple-deliveroo-problem)
     (:domain deliveroo)
     (:objects
@@ -43,6 +42,5 @@
             (not (carries agent1 parcel1))
             (at agent1 t22)
         )
->>>>>>> c4d9f45933a500a32677b3589516068620c1b910
     )
 )
