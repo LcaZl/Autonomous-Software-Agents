@@ -1,5 +1,8 @@
 (define (domain deliveroo)
     (:requirements :strips)
+    (:types
+        tile parcel agent
+    )
     (:predicates
         (tile ?t)
         (delivery ?t)
@@ -7,58 +10,14 @@
         (parcel ?p)
         (me ?a)
         (at ?agentOrParcel ?tile)
-        (right ?t1 ?t2)
-        (left ?t1 ?t2)
-        (up ?t1 ?t2)
-        (down ?t1 ?t2)
         (carries ?a ?p)
     )
     
-    (:action move-right
+    (:action move
         :parameters (?me ?from ?to)
         :precondition (and
             (me ?me)
             (at ?me ?from)
-            (right ?from ?to)
-        )
-        :effect (and
-            (at ?me ?to)
-			(not (at ?me ?from))
-        )
-    )
-    
-    (:action move-left
-        :parameters (?me ?from ?to)
-        :precondition (and
-            (me ?me)
-            (at ?me ?from)
-            (left ?from ?to)
-        )
-        :effect (and
-            (at ?me ?to)
-			(not (at ?me ?from))
-        )
-    )
-    
-    (:action move-up
-        :parameters (?me ?from ?to)
-        :precondition (and
-            (me ?me)
-            (at ?me ?from)
-            (up ?from ?to)
-        )
-        :effect (and
-            (at ?me ?to)
-			(not (at ?me ?from))
-        )
-    )
-    
-    (:action move-down
-        :parameters (?me ?from ?to)
-        :precondition (and
-            (me ?me)
-            (at ?me ?from)
-            (down ?from ?to)
         )
         :effect (and
             (at ?me ?to)
