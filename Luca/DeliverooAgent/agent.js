@@ -61,6 +61,8 @@ export class Agent {
     }
   }
 
+
+  
   parcelUtility(reward, px, py, ax, ay){
     var term1 = reward / (this.distance(ax, ay, px, py) + 1)
     var term2 = 0
