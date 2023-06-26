@@ -1,13 +1,31 @@
-#!/usr/bin/env node
-import { onlineSolver, PddlExecutor, PddlProblem, Beliefset, PddlDomain, PddlAction } from "@unitn-asa/pddl-client";
+import { onlineSolver, PddlExecutor } from "@unitn-asa/pddl-client";
+import fs from 'fs';
 
-export class Planner {
+function readFile ( path ) {
+    
+    return new Promise( (res, rej) => {
 
+        fs.readFile( path, 'utf8', (err, data) => {
+            if (err) rej(err)
+            else res(data)
+        })
 
-  constructor(host, token) {
-    this.planLibrary = [];
-    path = 'domain.pddl'
-    this.domain = new Beliefset(path);
-    myBeliefset.toPddlString()
-  }
+    })
+
 }
+
+async function main () {
+
+    let problem = await readFile('problem.pddl' );
+    console.log( problem );
+    let domain = await readFile('domain.pddl' );
+
+    var plan = await onlineSolver(domain, problem);
+    console.log( plan );
+
+    const pddlExecutor = new PddlExecutor( { name: 'lightOn', executor: (l)=>console.log('exec lighton '+l) } );
+    pddlExecutor.exec( plan );
+
+}
+
+main();

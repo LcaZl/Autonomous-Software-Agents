@@ -1,5 +1,8 @@
 (define (domain deliveroo)
     (:requirements :strips)
+    (:types
+        tile, parcel, agent
+    )
     (:predicates
         (tile ?t)
         (delivery ?t)
