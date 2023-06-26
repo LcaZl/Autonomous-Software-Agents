@@ -21,7 +21,7 @@
         )
         :effect (and
             (at ?me ?to)
-	    (not (at ?me ?from))
+			(not (at ?me ?from))
         )
     )
     
