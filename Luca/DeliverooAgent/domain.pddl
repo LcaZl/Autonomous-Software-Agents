@@ -1,11 +1,7 @@
 (define (domain deliveroo)
     (:requirements :strips)
     (:types
-<<<<<<< HEAD
         tile parcel agent
-=======
-        tile, parcel, agent
->>>>>>> c4d9f45933a500a32677b3589516068620c1b910
     )
     (:predicates
         (tile ?t)
@@ -25,7 +21,7 @@
         )
         :effect (and
             (at ?me ?to)
-			(not (at ?me ?from))
+	    (not (at ?me ?from))
         )
     )
     
