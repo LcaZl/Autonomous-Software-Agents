@@ -8,8 +8,9 @@ export class Planner {
 
     async init(){
         try{
-            this.domain = await this.readFile('domain.pddl')
-            this.problem = await this.readFile('problem.pddl');
+            this.domain = await this.readFile('./PDDL/domain.pddl')
+            this.problem = await this.readFile('./PDDL/problem.pddl');
+            console.log('[INIT] Domain loaded: \n',this.domain)
             return true
         }
         catch(exception){

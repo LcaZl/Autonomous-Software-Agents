@@ -35,22 +35,4 @@ export class Environment {
 
     console.log("[INIT] Environment info loaded.");
   }
-
-  printAttributes() {
-      const attributes = Object.keys(this).sort();
-      for (const attribute of attributes) {
-         console.log(` - ${attribute}: `, this[attribute])
-      }
-  }
-
-  printMap(filler = ' ') {
-    for (let y = 0; y < this.MAP_HEIGHT; y++) {
-      let row = '';
-      for (let x = 0; x < this.MAP_WIDTH; x++) {
-        row += this.FULL_MAP[y][x] ? JSON.stringify(this.FULL_MAP[y][x]) : filler;
-        row += ' ';
-      }
-      console.log(row);
-    }
-  }
 }

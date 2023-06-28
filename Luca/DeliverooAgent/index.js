@@ -1,7 +1,8 @@
 // index.js
 
-import { Agent } from './agent.js';
+import { Agent } from './src/agent.js';
 import { default as config } from "./config.js";
+import { agentInfo } from './src/utils.js';
 
 const { host, token } = config;
 
@@ -12,8 +13,8 @@ async function main() {
 
     // Agent initialization
     const init1 = await agent.initialization();
-    if (init1) agent.info()
-    //await agent.agentLoop()
+    if (init1) agentInfo(agent)
+    await agent.agentLoop()
     return 1
 }
 
