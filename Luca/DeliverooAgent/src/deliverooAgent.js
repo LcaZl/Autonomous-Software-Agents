@@ -8,7 +8,7 @@ import { Beliefs } from "../beliefs.js";
 export class DeliverooAgent{
 
     #host = null
-    #token = null 
+    #token = null
 
     constructor(host, token) {
         this.#host = host
@@ -17,7 +17,6 @@ export class DeliverooAgent{
         this.y = []
         this.client = new DeliverooApi(this.#host, this.#token);
         this.client.onDisconnect(() => console.log("Socket Disconnected!"));
-
         this.client.onConnect(() => console.log("[INIT] Agent Connected to Deliveroo!"));
 
         this.client.onYou( ( {id, name, x, y, score} ) => {
@@ -25,8 +24,10 @@ export class DeliverooAgent{
             this.name = name
             this.x[0] = Math.ceil(x)
             this.y[0] = Math.ceil(y)
+            this.x[1] = this.x[0]
+            this.y[1] = this.x[0]
+            this.beliefs.updateMyPosition(this.x[0], this.y[0])
             this.score = score
-
         })
 
         this.host = host;
