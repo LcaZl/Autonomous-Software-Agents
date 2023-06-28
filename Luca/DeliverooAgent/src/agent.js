@@ -19,13 +19,16 @@ export class Agent extends DeliverooAgent{
       
       this.lastDirection = randomDirection()
       //console.log('[AGENT][MOVE',(count + 1),'] Start moving', this.lastDirection)
-/*
+
       let move = this.client.move(this.lastDirection)
       await move.then((status) => {
-
           if (status != false){
-            this.x = status.x 
-            this.y = status.y
+            this.x[1] = this.x[0]
+            this.y[1] = this.y[0] 
+            this.x[0] = status.x[1] 
+            this.y[0] = status.y[1]
+            this.beliefs.updateMyPosition(this.x, this.y)
+            console.log('[AGENT] Beliefs updated.\n', this.beliefs.toPddlString())
             console.log('[AGENT][MOVE',(count + 1),'] End moving', this.lastDirection)
             console.log('[AGENT][POSITION] Current Position: (' + this.x + ',' + this.y + ')')
           }
@@ -35,10 +38,10 @@ export class Agent extends DeliverooAgent{
           }
 
       }) 
-*/
+
       console.log('[AGENT] Memory Status:')
-      showParcels(this.parcels)
-      showPlayers(this.otherPlayers)
+      //showParcels(this.parcels)
+      //showPlayers(this.otherPlayers)
       var parcelToPickup = null
       for(let parcel of this.parcels.values()){
         if(parcel.x == this.x && parcel.y == this.y){

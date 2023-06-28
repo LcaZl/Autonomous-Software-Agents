@@ -13,6 +13,8 @@ export class DeliverooAgent{
     constructor(host, token) {
         this.#host = host
         this.#token = token 
+        this.x = []
+        this.y = []
         this.client = new DeliverooApi(this.#host, this.#token);
         this.client.onDisconnect(() => console.log("Socket Disconnected!"));
 
@@ -21,8 +23,8 @@ export class DeliverooAgent{
         this.client.onYou( ( {id, name, x, y, score} ) => {
             this.id = id
             this.name = name
-            this.x = x
-            this.y = y
+            this.x[0] = x
+            this.y[0] = y
             this.score = score
         })
 
@@ -66,7 +68,7 @@ export class DeliverooAgent{
             }
 
             const initBeliefSet = async () => {
-                this.beliefs.init(this.environment.FULL_MAP, this.parcels, this.otherPlayers)
+                this.beliefs.init(this)
                 console.log('[INIT] Belief set initialized.\n')
                 return true
             }

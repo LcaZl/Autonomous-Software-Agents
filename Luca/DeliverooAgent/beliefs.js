@@ -3,21 +3,46 @@ import { onlineSolver, PddlExecutor, PddlProblem, Beliefset, PddlDomain, PddlAct
 
 export class Beliefs extends Beliefset{
 
+  #goals = []
+
   constructor() {
     super()
     console.log('[INIT] Agent Beliefs initialized.')
   }
 
-  async init(map, parcels, players){
+  updateMyPosition(x,y){
+    this.declare(`at a1 t${x}_${y}`)
+  }
+
+  async init(agent){
     // process map
     this.declare('me a1')
-    }
+    this.declare(`at a1 t${agent.x[0]}_${agent.y[0]}`)
+/*
+    for (let i = 0; i < map.length; i++) {
+      for (let j = 0; j < map[i].length; j++) {
+        const cell = map[i][j];
 
-    let deliveryCells = map.filter(cell => cell.delivery === true);
+        // declare cell type
+        if (cell == 1 || cell == 2) {
+          this.declare(`at t${i}_${j}`);
+        }
 
-    for (let cell of deliveryCells) {
-      let tile = 't' + cell.x + '_' + cell.y;
-      this.declare(`delivery ${tile}`);
+        // declare delivery cells
+        if (cell == 2) {
+          this.declare(`delivery t${i}_${j}`);
+        }
+
+        // declare relations between cells
+        if (i > 0 && map[i-1][j] != 0) {
+          this.declare(`up t${i}_${j} t${i-1}_${j}`);
+          this.declare(`down t${i-1}_${j} t${i}_${j}`);
+        }
+        if (j > 0 && map[i][j-1] != 0) {
+          this.declare(`left t${i}_${j} t${i}_${j-1}`);
+          this.declare(`right t${i}_${j-1} t${i}_${j}`);
+        }
+      }
     }
 
     // process parcels
@@ -32,7 +57,8 @@ export class Beliefs extends Beliefset{
       this.declare(`me a${player.id}`);
       this.declare(`at a${player.id} t${player.x}_${player.y}`);
     }
-    console.log('[INIT] Belief Set Initialized.')
+    console.log('[INIT] Belief Set Initialized. INIT:\n')
+    console.log(this.toPddlString())*/
   }
 }
 

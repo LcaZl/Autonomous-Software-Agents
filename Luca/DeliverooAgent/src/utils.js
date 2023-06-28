@@ -72,7 +72,7 @@ export function distance(x1, y1, x2, y2) {
     console.log(' - ID: ', agent.id)
     console.log(' - Name: ', agent.name)
     console.log(' - Score: ', agent.score)
-    console.log(' - Position: (', agent.x,',',agent.y, ')')
+    console.log(' - Position: (', agent.x[0],',',agent.y[0], ')')
     console.log(' - Server Deliveroo Connected: ',agent.host)
     console.log(' - Token: ',agent.token)
     console.log('\n[ENVIRONMENT] Environment Attributes:\n')
