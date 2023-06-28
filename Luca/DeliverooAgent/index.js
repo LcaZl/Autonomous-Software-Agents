@@ -11,25 +11,16 @@ async function main() {
     const agent = new Agent(host, token);
 
     // Agent initialization
-    const success = await agent.init();
-    if (success) {
-    agent.info();
-    await agent.agentLoop()
-    // Continua con il resto del codice se tutte le callback sono state completate con successo
-    } else {
-    console.error("Initialization failed.");
-    process.exit(1);
-    // Gestisci il caso in cui una o più callback abbiano generato un errore
-    }
-
-    // Agent active e with belief loaded
+    const init1 = await agent.initialization();
+    if (init1) agent.info()
+    //await agent.agentLoop()
     return 1
 }
 
 main().then(() => {
     console.log('\n[EXIT] Execution ended successfully.\n')
-    process.exit(0); // termina il processo con successo
+    process.exit(0);
 }).catch((error) => {
     console.error("An error occurred:", error);
-    process.exit(1); // termina il processo con un codice di errore
+    process.exit(1);
 });

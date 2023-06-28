@@ -1,31 +1,46 @@
 import { onlineSolver, PddlExecutor } from "@unitn-asa/pddl-client";
 import fs from 'fs';
 
-function readFile ( path ) {
+export class Planner {
+    constructor() {
+        console.log('[INIT] Planner Instantiated correctly.')
+    }
+
+    async init(){
+        try{
+            this.domain = await this.readFile('domain.pddl')
+            this.problem = await this.readFile('problem.pddl');
+            return true
+        }
+        catch(exception){
+            console.error("[INIT] Planner ininitalization error.\n", exception)
+            return false        
+        }
+    }
     
-    return new Promise( (res, rej) => {
+    async plan(){
+        var plan = await onlineSolver(this.domain, this.problem);
+        console.log( plan );
 
-        fs.readFile( path, 'utf8', (err, data) => {
-            if (err) rej(err)
-            else res(data)
+        const pddlExecutor = new PddlExecutor( 
+            { name: 'move-up', executor: (l)=>console.log('Move up '+l) },
+            { name: 'move-down', executor: (l)=>console.log('Move down '+l) },
+            { name: 'move-left', executor: (l)=>console.log('Move left '+l) },
+            { name: 'move-right', executor: (l)=>console.log('Move right '+l) }
+        
+        );
+        pddlExecutor.exec( plan );
+    }
+
+    readFile ( path ) {
+        
+        return new Promise( (res, rej) => {
+
+            fs.readFile( path, 'utf8', (err, data) => {
+                if (err) rej(err)
+                else res(data)
+            })
+
         })
-
-    })
-
+    }
 }
-
-async function main () {
-
-    let problem = await readFile('problem.pddl' );
-    console.log( problem );
-    let domain = await readFile('domain.pddl' );
-
-    var plan = await onlineSolver(domain, problem);
-    console.log( plan );
-
-    const pddlExecutor = new PddlExecutor( { name: 'lightOn', executor: (l)=>console.log('exec lighton '+l) } );
-    pddlExecutor.exec( plan );
-
-}
-
-main();

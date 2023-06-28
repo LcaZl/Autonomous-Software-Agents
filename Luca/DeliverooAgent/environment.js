@@ -32,6 +32,8 @@ export class Environment {
           this.deliveryTiles.set('' + el.x + '-' + el.y, null)
       }
     }
+
+    console.log("[INIT] Environment info loaded.");
   }
 
   printAttributes() {
