@@ -1,3 +1,6 @@
+import { default as commands } from "../commands.js";
+
+
 export function distance(x1, y1, x2, y2) {
     const dx = Math.abs( Math.round(x1) - Math.round(x2) )
     const dy = Math.abs( Math.round(y1) - Math.round(y2) )
@@ -24,25 +27,31 @@ export function distance(x1, y1, x2, y2) {
     return direction
   }
   
+
   export function showParcels(parcels) {
-    console.log('-PARCELS-')
-    if (parcels.size == 0 || parcels == null) {
-        console.log('--No parcels detected.')
-    }
-    for (let v of parcels){
-        console.log('--',v)
+    if(commands.silence_parcels===false){
+      console.log('-PARCELS-')
+      if (parcels.size == 0 || parcels == null) {
+          console.log('--No parcels detected.')
+      }
+      for (let v of parcels){
+          console.log('--',v)
+      }
     }
   }
   
   export function showPlayers(otherPlayers) {
-    console.log('-PLAYERS')
-    if (otherPlayers.size == 0 || otherPlayers == null) {
-        console.log('--No players detected.')
-    }
-    for (let v of otherPlayers){
-        console.log('--',v)
+    if(commands.silence_player==false){
+      console.log('-PLAYERS')
+      if (otherPlayers.size == 0 || otherPlayers == null) {
+          console.log('--No players detected.')
+      }
+      for (let v of otherPlayers){
+          console.log('--',v)
+      }
     }
   }
+
   export function printAttributes(environment) {
     const attributes = Object.keys(environment).sort();
     for (const attribute of attributes) {

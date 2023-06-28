@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import commands from "../commands.js";
 import { DeliverooAgent } from "./deliverooAgent.js";
 import { randomDirection, showParcels, showPlayers } from './utils.js';
 
@@ -36,7 +37,9 @@ export class Agent extends DeliverooAgent{
 
       }) 
 */
-      console.log('[AGENT] Memory Status:')
+      if (commands.silence_agent_memory === false){
+        console.log('[AGENT] Memory Status:')
+      }
       showParcels(this.parcels)
       showPlayers(this.otherPlayers)
       var parcelToPickup = null

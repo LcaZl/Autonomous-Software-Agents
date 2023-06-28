@@ -4,6 +4,7 @@ import { Environment } from './environment.js';
 import { Planner } from './planner.js'
 import { randomDirection, distance } from './utils.js';
 import { Beliefs } from "../beliefs.js";
+import { default as commands } from "../commands.js";
 
 export class DeliverooAgent{
 
@@ -68,6 +69,7 @@ export class DeliverooAgent{
             const initBeliefSet = async () => {
                 this.beliefs.init(this.environment.FULL_MAP, this.parcels, this.otherPlayers)
                 console.log('[INIT] Belief set initialized.\n')
+                console.log(this.beliefs)
                 return true
             }
 
@@ -112,8 +114,9 @@ export class DeliverooAgent{
             for (const a of agents) {
 
                 if ( a.x % 1 != 0 || a.y % 1 != 0 ) continue;// skip intermediate values (0.6 or 0.4)
-
-                console.log('[AGENT] Meet', a.name, '-', a)
+                if(commands.silence_agents === false){
+                    console.log('[AGENT] Meet', a.name, '-', a)
+                }
                 this.otherPlayers.set(a.id, {
                 'name':a.name,
                 'x': a.x, 

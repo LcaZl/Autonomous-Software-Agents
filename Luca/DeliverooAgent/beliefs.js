@@ -11,8 +11,14 @@ export class Beliefs extends Beliefset{
   async init(map, parcels, players){
     // process map
     this.declare('me a1')
-    }
+    //console.log('map: ' + map)
+    //console.log('map: ' + parcels)
+    //console.log('map: ' + players)
+  }
+}
 
+
+/*
     let deliveryCells = map.filter(cell => cell.delivery === true);
 
     for (let cell of deliveryCells) {
@@ -36,3 +42,4 @@ export class Beliefs extends Beliefset{
   }
 }
 
+*/
