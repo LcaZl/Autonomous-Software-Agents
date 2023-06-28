@@ -23,9 +23,10 @@ export class DeliverooAgent{
         this.client.onYou( ( {id, name, x, y, score} ) => {
             this.id = id
             this.name = name
-            this.x[0] = x
-            this.y[0] = y
+            this.x[0] = Math.round(x)
+            this.y[0] = Math.round(y)
             this.score = score
+
         })
 
         this.host = host;
@@ -115,13 +116,13 @@ export class DeliverooAgent{
 
                 if ( a.x % 1 != 0 || a.y % 1 != 0 ) continue;// skip intermediate values (0.6 or 0.4)
 
-                console.log('[AGENT] Meet', a.name, '-', a)
-                this.otherPlayers.set(a.id, {
-                'name':a.name,
-                'x': a.x, 
-                'y': a.y,
-                'score': a.score
-                })
+                    console.log('[AGENT] Meet', a.name, '-', a)
+                    this.otherPlayers.set(a.id, {
+                    'name':a.name,
+                    'x': Math.ceila.x, 
+                    'y': a.y,
+                    'score': a.score
+                    })
             }
         })
 

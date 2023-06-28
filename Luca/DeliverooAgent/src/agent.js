@@ -22,21 +22,19 @@ export class Agent extends DeliverooAgent{
 
       let move = this.client.move(this.lastDirection)
       await move.then((status) => {
-          if (status != false){
+          if (status != false &&  status.x % 1 != 0 || status.y % 1 != 0 ){
             this.x[1] = this.x[0]
             this.y[1] = this.y[0] 
-            this.x[0] = status.x[1] 
-            this.y[0] = status.y[1]
-            this.beliefs.updateMyPosition(this.x, this.y)
+            this.x[0] = Math.ceil(status.x)
+            this.y[0] = Math.ceil(status.y)
+            this.beliefs.updateMyPosition(this.x[0], this.y[0])
             console.log('[AGENT] Beliefs updated.\n', this.beliefs.toPddlString())
             console.log('[AGENT][MOVE',(count + 1),'] End moving', this.lastDirection)
-            console.log('[AGENT][POSITION] Current Position: (' + this.x + ',' + this.y + ')')
+            console.log('[AGENT] Current Position: (' + this.x[1] + ',' + this.y[1] + ') -> (' + this.x[0] + ',' + this.y[0] + ')')
           }
           else{
             console.log('[AGENT][MOVE',(count + 1),'] No move done,', this.lastDirection, 'is blocked.')
-            console.log('[AGENT][POSITION] Current Position: (' + this.x + ',' + this.y + ')')
           }
-
       }) 
 
       console.log('[AGENT] Memory Status:')
