@@ -1,7 +1,4 @@
-- Dividere iniziallizzazione agente in una classe di base
-- Implementare la logica dell'agente in una classe che estende la base
--> Migliore divisione del codice e separazione della logica di inizializzazione da quella operativa
-
-- eliminare parcel a zero -> dare un orologio all'agente
-- Funzione per creazione dinamica del dominio in base alla mappa e ai parametri
-- 
+- gestione player randomici (non raccolgono parcels) quindi distinguerli dai veri player
+- gestire velocita generazione mosse regolata in base al movement_duration, per evitare mosse a vuoto
+- random player simulate
+- mappa letta al contrario :)
