@@ -1,4 +1,0 @@
-- gestione player randomici (non raccolgono parcels) quindi distinguerli dai veri player
-- gestire velocita generazione mosse regolata in base al movement_duration, per evitare mosse a vuoto
-- random player simulate
-- mappa letta al contrario :)
