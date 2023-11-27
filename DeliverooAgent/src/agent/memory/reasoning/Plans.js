@@ -220,12 +220,12 @@ export class PddlMove extends Plan {
 
         //console.log( pddlProblem );
         const pddlExecutor = new PddlExecutor(
-            {name: 'move_right', executor:  (l) => this.agent.move('right')},
-            {name: 'move_left', executor: (l) => this.agent.move('left')},
-            {name: 'move_up', executor: (l) => this.agent.move('up')},
-            {name: 'move_down', executor: (l) =>  this.agent.move('down')},
-            {name: 'deliver', executor: (l) => this.agent.deliver()},
-            {name: 'pickup', executor: (l) =>  this.agent.pickup()}
+            {name: 'move_right', executor:  () => this.agent.move('right')},
+            {name: 'move_left', executor: () => this.agent.move('left')},
+            {name: 'move_up', executor: () => this.agent.move('up')},
+            {name: 'move_down', executor: () =>  this.agent.move('down')},
+            {name: 'deliver', executor: () => this.agent.deliver()},
+            {name: 'pickup', executor: () =>  this.agent.pickup()}
         );
 
         let pddlProblem = null
@@ -256,8 +256,74 @@ export class PddlMove extends Plan {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
         await pddlExecutor.exec( plan );
         //await updatePlan()
-        console.log('COMPLETEDPDDL')
-    
+    }
+}
 
+export class PddlBatchMove extends Plan {
+
+    exractTilePositionFromPDDL(str) {
+        const regex = /(\d+)/g;
+        let numbers = str.match(regex).map(Number)
+        return {'x': numbers[0], 'y':numbers[1]}
+      }
+
+    pathInfo(plan) {
+
+        let positions = []
+        let actions = []
+
+        for (let step of plan) {
+            actions.push(step.action.split('_').at(0))
+            positions.push(this.exractTilePositionFromPDDL(step.args[1]))
+        }
+        positions.push(this.exractTilePositionFromPDDL(plan[plan.length - 1].args[2]))
+
+        return positions
+    }
+
+    static isApplicableTo ( option ) {
+        return option.id == 'go_to_pddl_batch';
+    }
+
+    async execute ( option ) {
+
+        //console.log( pddlProblem );
+        const pddlExecutor = new PddlExecutor(
+            {name: 'move_right', executor:  () => this.agent.move('right')},
+            {name: 'move_left', executor: () => this.agent.move('left')},
+            {name: 'move_up', executor: () => this.agent.move('up')},
+            {name: 'move_down', executor: () =>  this.agent.move('down')},
+            {name: 'deliver', executor: () => this.agent.deliver()},
+            {name: 'pickup', executor: () =>  this.agent.pickup()}
+        );
+
+        let pddlProblem = null
+        let plan = null
+        let target = null
+        let positions = null
+
+        const updatePlan = async () => {
+            if (option.position == 'delivery'){
+                plan = this.agent.environment.getNearestDeliveryTile(this.agent.currentPosition);
+                target = plan.position
+            }
+            else
+                target = option.position
+
+            pddlProblem = this.problemGenerator.getProblem('goto', target)
+            //console.log(pddlProblem, this.agent.planner.domain)
+            plan = await onlineSolver( this.agent.planner.domain, pddlProblem );
+            positions = this.pathInfo(plan)
+        }
+
+        await updatePlan()
+        if ( !plan || plan.length == 0 ) throw 'target not reachable';
+
+        //console.log(positions,plan)
+        this.agent.client.socket.emit( "path", positions);
+
+        if ( this.stopped ) throw ['stopped']; // if stopped then quit
+        await pddlExecutor.exec( plan );
+        //await updatePlan()
     }
 }

@@ -163,15 +163,7 @@ export class Environment {
     const cacheKey = endPosition ? this.positionKey(startPosition, endPosition) : null;
     this.searchCall += 1
 
-    if (mode == 'path' && objectsAreEqual(startPosition, endPosition)){
-      return {
-        position: startPosition,
-        path: {
-            positions: [],
-            actions: []
-        }
-      }
-    }
+
 
     if (mode === "path" && this.cache.get(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
         this.cacheHit += 1

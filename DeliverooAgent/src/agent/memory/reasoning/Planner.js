@@ -1,6 +1,6 @@
 import { readFile } from '../../../utils/utils.js';
 import { Agent } from '../../agent.js';
-import { DepthSearchMove, GoDeliver, GoPickUp, Patrolling, PddlMove } from './Plans.js';
+import { DepthSearchMove, GoDeliver, GoPickUp, Patrolling, PddlBatchMove, PddlMove } from './Plans.js';
 
 /**
  * Classe used to manage the selection of the next action of the agent
@@ -20,6 +20,7 @@ export class Planner {
         this.library.push( DepthSearchMove )
         this.library.push( Patrolling )
         this.library.push( PddlMove)
+        this.library.push( PddlBatchMove)
 
 
         console.log('[INIT] Planner Initialized.')

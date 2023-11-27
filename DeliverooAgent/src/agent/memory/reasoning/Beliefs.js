@@ -16,7 +16,7 @@ export class Beliefs extends Beliefset {
   constructor(agent) {
     super()
     this.agent = agent
-    this.declareAgent()
+    this.declareAgent(this.agent.agentID, this.agent.currentPosition)
     this.initMap()
     console.log('[INIT] Agent Beliefs initialized.')
   }
@@ -31,11 +31,11 @@ export class Beliefs extends Beliefset {
   /**
    * Declare the belief about the agent.
   */
-  declareAgent() {
-    this.removeObject(`${this.agent.agentID}`)
-    this.addObject(`${this.agent.agentID}`)
-    this.declare(`me ${this.agent.agentID}`)
-    this.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)
+  declareAgent(agentID, position) {
+    this.removeObject(`${agentID}`)
+    this.addObject(`${agentID}`)
+    this.declare(`me ${agentID}`)
+    this.declare(`at ${agentID} t${position.x}_${position.y}`)
   }
 
   /**
@@ -43,7 +43,7 @@ export class Beliefs extends Beliefset {
   */
   updateMyPosition() {
     console.log('[BELIEFSET] My position updated.')
-    this.declareAgent()
+    this.declareAgent(this.agent.agentID, this.agent.currentPosition)
   }
 
   /**

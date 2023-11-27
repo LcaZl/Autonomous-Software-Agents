@@ -6,6 +6,15 @@ export class Option{
         this.utility = utility
         this.position = position
         this.firstSearch = search
+        this.side_options = []
+    }
+
+    setSideOptions(opts){
+        this.side_options = opts
+    }
+
+    getSideOptions(){
+        return this.side_options
     }
 
     toString() {
