@@ -84,7 +84,7 @@ export class GoPickUp extends Plan {
 
     async execute ( option ) {
         if ( this.stopped ) throw ['stopped'];
-        if (MOVE_TYPE == 'PDDL')
+        if (this.agent.move_type == 'PDDL')
             await this.subIntention( new Option('go_to_pddl', option.position, null)) // -- HERE
         else // BFS
             await this.subIntention( new Option('go_to_bfs', option.position, null)) // -- HERE
