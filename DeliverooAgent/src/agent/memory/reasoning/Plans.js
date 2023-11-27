@@ -70,6 +70,12 @@ export class Plan {
 
 }
 
+/**
+ * This function wrap the chosen method between BFS and PDDL. 
+ * By setting the first parameter of Option object is possible to define if the
+ * will use the bfs or the pddl to get the paths. 
+ * 
+ */
 export class GoPickUp extends Plan {
 
     static isApplicableTo ( option ) {
@@ -77,11 +83,14 @@ export class GoPickUp extends Plan {
     }
 
     async execute ( option ) {
-        if ( this.stopped ) throw ['stopped']; // if stopped then quit
-        await this.subIntention( new Option('go_to_pddl', option.position, null))
-        if ( this.stopped ) throw ['stopped']; // if stopped then quit
+        if ( this.stopped ) throw ['stopped'];
+        if (MOVE_TYPE == 'PDDL')
+            await this.subIntention( new Option('go_to_pddl', option.position, null)) // -- HERE
+        else // BFS
+            await this.subIntention( new Option('go_to_bfs', option.position, null)) // -- HERE
+        if ( this.stopped ) throw ['stopped']; 
         await this.agent.pickup()
-        if ( this.stopped ) throw ['stopped']; // if stopped then quit
+        if ( this.stopped ) throw ['stopped']; 
         return true;
     }
 }
@@ -94,7 +103,7 @@ export class GoDeliver extends Plan {
 
     async execute ( option ) {
 
-        await this.subIntention(new Option('go_to_pddl', 'delivery', null));
+        await this.subIntention(new Option('go_to_bfs', 'delivery', null));
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
 
         await this.agent.deliver()
@@ -165,7 +174,7 @@ export class DepthSearchMove extends Plan {
 
                 if ( this.stopped ) throw ['stopped']; // if stopped then quit
 
-                const status = this.agent.move(action)
+                const status = await this.agent.move(action)
                 const freePath = this.isPathFree(plan.path.positions.slice(index))  
 
                 if (!(status && freePath)){

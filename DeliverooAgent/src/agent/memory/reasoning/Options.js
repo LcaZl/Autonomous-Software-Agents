@@ -52,8 +52,7 @@ export class Options{
     }
 
     pickUpUtility(p) {
-        const movementPenality = 1 // 1 None
-        const movementPenalty = (this.agent.MOVEMENT_DURATION * movementPenality) / this.agent.PARCEL_DECADING_INTERVAL;
+        const movementPenality = (this.agent.MOVEMENT_DURATION) / this.agent.PARCEL_DECADING_INTERVAL;
         const actualReward = this.agent.parcels.getMyParcelsReward()
 
         if (this.agent.PARCEL_DECADING_INTERVAL === 'infinite') {
@@ -61,13 +60,13 @@ export class Options{
         }
     
         let search = this.agent.environment.getShortestPath(this.agent.currentPosition, p.position)
-        const pickupDistance = search.path.actions.length
-        const pickupCost = pickupDistance * movementPenalty;
+        
+        const pickupDistance = search == null ? Infinity : search.path.actions.length
+        const pickupCost = pickupDistance * movementPenality;
 
         const deliveryDistance = p.deliveryDistance 
-        const deliveryCost = deliveryDistance * movementPenalty;
+        const deliveryCost = deliveryDistance * movementPenality;
 
-    
         const cost = pickupCost + deliveryCost;
         const carriedParcels = this.agent.parcels.carriedParcels()
         const utility = actualReward + p.reward - (cost * (carriedParcels + 1))
@@ -76,7 +75,7 @@ export class Options{
         console.log({
             movement_duration: this.agent.MOVEMENT_DURATION,
             decading_interval: this.agent.PARCEL_DECADING_INTERVAL,
-            movementPenalty,
+            movementPenality,
             actualReward,
             pickupDistance,
             pickupCost,

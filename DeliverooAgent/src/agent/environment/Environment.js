@@ -204,6 +204,12 @@ export class Environment {
               }
               queue.push(node);
 
+              // Add subpaths
+              const subPathKey = this.positionKey(startPosition, node.position);
+              if (!this.cache.get(subPathKey)) {
+                this.cache.set(subPathKey, node);
+              }
+
               if ((mode == "delivery" && this.fullMap[newPos.x][newPos.y] == 2) || (mode == "path" && objectsAreEqual(newPos, endPosition))) {
                 console.log('[ENVIRONMENT][BFS_SUCCESS] BFS for', mode, 'from', startPosition, 'to', node.position);
                 this.cache.set((cacheKey || this.positionKey(startPosition, current.position)), node);

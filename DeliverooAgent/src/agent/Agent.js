@@ -34,13 +34,15 @@ export class Agent extends AgentInterface{
      * @param {string} token - The token for the agent.
      */
 
-    constructor(host, token, name, duration) {
+    constructor(host, token, name, duration, move_type) {
         super()
 
         if (duration)
             this.duration = duration * 1000
         else
             this.duration = Infinity
+
+        this.move_type = move_type
         // Performance information
         this.pickUpActions = 0
         this.deliveryActions = 0

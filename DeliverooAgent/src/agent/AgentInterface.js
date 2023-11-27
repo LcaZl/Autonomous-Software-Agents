@@ -69,6 +69,6 @@ export class AgentInterface{
     printMap(this.environment.exploredTiles)
     console.log(' - Search call', this.environment.searchCall)
     console.log(' - Cache hits', this.environment.cacheHit)
-    console.log(' - Chached BFS paths (',this.environment.cache.size,'):\n', this.environment.cache)
+    //console.log(' - Chached BFS paths (',this.environment.cache.size,'):\n', this.environment.cache)
   }
 }
