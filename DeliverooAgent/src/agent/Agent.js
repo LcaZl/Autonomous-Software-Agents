@@ -53,6 +53,9 @@ export class Agent extends AgentInterface{
         this.movementAttempts = 0 // Total number of movement attempts
         this.failMovement = 0
         this.score = 0
+        
+        // For multi-agent
+        this.master = false
 
         this.connected = false 
         this.client = new DeliverooApi(host, token) // Class to establish a connection to the target server
@@ -189,20 +192,14 @@ export class Agent extends AgentInterface{
     }
     
     /**
-     * @async
-     * Manage the delivery action performed by the agent
-     */
-    async deliver() {
+1
+    setMaset(){
+        this.master = true
+    }
 
-        this.deliveryActions += 1
-        let deliveredParcels = await this.client.putdown() 
+    messageNotification(message){
+        switch(message.type){
 
-        if (deliveredParcels && deliveredParcels.length > 0){
-
-            this.parcelsDelivered += deliveredParcels.length
-            console.log('[AGENT] Delivered', deliveredParcels.length ,'parcel(s):')
-4
-            this.eventManager.emit('delivered_parcels', deliveredParcels)
         }
     }
 }
