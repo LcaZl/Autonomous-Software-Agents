@@ -1,5 +1,4 @@
 import { PriorityQueue } from "../../../utils/PriorityQueue.js";
-import { distance } from "../../../utils/utils.js";
 import { Agent } from "../../Agent.js";
 import { Parcel } from "../../Environment/Parcels/Parcel.js";
 import { Option } from "./Option.js";

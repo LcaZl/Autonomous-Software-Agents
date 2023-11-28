@@ -1,4 +1,3 @@
-import { showParcels, showPlayers, showIntentions, printMap, showOptions } from '../utils/utils.js';
 import readline from 'readline';
 import { Agent } from './agent.js';
 
@@ -20,6 +19,22 @@ export class AgentInterface{
       this.score = 0
   }
 
+  /**
+   * Prints the map of the environment.
+   * @param {Environment} environment - The environment object.
+   * @param {string} [filler='-'] - The filler character for the map printout.
+  */
+  printMap(map, filler = '-') {
+    for (let y = map.length - 1; y >= 0; y--) {
+      let row = '';
+      for (let x = 0; x < map.length; x++) {
+        row += map[x][y] ? JSON.stringify(map[x][y]) : filler;
+        row += ' ';
+      }
+      console.log('         ',row);
+    }
+  }
+
   // Console agent info
   agentInfo(agent) {
 
@@ -38,7 +53,7 @@ export class AgentInterface{
       }
     }
     console.log(' - Environment Map (\'-\': Inactive cells, 1: Active spawner cells, 2: active delivery cells)\n')
-    printMap(this.environment.fullMap)
+    this.printMap(this.environment.fullMap)
     console.log('\n - Delivery Tiles',this.environment.deliveryTiles)
   }
 
@@ -50,9 +65,9 @@ export class AgentInterface{
       console.log('|- Current score:', this.score - this.initialScore)
       console.log('|- Current Position:', this.currentPosition)
       console.log('|- Parcels Carried:', this.parcels.carriedParcels())
-      showParcels(this.parcels)
-      showPlayers(this.players.getPlayers())
-      showOptions(this.options.getOptions())
+      this.showParcels(this.parcels)
+      this.showPlayers(this.players.getPlayers())
+      this.showOptions(this.options.getOptions())
       console.log('|- Current intention:', this.intentions.currentIntention.option.toString())
       console.log('|------------------------------------|')
       console.log('|                 END                |')
@@ -75,9 +90,90 @@ export class AgentInterface{
     console.log(' - Delivery performed:', this.deliveryActions, '\n')
     console.log(' - Delivered parcels:', this.parcelsDelivered)
     console.log(' - Exploration map:\n')
-    printMap(this.environment.exploredTiles)
-    console.log(' - Search call', this.environment.searchCall)
+    this.printMap(this.environment.exploredTiles)
+    console.log(' - Search call', this.environment.searchCalls)
     console.log(' - Cache hits', this.environment.cacheHit)
     //console.log(' - Chached BFS paths (',this.environment.cache.size,'):\n', this.environment.cache)
+  }
+
+    /**
+   * @param {ParcelsManager} parcels - The parcels object to be displayed.
+   */
+  showParcels(parcels) {
+    console.log('|- Parcels detected: ', parcels.getParcels().size)
+    
+    if (parcels.getParcels().size > 0){
+      let i = 1
+      for (let [id, parcel] of parcels.getParcels()){
+        console.log('|-- ',i,'-', parcel.toString())
+        i++
+      }
+    }
+
+    console.log('|-- My parcels:', parcels.myParcels.size == 0 ? 0 : [...parcels.myParcels].join(', '));
+    console.log('|-- Deleted parcels:', parcels.deletedParcels.size == 0 ? 0 : [...parcels.deletedParcels].join(', '));
+    
+  }
+
+  /**
+   * @param {Array} options 
+   */
+  showOptions(options){
+    console.log('|- Last pushed options: ', options ? options.length : 0)
+    if (options && options.length > 0){
+      let i = 1
+      for (let opt of options){
+        console.log('|-- ',i,'-', opt.toString())
+        i++
+      }
+    }
+  }
+
+  /**
+   * @param {Intentions} intentions 
+   */
+  showIntentions(intentions){
+    console.log('|- Intentions: ', intentions.length)
+    if (intentions.length > 0){
+      let i = 1
+
+      for (let o of intentions) {
+        console.log('|--',i, '-', o.toString())
+        i++
+      }
+    }
+  }
+
+
+  /**  
+   * @param {Array<Player>} players - The players object to be displayed.
+  */
+  showPlayers(players) {
+    console.log('|- Player encountered: ', players.size)
+    if(players.size > 0){
+      let i = 1
+      for (let p of players) {
+        let str = p.toString()
+        console.log('|--',i, '-', p.toString())
+        i++
+      }
+    }
+  }
+
+
+  /**
+   * @param {Beliefs}
+  */
+ showBeliefs(beliefs){
+    let count = 1
+    let string = ''
+    for (let v of beliefs.entries){
+      if (count % 11 == 0){
+        console.log(string)
+        string = ''
+      }
+      string += '\t['+v+']'
+      count++
+    }
   }
 }

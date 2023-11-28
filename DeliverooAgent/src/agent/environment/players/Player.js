@@ -1,4 +1,4 @@
-import { Position } from "../../../utils/utils.js"
+import { Position } from "../../../utils/Position.js"
 
 /**
  * The Player class models the information and behavior of a player in the game.
@@ -22,14 +22,6 @@ export class Player{
         this.positionHistory.set(Date.now(), this.currentPosition)
         console.log('[NEWPLAYER] ' ,this.name, ' entered in tile', this.currentPosition.toString())
     }
-
-    getCurrentPosition() { return this.currentPosition }
-
-    getLastPosition() { return this.lastPosition }
-
-    isLost() { return this.lost }
-
-    disappeared() { this.lost = true }
     update(player) {
 
         let positionalUpdates = false
@@ -50,6 +42,14 @@ export class Player{
 
         return positionalUpdates
     }
+
+    getCurrentPosition() { return this.currentPosition }
+
+    getLastPosition() { return this.lastPosition }
+
+    isLost() { return this.lost }
+
+    disappeared() { this.lost = true }
 
     toString() {
         return `[ID: ${this.id}, Name: ${this.name}, Score: ${this.score}, Position: (${this.currentPosition.toString()}), Last Position: (${this.lastPosition.x}, ${this.lastPosition.y}), Lost: ${this.lost}`

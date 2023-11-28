@@ -1,4 +1,3 @@
-import { readFile } from '../../../utils/utils.js';
 import { Agent } from '../../agent.js';
 import { DepthSearchMove, GoDeliver, GoPickUp, Patrolling, PddlBatchMove, PddlMove } from './Plans.js';
 
@@ -14,6 +13,7 @@ export class Planner {
    
     constructor(agent) {
 
+        this.agent = agent
         this.library = []
         this.library.push( GoPickUp )
         this.library.push( GoDeliver )
@@ -32,11 +32,23 @@ export class Planner {
 
     async loadDomain() {
         try{
-            this.domain = await readFile('agent/memory/pddl/domain.pddl')
+            this.domain = await this.readFile('agent/memory/pddl/domain.pddl')
             console.log('[INIT] Planner Domain loaded')//,this.domain)
         }
         catch(exception){
             console.error("[INIT] Planner ininitalization error.\n", exception)
         }
     }
+
+    readFile ( path ) {
+
+        return new Promise( (res, rej) => {
+      
+            fs.readFile( path, 'utf8', (err, data) => {
+                if (err) rej(err)
+                else res(data)
+            })
+      
+        })
+      }
 }

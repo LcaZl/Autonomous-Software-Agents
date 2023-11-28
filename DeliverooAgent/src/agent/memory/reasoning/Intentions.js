@@ -92,7 +92,7 @@ export class Intentions {
             
                 // Current intention
                 const option = this.intention_queue.pop();
-                option.setSideOptions(this.intention_queue.values())
+                //option.setSideOptions(this.intention_queue.values())
                 const intention = this.currentIntention = new Intention( this, option, this.agent );
                 
                 if ( option.id.startsWith('go_pick_up')) {

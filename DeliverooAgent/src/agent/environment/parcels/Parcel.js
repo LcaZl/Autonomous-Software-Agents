@@ -1,4 +1,4 @@
-import { Position, distance, objectsAreEqual } from "../../../utils/utils.js"
+import { Position } from "../../../utils/Position.js"
 import { Agent } from "../../agent.js"
 
 export class Parcel{

@@ -1,10 +1,9 @@
 
 import { Environment } from '../Environment.js';
 import { Parcel } from './Parcel.js';
-import { Position } from '../../../utils/utils.js';
+import { Position } from '../../../utils/Position.js';
 import { Agent } from '../../agent.js';
 import EventEmitter from "events";
-import { distance } from "../../../utils/utils.js"
 
 /**
  * The Parcels class manages all parcels in the game.

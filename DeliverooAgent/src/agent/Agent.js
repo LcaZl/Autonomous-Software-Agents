@@ -4,11 +4,10 @@ import { Environment } from "./Environment/environment.js";
 import { AgentPercepts } from "./Memory/Percepts.js";
 import { ParcelsManager } from "./Environment/Parcels/ParcelsManager.js";
 import { PlayersManager } from "./Environment/players/PlayersManager.js";
-import { Position } from '../utils/utils.js';
+import { Position } from '../utils/Position.js';
 import { Planner } from "./memory/Reasoning/planner.js"
 import { Beliefs } from "./memory/Reasoning/Beliefs.js"
 import EventEmitter from "events";
-import { objectsAreEqual } from '../utils/utils.js';
 import { Options } from "./memory/reasoning/Options.js";
 import { Intentions } from "./memory/reasoning/Intentions.js";
 import { AgentInterface } from "./AgentInterface.js";
@@ -131,7 +130,7 @@ export class Agent extends AgentInterface{
       
         if (!OnDelivery){
             const currentPosition = this.currentPosition;
-            if (this.parcels.getPositions().some(item => objectsAreEqual(item, currentPosition)))
+            if (this.parcels.getPositions().some(pos => pos.isEqual(currentPosition)))
                 await this.pickup()
         }
       }

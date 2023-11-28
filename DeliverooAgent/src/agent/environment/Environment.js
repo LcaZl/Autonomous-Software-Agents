@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { PriorityQueue } from '../../utils/PriorityQueue.js';
-import { Position, distance, objectsAreEqual, printMap } from '../../utils/utils.js';
+import { Position } from '../../utils/Position.js';
 import { Agent } from '../agent.js';
 /**
  * The Environment class represents the game environment.
@@ -18,7 +18,7 @@ export class Environment {
     let { width, height, tiles } = this.agent.client.map;
     this.mapWidth = width;
     this.mapHeight = height;
-    this.searchCall = 0
+    this.searchCalls = 0
     this.cacheHit = 0
     this.fullMap = Array(this.mapHeight).fill().map(() => Array(this.mapWidth).fill(0))
     tiles.forEach(tile => tile.delivery ? this.fullMap[tile.x][tile.y] = 2 : this.fullMap[tile.x][tile.y] = 1)
@@ -38,7 +38,7 @@ export class Environment {
 
   onDeliveryTile() {
     for (let pos of this.deliveryTiles) 
-      if (objectsAreEqual(pos, this.agent.currentPosition)) 
+      if (pos.isEqual(this.agent.currentPosition)) 
         return true
     return false
   }
@@ -54,7 +54,7 @@ export class Environment {
     let enemyPlayersPositions = this.agent.players.getCurrentPositions();
     if (enemyPlayersPositions.length == 0)
       return false
-    return enemyPlayersPositions.some(pos => objectsAreEqual(pos, checkPos));
+    return enemyPlayersPositions.some(pos => pos.isEqual(checkPos));
   }
 
 
@@ -93,7 +93,7 @@ export class Environment {
     }
 
     console.log('[ENVIRONMENT] Random movement - Exploration map:\n')
-    printMap(this.exploredTiles)
+    this.agent.printMap(this.exploredTiles)
     return direction;
   }
 
@@ -108,7 +108,7 @@ export class Environment {
 
     for (let position of this.deliveryTiles) {
       if (!this.isEnemyPosition(position)){
-        let dist = distance(position, this.agent.currentPosition)
+        let dist = position.distanceTo(this.agent.currentPosition)
         if (dist < bestDistance) {
             bestDistance = dist;
             closestDelivery = position;
@@ -161,9 +161,7 @@ export class Environment {
 
   bfsSearch(startPosition, endPosition = null, mode = "path") {
     const cacheKey = endPosition ? this.positionKey(startPosition, endPosition) : null;
-    this.searchCall += 1
-
-
+    this.searchCalls += 1
 
     if (mode === "path" && this.cache.get(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
         this.cacheHit += 1
@@ -202,7 +200,7 @@ export class Environment {
                 this.cache.set(subPathKey, node);
               }
 
-              if ((mode == "delivery" && this.fullMap[newPos.x][newPos.y] == 2) || (mode == "path" && objectsAreEqual(newPos, endPosition))) {
+              if ((mode == "delivery" && this.fullMap[newPos.x][newPos.y] == 2) || (mode == "path" && newPos.isEqual(endPosition))) {
                 console.log('[ENVIRONMENT][BFS_SUCCESS] BFS for', mode, 'from', startPosition, 'to', node.position);
                 this.cache.set((cacheKey || this.positionKey(startPosition, current.position)), node);
                 return node;

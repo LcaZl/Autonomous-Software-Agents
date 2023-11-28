@@ -1,5 +1,4 @@
 import { PddlAction, PddlExecutor, onlineSolver } from "@unitn-asa/pddl-client";
-import { distance, objectsAreEqual } from "../../../utils/utils.js";
 import { Agent } from "../../agent.js";
 import { Intention } from "./Intention.js";
 import { Option } from "./Option.js";
@@ -45,29 +44,6 @@ export class Plan {
         this.#sub_intentions.push( sub_intention );
         return sub_intention.achieve();
     }
-
-    /**
-     * Check if the tiles of the path are free from other players.
-     * 
-     * @returns - true if the path is free, else otherwise.
-     */
-    isPathFree(positions) {
-        const currentPositions = this.agent.players.getCurrentPositions();
-    
-        const limit = Math.min(this.agent.AGENTS_OBSERVATION_DISTANCE, positions.length);
-
-        for (let index = 0; index < limit; index++) {
-            const tile = positions[index];
-            const isTileOccupied = currentPositions.some(pos => objectsAreEqual(tile, pos));
-
-            if (isTileOccupied) {
-                console.log('[ACTUAL PLAN] Future tile (', tile, ') occupied. Need to update Plan.');
-                return false;
-            }
-        }
-        return true;
-    }
-
 }
 
 /**
@@ -139,6 +115,28 @@ export class DepthSearchMove extends Plan {
         return option.id == 'go_to_bfs';
     }
 
+    /**
+     * Check if the tiles of the path are free from other players.
+     * 
+     * @returns - true if the path is free, else otherwise.
+    */
+    isPathFree(positions) {
+        const currentPositions = this.agent.players.getCurrentPositions();
+    
+        const limit = Math.min(this.agent.AGENTS_OBSERVATION_DISTANCE, positions.length);
+
+        for (let index = 0; index < limit; index++) {
+            const tile = positions[index];
+            const isTileOccupied = currentPositions.some(pos => pos.isEqual(tile));
+
+            if (isTileOccupied) {
+                console.log('[ACTUAL PLAN] Future tile (', tile, ') occupied. Need to update Plan.');
+                return false;
+            }
+        }
+        return true;
+    }
+
     async execute ( option ) {
         
         let target = null
@@ -183,7 +181,7 @@ export class DepthSearchMove extends Plan {
 
             }
             
-        } while ( !objectsAreEqual(this.agent.currentPosition, target));
+        } while ( !this.agent.currentPosition.isEqual(target));
 
         return true;
 
@@ -191,6 +189,10 @@ export class DepthSearchMove extends Plan {
 }
 
 export class PddlMove extends Plan {
+    
+    static isApplicableTo ( option ) {
+        return option.id == 'go_to_pddl';
+    }
 
     exractTilePositionFromPDDL(str) {
         const regex = /(\d+)/g;
@@ -210,10 +212,6 @@ export class PddlMove extends Plan {
         positions.push(this.exractTilePositionFromPDDL(plan[plan.length - 1].args[2]))
 
         return positions
-    }
-
-    static isApplicableTo ( option ) {
-        return option.id == 'go_to_pddl';
     }
 
     async execute ( option ) {
