@@ -9,6 +9,15 @@ export class AgentInterface{
 
   constructor() {
       this.startedAt = new Date().getTime()
+      this.pickUpActions = 0
+      this.deliveryActions = 0
+      this.parcelsDelivered = 0
+      this.parcelsPickedUp = 0
+      this.initialScore = 0
+      this.effectiveMovement = 0 // total number of effective movement performed by the agent
+      this.movementAttempts = 0 // Total number of movement attempts
+      this.failMovement = 0
+      this.score = 0
   }
 
   // Console agent info

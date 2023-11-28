@@ -44,16 +44,10 @@ export class Agent extends AgentInterface{
 
         this.move_type = move_type
         // Performance information
-        this.pickUpActions = 0
-        this.deliveryActions = 0
-        this.parcelsDelivered = 0
-        this.parcelsPickedUp = 0
-        this.initialScore = 0
-        this.effectiveMovement = 0 // total number of effective movement performed by the agent
-        this.movementAttempts = 0 // Total number of movement attempts
-        this.failMovement = 0
-        this.score = 0
-        
+        this.lastPosition = null
+        this.currentPosition = null
+        this.lastDirection = null
+
         // For multi-agent
         this.master = false
 
@@ -76,7 +70,7 @@ export class Agent extends AgentInterface{
         // Wait that the agent is connected to the server and has received the first sensing. Almost instant.
         while (!this.percepts.firstSense || !this.connected) { await new Promise(resolve => setTimeout(resolve, 5)) }
 
-        // Environment basic information
+        // Basic information
         this.agentID = this.client.id
         this.name = this.client.name
         this.active = true
@@ -89,6 +83,7 @@ export class Agent extends AgentInterface{
 
         this.environment = new Environment(this)
 
+        // If a duration is given, start the timer.
         if (this.duration != Infinity){
 
             setTimeout(() => {
@@ -96,21 +91,23 @@ export class Agent extends AgentInterface{
                 process.exit() 
             }, this.duration);
 
+            // To update the options when the time is expiring.
+            // If the agent is carring parcels, when this timer expires the best option will be the delivery.
             setTimeout(() =>{
                 this.eventManager.emit('update_options')
             }, this.duration - (this.MOVEMENT_DURATION * this.environment.mapHeight))
-
         }
 
-        // Initialize agent components
+        // Initialize agent components and load PDDL domain
         this.parcels = new ParcelsManager(this)
         this.players = new PlayersManager(this)
-        this.beliefs = new Beliefs(this) // Manage only the belief set of the entire environment
+        this.beliefs = new Beliefs(this)
         this.planner = new Planner(this)
         this.options = new Options(this)
         this.intentions = new Intentions(this)
-
         await this.planner.loadDomain()
+
+        // Activate the managment of the events
         this.parcels.activate()
         this.players.activate()
         this.beliefs.activate()
@@ -119,7 +116,7 @@ export class Agent extends AgentInterface{
         this.agentInfo(this)
         console.log('[INIT] Initialization Ended Succesfully.\n\n')
 
-        // Agent started
+        // Start effectively the agent
         await this.intentions.loop()
     }
 
@@ -190,19 +187,24 @@ export class Agent extends AgentInterface{
             this.eventManager.emit('picked_up_parcels', pickedUpParcels)            
         }
     }
-    
+
     /**
-1
-    setMaset(){
-        this.master = true
-    }
+     * @async
+     * Manage the delivery action performed by the agent
+    */
+    async deliver() {
 
-    messageNotification(message){
-        switch(message.type){
+        this.deliveryActions += 1
+        let deliveredParcels = await this.client.putdown() 
 
+        if (deliveredParcels && deliveredParcels.length > 0){
+
+            this.parcelsDelivered += deliveredParcels.length
+            console.log('[AGENT] Delivered', deliveredParcels.length ,'parcel(s):')
+4
+            this.eventManager.emit('delivered_parcels', deliveredParcels)
         }
     }
 }
-
 
 
