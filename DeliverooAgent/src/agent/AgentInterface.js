@@ -17,8 +17,13 @@ export class AgentInterface{
       this.movementAttempts = 0 // Total number of movement attempts
       this.failMovement = 0
       this.score = 0
+      this.consoleActivated = false
   }
 
+  log(message){
+    if (this.consoleActivated)
+      console.log(message)
+  }
   /**
    * Prints the map of the environment.
    * @param {Environment} environment - The environment object.
@@ -37,27 +42,31 @@ export class AgentInterface{
 
   // Console agent info
   agentInfo(agent) {
-
-    console.log('[INIT] Agent info:\n')
-    console.log(' - ID: ', this.agentID)
-    console.log(' - Name: ', this.name)
-    console.log(' - Score: ', this.score)
-    console.log(' - Initial Position: (', this.lastPosition.x, ',', this.lastPosition.y, ')')
-    console.log(' - Server Deliveroo Connected: ', this.client.id != null)
-    console.log(' - Token: ', this.client.token)
-    console.log(' - Environment Configuration:')
-    for (const key in this.client.config) {
-      if (this.client.config.hasOwnProperty(key)) {
-        const value = this.client.config[key];
-        console.log(' -- ',key, ': ', value);
+    if (this.consoleActivated){
+      console.log('[INIT] Agent info:\n')
+      console.log(' - ID: ', this.agentID)
+      console.log(' - Name: ', this.name)
+      console.log(' - Score: ', this.score)
+      console.log(' - Initial Position: (', this.lastPosition.x, ',', this.lastPosition.y, ')')
+      console.log(' - Server Deliveroo Connected: ', this.client.id != null)
+      console.log(' - Token: ', this.client.token)
+      console.log(' - Environment Configuration:')
+      for (const key in this.client.config) {
+        if (this.client.config.hasOwnProperty(key)) {
+          const value = this.client.config[key];
+          console.log(' -- ',key, ': ', value);
+        }
       }
+      console.log(' - Environment Map (\'-\': Inactive cells, 1: Active spawner cells, 2: active delivery cells)\n')
+      this.printMap(this.environment.fullMap)
+      console.log('\n - Delivery Tiles',this.environment.deliveryTiles)
+      console.log(' - PARCEL_DECADING_INTERVAL:', this.PARCEL_DECADING_INTERVAL)
     }
-    console.log(' - Environment Map (\'-\': Inactive cells, 1: Active spawner cells, 2: active delivery cells)\n')
-    this.printMap(this.environment.fullMap)
-    console.log('\n - Delivery Tiles',this.environment.deliveryTiles)
   }
 
   status() {
+    if (this.consoleActivated){
+
       console.log('|------------------------------------|')
       console.log('|            Agent status            |')
       console.log('|------------------------------------|')
@@ -73,7 +82,7 @@ export class AgentInterface{
       console.log('|                 END                |')
       console.log('|------------------------------------|')
     }
-
+  }
 
   finalMetrics() {
     this.finishAt = new Date().getTime()
@@ -100,31 +109,34 @@ export class AgentInterface{
    * @param {ParcelsManager} parcels - The parcels object to be displayed.
    */
   showParcels(parcels) {
-    console.log('|- Parcels detected: ', parcels.getParcels().size)
-    
-    if (parcels.getParcels().size > 0){
-      let i = 1
-      for (let [id, parcel] of parcels.getParcels()){
-        console.log('|-- ',i,'-', parcel.toString())
-        i++
+    if (this.consoleActivated){
+      console.log('|- Parcels detected: ', parcels.getParcels().size)
+      
+      if (parcels.getParcels().size > 0){
+        let i = 1
+        for (let [id, parcel] of parcels.getParcels()){
+          console.log('|-- ',i,'-', parcel.toString())
+          i++
+        }
       }
-    }
 
-    console.log('|-- My parcels:', parcels.myParcels.size == 0 ? 0 : [...parcels.myParcels].join(', '));
-    console.log('|-- Deleted parcels:', parcels.deletedParcels.size == 0 ? 0 : [...parcels.deletedParcels].join(', '));
-    
+      console.log('|-- My parcels:', parcels.myParcels.size == 0 ? 0 : [...parcels.myParcels].join(', '));
+      console.log('|-- Deleted parcels:', parcels.deletedParcels.size == 0 ? 0 : [...parcels.deletedParcels].join(', '));
+    }
   }
 
   /**
    * @param {Array} options 
    */
   showOptions(options){
-    console.log('|- Last pushed options: ', options ? options.length : 0)
-    if (options && options.length > 0){
-      let i = 1
-      for (let opt of options){
-        console.log('|-- ',i,'-', opt.toString())
-        i++
+    if (this.consoleActivated){
+      console.log('|- Last pushed options: ', options ? options.length : 0)
+      if (options && options.length > 0){
+        let i = 1
+        for (let opt of options){
+          console.log('|-- ',i,'-', opt.toString())
+          i++
+        }
       }
     }
   }
@@ -133,13 +145,15 @@ export class AgentInterface{
    * @param {Intentions} intentions 
    */
   showIntentions(intentions){
-    console.log('|- Intentions: ', intentions.length)
-    if (intentions.length > 0){
-      let i = 1
+    if (this.consoleActivated){
+      console.log('|- Intentions: ', intentions.length)
+      if (intentions.length > 0){
+        let i = 1
 
-      for (let o of intentions) {
-        console.log('|--',i, '-', o.toString())
-        i++
+        for (let o of intentions) {
+          console.log('|--',i, '-', o.toString())
+          i++
+        }
       }
     }
   }
@@ -149,13 +163,15 @@ export class AgentInterface{
    * @param {Array<Player>} players - The players object to be displayed.
   */
   showPlayers(players) {
-    console.log('|- Player encountered: ', players.size)
-    if(players.size > 0){
-      let i = 1
-      for (let p of players) {
-        let str = p.toString()
-        console.log('|--',i, '-', p.toString())
-        i++
+    if (this.consoleActivated){
+      console.log('|- Player encountered: ', players.size)
+      if(players.size > 0){
+        let i = 1
+        for (let p of players) {
+          let str = p.toString()
+          console.log('|--',i, '-', p.toString())
+          i++
+        }
       }
     }
   }
@@ -165,15 +181,17 @@ export class AgentInterface{
    * @param {Beliefs}
   */
  showBeliefs(beliefs){
-    let count = 1
-    let string = ''
-    for (let v of beliefs.entries){
-      if (count % 11 == 0){
-        console.log(string)
-        string = ''
+    if (this.consoleActivated){
+      let count = 1
+      let string = ''
+      for (let v of beliefs.entries){
+        if (count % 11 == 0){
+          console.log(string)
+          string = ''
+        }
+        string += '\t['+v+']'
+        count++
       }
-      string += '\t['+v+']'
-      count++
     }
   }
 }

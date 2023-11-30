@@ -9,8 +9,10 @@ import { Planner } from "./memory/Reasoning/planner.js"
 import { Beliefs } from "./memory/Reasoning/Beliefs.js"
 import EventEmitter from "events";
 import { Options } from "./memory/reasoning/Options.js";
+import { Option } from "./memory/reasoning/Option.js";
 import { Intentions } from "./memory/reasoning/Intentions.js";
 import { AgentInterface } from "./AgentInterface.js";
+import { Intention } from "./memory/Reasoning/Intention.js";
 /**
  * @class
  * 
@@ -33,15 +35,13 @@ export class Agent extends AgentInterface{
      * @param {string} token - The token for the agent.
      */
 
-    constructor(host, token, name, duration, move_type) {
+    constructor(host, token, name, duration, moveType) {
         super()
 
-        if (duration)
-            this.duration = duration * 1000
-        else
-            this.duration = Infinity
+        this.duration = duration ? duration * 1000 : Infinity;
+        this.moveType = moveType
+        this.fastPick = true
 
-        this.move_type = move_type
         // Performance information
         this.lastPosition = null
         this.currentPosition = null
@@ -66,7 +66,7 @@ export class Agent extends AgentInterface{
      */
     async start() {
 
-        // Wait that the agent is connected to the server and has received the first sensing. Almost instant.
+        // Ensuring connection and first sensing
         while (!this.percepts.firstSense || !this.connected) { await new Promise(resolve => setTimeout(resolve, 5)) }
 
         // Basic information
@@ -82,9 +82,8 @@ export class Agent extends AgentInterface{
 
         this.environment = new Environment(this)
 
-        // If a duration is given, start the timer.
+        // Timer for agent operation duration
         if (this.duration != Infinity){
-
             setTimeout(() => {
                 this.finalMetrics()
                 process.exit() 
@@ -113,9 +112,10 @@ export class Agent extends AgentInterface{
         this.options.activate()
 
         this.agentInfo(this)
-        console.log('[INIT] Initialization Ended Succesfully.\n\n')
+        this.log('[INIT] Initialization Ended Succesfully.\n\n')
 
         // Start effectively the agent
+        console.log('\n[',this.agentID,']Agent', this.name, 'Started!\n')
         await this.intentions.loop()
     }
 
@@ -128,10 +128,62 @@ export class Agent extends AgentInterface{
           await this.deliver()
         }
       
+        if (this.parcels.getPositions().some(pos => pos.isEqual(this.currentPosition))){
+            await this.pickup()
+        }
+
         if (!OnDelivery){
-            const currentPosition = this.currentPosition;
-            if (this.parcels.getPositions().some(pos => pos.isEqual(currentPosition)))
-                await this.pickup()
+
+
+            if (this.fastPick && this.intentions.currentIntention.option.id != 'patrolling'){
+                let up = [new Position(this.currentPosition.x, this.currentPosition.y + 1), 'up']
+                let down = [new Position(this.currentPosition.x, this.currentPosition.y - 1), 'down']
+                let left = [new Position(this.currentPosition.x - 1, this.currentPosition.y), 'left']
+                let right = [new Position(this.currentPosition.x + 1, this.currentPosition.y), 'right']
+                
+                let ref_id = ''
+                if (this.intentions.currentIntention && this.intentions.currentIntention.option && this.intentions.currentIntention.option.parcel)
+                    ref_id = this.intentions.currentIntention.option.parcel.id
+
+                console.log('\nFastCheck:\nPositions:',up, down, left, right)
+                for (let p of this.parcels.getParcels().values()){
+                    if (!this.parcels.myParcels.has(p.id) && p.id != ref_id)
+                        console.log('PArcel position', p.id, p.position)
+                        if (p.position.isEqual(up[0])){
+                            await this.client.move(up[1])
+                            await this.pickup()
+                            await this.client.move(down[1])
+                            console.log('UpCompleted.')
+                            return
+                        }
+                            //this.intentions.push([new Option(`fastPickup_${up[1]}`, up, Infinity, [up[1], down[1]], p)])
+                        else if (p.position.isEqual(down[0])){
+                            await this.client.move(down[1])
+                            await this.pickup()
+                            await this.client.move(up[1])
+                            console.log('DownCompleted.')
+                            return
+                        }
+                            //this.intentions.push([new Option(`fastPickup_${down[1]}`, down, Infinity, [down[1], up[1]], p)])
+                        else if (p.position.isEqual(left[0])){
+                            await this.client.move(left[1])
+                            await this.pickup()
+                            await this.client.move(right[1])
+                            console.log('LeftCompleted.')
+
+                            return;
+                        }
+                            //this.intentions.push([new Option(`fastPickup_${left[1]}`, left, Infinity, [left[1], right[1]], p)])
+                        else if (p.position.isEqual(right[0])){
+                            await this.client.move(right[1])
+                            await this.pickup()
+                            await this.client.move(left[1])
+                            console.log('RightCompleted.')
+                            return;
+                        }
+                            //this.intentions.push([new Option(`fastPickup_${right[1]}`, right, Infinity, [right[1], left[1]], p)])
+                }
+            }
         }
       }
 
@@ -154,13 +206,13 @@ export class Agent extends AgentInterface{
             this.environment.increaseTemperature()
             this.lastPosition = this.currentPosition
             this.currentPosition = new Position(moveResult.x, moveResult.y)
-            console.log('[MOVE',this.movementAttempts,'] Moved:', direction, '- New Position', this.currentPosition, ' - From', this.lastPosition)
+            this.log('[MOVE',this.movementAttempts,'] Moved:', direction, '- New Position', this.currentPosition, ' - From', this.lastPosition)
 
             this.eventManager.emit('movement')
         }
         else{
             this.failMovement += 1
-            console.log('[MOVE',this.movementAttempts,'] Moved:', moveResult, '- Fail - Position', this.currentPosition)
+            this.log('[MOVE',this.movementAttempts,'] Moved:', moveResult, '- Fail - Position', this.currentPosition)
         }
 
         await this.actualTileCheck()
@@ -181,7 +233,7 @@ export class Agent extends AgentInterface{
         if (pickedUpParcels && pickedUpParcels.length > 0) {
 
             this.parcelsPickedUp += pickedUpParcels.length
-            console.log('[AGENT] Picked up', pickedUpParcels.length,'parcel(s):')
+            this.log('[AGENT] Picked up', pickedUpParcels.length,'parcel(s):')
             
             this.eventManager.emit('picked_up_parcels', pickedUpParcels)            
         }
@@ -199,9 +251,11 @@ export class Agent extends AgentInterface{
         if (deliveredParcels && deliveredParcels.length > 0){
 
             this.parcelsDelivered += deliveredParcels.length
-            console.log('[AGENT] Delivered', deliveredParcels.length ,'parcel(s):')
-4
+            this.score += this.parcels.getMyParcelsReward()
+            console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Score: ',this.score - this.initialScore,' - Delivered', deliveredParcels.length ,'parcel(s) - Reward: ', this.parcels.getMyParcelsReward())
+
             this.eventManager.emit('delivered_parcels', deliveredParcels)
+
         }
     }
 }

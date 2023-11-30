@@ -1,5 +1,8 @@
+import { PddlProblem } from '@unitn-asa/pddl-client';
 import { Agent } from '../../agent.js';
-import { DepthSearchMove, GoDeliver, GoPickUp, Patrolling, PddlBatchMove, PddlMove } from './Plans.js';
+import { BlindMove, DepthSearchMove, GoDeliver, GoPickUp, Patrolling, PddlMove } from './Plans.js';
+import fs from 'fs'
+import { PddlAction, PddlExecutor, onlineSolver } from "@unitn-asa/pddl-client";
 
 /**
  * Classe used to manage the selection of the next action of the agent
@@ -19,21 +22,46 @@ export class Planner {
         this.library.push( GoDeliver )
         this.library.push( DepthSearchMove )
         this.library.push( Patrolling )
-        this.library.push( PddlMove)
-        this.library.push( PddlBatchMove)
+        this.library.push( PddlMove )
+        this.library.push( BlindMove )
+        this.memory = new Map()
 
-
-        console.log('[INIT] Planner Initialized.')
+        this.agent.log('[INIT] Planner Initialized.')
     }
 
     getPlanLibrary(){ return this.library }
+
+    /**
+     * 
+     * @param {PddlProblem} pddlProblem 
+     * @returns 
+     */
+    async getPlan(problem){
+        let plan = null
+        this.agent.log('[PLANNER] Requested plan for problem:', problem.name, '(Memory hit ', this.memory.has(problem.name),')')
+        if (!this.memory.has(problem.name)){
+            try{
+                plan = await onlineSolver( this.domain, problem.toPddlString() );
+            }
+            catch (error){
+                this.agent.log(problem, this.domain)
+                this.agent.log(error)
+                return null
+            }
+            this.memory.set(problem.name, plan)
+        }
+        else{
+            plan = this.memory.get(problem.name)
+        }
+        return plan
+    }
 
     getDomain(){ return this.domain }
 
     async loadDomain() {
         try{
             this.domain = await this.readFile('agent/memory/pddl/domain.pddl')
-            console.log('[INIT] Planner Domain loaded')//,this.domain)
+            this.agent.log('[INIT] Planner Domain loaded')//,this.domain)
         }
         catch(exception){
             console.error("[INIT] Planner ininitalization error.\n", exception)

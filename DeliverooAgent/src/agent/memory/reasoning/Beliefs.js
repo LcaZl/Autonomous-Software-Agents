@@ -18,7 +18,7 @@ export class Beliefs extends Beliefset {
     this.agent = agent
     this.declareAgent(this.agent.agentID, this.agent.currentPosition)
     this.initMap()
-    console.log('[INIT] Agent Beliefs initialized.')
+    this.agent.log('[INIT] Agent Beliefs initialized.')
   }
 
   activate(){
@@ -42,7 +42,7 @@ export class Beliefs extends Beliefset {
    * Updates belief of agent position
   */
   updateMyPosition() {
-    console.log('[BELIEFSET] My position updated.')
+    this.agent.log('[BELIEFSET] My position updated.')
     this.declareAgent(this.agent.agentID, this.agent.currentPosition)
   }
 
@@ -59,7 +59,7 @@ export class Beliefs extends Beliefset {
    * Updates beliefs about other players
   */
   updatePlayers() {
-    console.log('[BELIEFSET] Players informations updated.')
+    this.agent.log('[BELIEFSET] Players informations updated.')
     for (let player of this.agent.players.getPlayers().values()) {
       if (!player.isLost()) {
         this.addObject(`${player.id}`)
@@ -78,7 +78,7 @@ export class Beliefs extends Beliefset {
    * Updates the agent's beliefs about parcels.
   */
   updateParcels() {
-    console.log('[BELIEFSET] Parcels information updated.')
+    this.agent.log('[BELIEFSET] Parcels information updated.')
     for (let [id, parcel] of this.agent.parcels.getParcels()) {
       if (parcel.isMine()) {
         this.removeFact(`at ${parcel.id} t${parcel.x}_${parcel.y}`)

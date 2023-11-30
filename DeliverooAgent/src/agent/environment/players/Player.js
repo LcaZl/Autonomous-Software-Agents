@@ -11,7 +11,8 @@ export class Player{
      * 
      * @param {Object} player - The initial information about a player.
     */
-    constructor(player){
+    constructor(agent, player){
+        this.agent = agent
         this.id = player.id
         this.name = player.name
         this.currentPosition = new Position(player.x, player.y)
@@ -20,7 +21,7 @@ export class Player{
         this.score = player.score
         this.positionHistory = new Map()
         this.positionHistory.set(Date.now(), this.currentPosition)
-        console.log('[NEWPLAYER] ' ,this.name, ' entered in tile', this.currentPosition.toString())
+        this.agent.log('[NEWPLAYER] ' ,this.name, ' entered in tile', this.currentPosition.toString())
     }
     update(player) {
 
@@ -36,7 +37,7 @@ export class Player{
             this.lastPosition = this.currentPosition
             this.currentPosition = newPosition
             this.positionHistory.set(Date.now(), this.currentPosition);
-            console.log('[PLAYER ', this.name,' ] Moved from', this.lastPosition, 'to', this.currentPosition)
+            this.agent.log('[PLAYER ', this.name,' ] Moved from', this.lastPosition, 'to', this.currentPosition)
             positionalUpdates = true
         }
 

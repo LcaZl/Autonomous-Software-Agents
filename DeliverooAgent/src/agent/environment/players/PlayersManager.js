@@ -17,7 +17,7 @@ export class PlayersManager{
         this.inGamePlayers = 0;
         this.playersList = new Map()
         this.ids = new Set()
-        console.log('[INIT] Enemy Agents Manager Initialized')
+        this.agent.log('[INIT] Enemy Agents Manager Initialized')
     }
 
     getPlayers() { return this.playersList }
@@ -52,7 +52,7 @@ export class PlayersManager{
 
                     this.inGamePlayers += 1;
                     this.ids.add(player.id);
-                    let newPlayer = new Player(player)
+                    let newPlayer = new Player(this.agent, player)
                     this.playersList.set(player.id, newPlayer);
                     updates = true
                 }

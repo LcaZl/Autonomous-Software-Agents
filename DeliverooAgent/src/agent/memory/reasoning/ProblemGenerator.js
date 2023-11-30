@@ -22,16 +22,14 @@ export class ProblemGenerator{
      * @param {Parcel} data 
      * @returns 
      */
-    getProblem(type, position){
+    getProblem(type, arg){ // arg can be a single position or an array of positions
         this.type = type
 
         switch (type) {
             case 'go_pick_up':
             case 'deliver':
             case 'goto':
-                return this.gotoOption(position)
-            case 'gotoM':
-                return this.goToMultipleOption(this.agent.parcels.getParcels(), this.agent.environment.deliveryTiles)
+                return this.gotoOption(arg)
         }
     }
  
@@ -42,25 +40,13 @@ export class ProblemGenerator{
      * @param {Object} endTile 
      * @returns {String}
      */
-    gotoOption(destination) {        
+    gotoOption(destination) {       
         var problem = new PddlProblem(
-            'BestParcel',
+            `${this.agent.currentPosition.x}_${this.agent.currentPosition.y}-${destination.x}_${destination.y}`,
             this.agent.beliefs.getObjectsWithType(),
             this.agent.beliefs.toPddlString(),
             `at ${this.agent.agentID} t${destination.x}_${destination.y}`
         )
-        return problem.toPddlString()
-    }
-
-    goToMultipleOption(parcels, deliveryTiles){
-        let goal = ``
-        for (let p of parcels){
-            goal += `carries ${this.agent.agentID} ${p.id} `
-        }
-        goal += `(or`
-        for (let d of deliveryTiles){
-            goal += `( at ${this.agent.agentID} t${p.position.x}_${p.position.y})`
-        }
-        goal += `)`
+        return problem
     }
 }

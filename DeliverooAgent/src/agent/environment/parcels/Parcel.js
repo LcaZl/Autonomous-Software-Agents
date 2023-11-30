@@ -15,14 +15,14 @@ export class Parcel{
         this.position = new Position(parcel.x, parcel.y)
         this.reward = parcel.reward
         this.carriedBy = parcel.carriedBy
-        this.deliveryDistance = this.agent.environment.getNearestDeliveryTile(this.position).path.actions.length;
+        this.pathToDelivery = this.agent.environment.getNearestDeliveryTile(this.position);
 
         if(this.agent.PARCEL_DECADING_INTERVAL != 'infinite'){
-            setInterval(() => {
+            setInterval(async () => {
                 this.reward -= (this.agent.PARCEL_DECADING_INTERVAL / 1000)
-                if (this.reward == 0)
+                if (this.reward <= 1)
                     this.agent.parcels.deleteParcel(this.id)
-                
+                    
             }, this.agent.PARCEL_DECADING_INTERVAL)
         }
     }

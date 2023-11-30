@@ -16,23 +16,25 @@ export class Environment {
     
     this.agent = agent
     let { width, height, tiles } = this.agent.client.map;
+    this.tiles = tiles
     this.mapWidth = width;
     this.mapHeight = height;
     this.searchCalls = 0
     this.cacheHit = 0
     this.fullMap = Array(this.mapHeight).fill().map(() => Array(this.mapWidth).fill(0))
     tiles.forEach(tile => tile.delivery ? this.fullMap[tile.x][tile.y] = 2 : this.fullMap[tile.x][tile.y] = 1)
-    
     // Filter and store only delivery tile
     this.deliveryTiles = new Set();
     tiles.forEach(tile => tile.delivery ? this.deliveryTiles.add(new Position(tile.x, tile.y)) : null)
 
     this.exploredTiles = Array(this.mapHeight).fill().map(() => Array(this.mapWidth).fill(0));
-    setInterval(() => this.decreaseTemperature(), this.agent.MOVEMENT_DURATION * (this.agent.AGENTS_OBSERVATION_DISTANCE + 1))
+    tiles.forEach(tile => tile.delivery ? this.fullMap[tile.x][tile.y] = 2 : this.fullMap[tile.x][tile.y] = 1)
+
+    //setInterval(() => this.decreaseTemperature(), this.agent.MOVEMENT_DURATION * (this.agent.AGENTS_OBSERVATION_DISTANCE + 1))
 
     this.cache = new Map();
     
-    console.log("[INIT] Environment Information Initialized.");
+    this.agent.log("[INIT] Environment Information Initialized.");
     return this
   }
 
@@ -57,8 +59,37 @@ export class Environment {
     return enemyPlayersPositions.some(pos => pos.isEqual(checkPos));
   }
 
+  isPathSafe(path) {
+    for (const position of path) {
+        if (this.isEnemyPosition(position)) {
+            return false;
+        }
+    }
+    return true;
+  }
 
+  increaseTemperature() {
+    let position = this.agent.currentPosition;
+    let obs = this.agent.AGENTS_OBSERVATION_DISTANCE * 2;
+    this.exploredTiles[position.x][position.y] += obs;
+  }
 
+  decreaseTemperature(){
+    for (let i = 0; i < this.exploredTiles.length; i++) 
+      for (let j = 0; j < this.exploredTiles[i].length; j++)
+          this.exploredTiles[i][j] = Math.max(0, this.exploredTiles[i][j] - 1);
+  }
+
+  getRandomPosition(){
+    let position = null
+    do{
+      let tile = this.tiles[Math.round( Math.random() * this.tiles.length)]
+      position = new Position(tile.x, tile.y)
+
+    }while(position.isEqual(this.agent.currentPosition))
+    this.agent.log('[ENVIRONMENT] Random position:', position)
+    return position
+  }
   /**
    * Gets the available directions for the agent.
    * 
@@ -92,78 +123,30 @@ export class Environment {
         }
     }
 
-    console.log('[ENVIRONMENT] Random movement - Exploration map:\n')
+    this.agent.log('[ENVIRONMENT] Random movement - Exploration map:\n')
     this.agent.printMap(this.exploredTiles)
     return direction;
   }
 
-  /**
-   * Given a tile, returns the nearest delivery tile.
-   * 
-   * @returns {Object} - The coordinates of the nearest delivery tile (nearest to the input tile).
-   */
-  getEstimatedNearestDeliveryTile() { 
-    let closestDelivery = null;
-    let bestDistance = Infinity; // Imposta una distanza massima iniziale
-
-    for (let position of this.deliveryTiles) {
-      if (!this.isEnemyPosition(position)){
-        let dist = position.distanceTo(this.agent.currentPosition)
-        if (dist < bestDistance) {
-            bestDistance = dist;
-            closestDelivery = position;
-        }
-      }
-    }
-
-    return closestDelivery ? closestDelivery : null
-  }
-
-  increaseTemperature() {
-    let position = this.agent.currentPosition;
-    let obs = this.agent.AGENTS_OBSERVATION_DISTANCE * 2;
-    this.exploredTiles[position.x][position.y] += obs;
-  }
-
-
-  decreaseTemperature(){
-    for (let i = 0; i < this.exploredTiles.length; i++) 
-      for (let j = 0; j < this.exploredTiles[i].length; j++)
-          this.exploredTiles[i][j] = Math.max(0, this.exploredTiles[i][j] - 1);
-  }
-
-  isPathSafe(path) {
-    for (const position of path) {
-        if (this.isEnemyPosition(position)) {
-            return false;
-        }
-    }
-    return true;
-  }
-
   positionKey(startPosition, endPosition) {
+    if (endPosition == null)
+      return `${startPosition.x},${startPosition.y}-Delivery`
     return `${startPosition.x},${startPosition.y}-${endPosition.x},${endPosition.y}`;
   }
 
-  
   getShortestPath(startPosition, endPosition) {
     return this.bfsSearch(startPosition, endPosition, "path");
   }
 
-  /**
-   * 
-   * @param {*} position 
-   * @returns {Array}
-   */
   getNearestDeliveryTile(position) {
       return this.bfsSearch(position, null, "delivery");
   }
 
   bfsSearch(startPosition, endPosition = null, mode = "path") {
-    const cacheKey = endPosition ? this.positionKey(startPosition, endPosition) : null;
+    const cacheKey = this.positionKey(startPosition, endPosition);
     this.searchCalls += 1
 
-    if (mode === "path" && this.cache.get(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
+    if (this.cache.get(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
         this.cacheHit += 1
         return this.cache.get(cacheKey);
     }
@@ -190,7 +173,8 @@ export class Environment {
                 path: {
                     positions: [...current.path.positions, newPos],
                     actions: [...current.path.actions, action]
-                }
+                },
+                length : [...current.path.actions, action].length
               }
               queue.push(node);
 
@@ -201,14 +185,35 @@ export class Environment {
               }
 
               if ((mode == "delivery" && this.fullMap[newPos.x][newPos.y] == 2) || (mode == "path" && newPos.isEqual(endPosition))) {
-                console.log('[ENVIRONMENT][BFS_SUCCESS] BFS for', mode, 'from', startPosition, 'to', node.position);
+                this.agent.log('[ENVIRONMENT][BFS_SUCCESS] BFS for', mode, 'from', startPosition, 'to', node.position);
                 this.cache.set((cacheKey || this.positionKey(startPosition, current.position)), node);
                 return node;
               }
             }
         }
     }
-    console.log('[ENVIRONMENT][BFS_FAILED] BFS for ',mode,' from', startPosition, 'failed (endPosition:', endPosition,')');
-    return null
+    this.agent.log('[ENVIRONMENT][BFS_FAILED] BFS for ',mode,' from', startPosition, 'failed (endPosition:', endPosition,')');
+    return {position : startPosition, length : Infinity}
   }
 }
+
+
+/**
+ *   getEstimatedNearestDeliveryTile() { 
+    let closestDelivery = null;
+    let bestDistance = Infinity; // Imposta una distanza massima iniziale
+
+    for (let position of this.deliveryTiles) {
+      if (!this.isEnemyPosition(position)){
+        let dist = position.distanceTo(this.agent.currentPosition)
+        if (dist < bestDistance) {
+            bestDistance = dist;
+            closestDelivery = position;
+        }
+      }
+    }
+
+    return closestDelivery ? closestDelivery : null
+  }
+
+ */

@@ -23,7 +23,7 @@ export class ParcelsManager{
         this.myParcels = new Set()
         this.deletedParcels = new Set()
         this.parcelsTimerStarted = false
-        console.log('[INIT] Parcels Manager Initialized.')
+        this.agent.log('[INIT] Parcels Manager Initialized.')
     }
     activate(){
         this.agent.eventManager.on('parcels_percept', (parcels) => { this.handleParcelsSensing(parcels) })
@@ -34,6 +34,10 @@ export class ParcelsManager{
     getParcels() { return this.parcels }
 
     carriedParcels(){ return this.myParcels.size }
+
+    isValidPickUp(id){
+        return this.parcels.has(id) && !this.deletedParcels.has(id) && !this.myParcels.has(id)
+    }
 
     deleteParcel(id) {
         this.parcels.delete(id)
@@ -65,11 +69,14 @@ export class ParcelsManager{
 
     handelParcelsPickUp(pickedUpParcels){
         for (let p of pickedUpParcels){
-            this.parcels.get(p.id).carriedBy = this.agent.agentID
-            this.myParcels.add(p.id)
+            if (!this.deletedParcels.has(p.id)){
+                this.parcels.get(p.id).carriedBy = this.agent.agentID
+                this.myParcels.add(p.id)
+            }
         }
         this.agent.eventManager.emit('update_parcels_beliefs')
     }
+    
     handleParcelsSensing(sensedParcels){
 
         let updates = false

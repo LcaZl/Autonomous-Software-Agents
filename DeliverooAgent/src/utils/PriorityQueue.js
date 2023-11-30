@@ -108,7 +108,7 @@ export class PriorityQueue {
      * @returns {Array<Object>}
      */
     values() {
-        return [...this.heap].map(item => item.data.toString());
+        return [...this.heap].map(item => item.data);
     }
     
     /**
