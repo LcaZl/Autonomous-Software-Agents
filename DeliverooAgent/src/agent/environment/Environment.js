@@ -108,20 +108,48 @@ export class Environment {
     return position;
   }
 
+  /**
+   * Generates a key for caching based on start and end positions.
+   * 
+   * @param {Position} startPosition - The starting position.
+   * @param {Position} endPosition - The ending position, can be null for delivery.
+   * @returns {string} A unique key for the given positions.
+   */
   positionKey(startPosition, endPosition) {
-    if (endPosition == null)
-      return `${startPosition.x},${startPosition.y}-Delivery`
-    return `${startPosition.x},${startPosition.y}-${endPosition.x},${endPosition.y}`;
+    return endPosition === null
+      ? `${startPosition.x},${startPosition.y}-Delivery`
+      : `${startPosition.x},${startPosition.y}-${endPosition.x},${endPosition.y}`;
   }
 
+  /**
+   * Finds the shortest path from a start to an end position.
+   * 
+   * @param {Position} startPosition - The starting position.
+   * @param {Position} endPosition - The ending position.
+   * @returns {Object} The shortest path and associated actions.
+   */
   getShortestPath(startPosition, endPosition) {
     return this.bfsSearch(startPosition, endPosition, "path");
   }
 
+  /**
+   * Finds the nearest delivery tile from a given position.
+   * 
+   * @param {Position} position - The starting position.
+   * @returns {Object} The nearest delivery tile information.
+   */
   getNearestDeliveryTile(position) {
-      return this.bfsSearch(position, null, "delivery");
+    return this.bfsSearch(position, null, "delivery");
   }
-
+  
+  /**
+   * Breadth-first search algorithm for finding paths in the environment.
+   * 
+   * @param {Position} startPosition - The starting position.
+   * @param {Position} endPosition - The ending position.
+   * @param {string} mode - The search mode ('path' or 'delivery').
+   * @returns {Object} The path information including positions and actions.
+   */
   bfsSearch(startPosition, endPosition, mode) {
     const cacheKey = this.positionKey(startPosition, endPosition)
     this.searchCalls += 1

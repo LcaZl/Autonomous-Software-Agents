@@ -1,59 +1,65 @@
-import { PriorityQueue } from "../../../utils/PriorityQueue.js"
-import { Agent } from "../../agent.js"
-import { Intention } from "./Intention.js"
-import { Option } from "./Option.js"
+import { PriorityQueue } from "../../../utils/PriorityQueue.js";
+import { Agent } from "../../agent.js";
+import { Intention } from "./Intention.js";
+import { Option } from "./Option.js";
+
 /**
- * The Options class represents the options of an agent.
+ * Manages the intentions of an agent, handling the decision-making process.
  */
-export class Intentions { 
-
+export class Intentions {
     /**
-     * Constructs a new instance of the Options class.
-     * @param {Agent} agent
-     * @param {Brain} brain
-     */
-
-    constructor(agent) { 
-
-        this.agent = agent
-        this.intention_queue = new PriorityQueue()
-        this.currentIntention = null
-        this.idle = new Option('patrolling', null, null, null, null)
-
-        this.agent.log('[INIT] Intentions Initialized.')
-    }
-    
-    log ( ...args ) {
-        this.agent.log( ...args )
-    }
-
-    stopCurrent () {
-        if ( this.currentIntention )
-            this.currentIntention.stop();
-    }
-
-    /**
+     * Constructs a new instance of the Intentions class.
      * 
-     * @param {Array} options 
-     * @returns 
-    */
-    async push ( option ) {
+     * @param {Agent} agent - The agent associated with these intentions.
+     */
+    constructor(agent) {
+        this.agent = agent;
+        this.intention_queue = new PriorityQueue();
+        this.currentIntention = null;
+        this.idle = new Option('patrolling', null, 0, null, null);
 
+        this.agent.log('[INIT] Intentions Initialized.');
+    }
+
+    log(...args) {
+        this.agent.log(...args);
+    }
+
+    /**
+     * Stops the current intention if it exists.
+     */
+    stopCurrent() {
+        if (this.currentIntention) {
+            this.currentIntention.stop();
+        }
+    }
+
+    /**
+         * Adds a new option to the intentions queue or updates it if it already exists.
+         * 
+         * @param {Option} option - The option to be added or updated.
+         */
+    async push(option) {
         if (this.intention_queue.has(option.id)) {
             this.agent.log('[INTENTIONS] Updating intention', option.id);
-            this.intention_queue.updatePriority(option.id, option.utility)
-        }
-        else{
+            this.intention_queue.updatePriority(option.id, option.utility);
+        } else {
             this.intention_queue.push(option, option.utility);
             this.agent.log('[INTENTIONS] New intention', option.id);
         }
 
-        // Check for special conditions to stop the current intention
-        let chanchingRisk = option.utility * 0.5
-        if (this.currentIntention && (this.currentIntention.option.id === 'patrolling' || this.currentIntention.option.utility < (option.utility - chanchingRisk))) 
+        let changingRisk = option.utility * 0.5;
+        if (this.currentIntention && 
+            (this.currentIntention.option.id === 'patrolling' || 
+            this.currentIntention.option.utility < (option.utility - changingRisk))) {
             this.stopCurrent();
+        }
     }
 
+    /**
+     * Continuously processes the intention queue, executing intentions.
+     * Listens for events that might impact current intentions.
+     */
     async loop ( ) {
         this.agent.eventManager.on('deleted_parcel', async (id) => {
 

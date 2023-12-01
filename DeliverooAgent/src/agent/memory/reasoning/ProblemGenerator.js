@@ -50,6 +50,13 @@ export class ProblemGenerator{
         return problem
     }
 
+    /**
+     * Generates a PDDL problem to go from a specified start position to a specified end position.
+     * 
+     * @param {Object} from - The start position.
+     * @param {Object} to - The end position.
+     * @returns {PddlProblem} A PDDL problem instance for moving from the start position to the end position.
+     */
     goFromTo(from, to) {    
 
         this.agent.beliefs.removeObject(`${this.agent.agentID}`)

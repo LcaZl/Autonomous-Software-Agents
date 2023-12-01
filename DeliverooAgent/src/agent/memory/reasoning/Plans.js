@@ -275,23 +275,3 @@ export class PddlMove extends Plan {
         return true
     }
 }
-
-export class BlindMove extends Plan {
-
-    static isApplicableTo ( option ) {
-        return option.id == 'fast_pickup';
-    }
-
-    async execute ( option ) {
-        this.agent.log('[FAST PICK UP] Parcel:', option.parcel.id)
-        if ( this.stopped ) throw ['stopped']; // if stopped then quit
-        let status_1 = await this.agent.client.move(option.firstSearch[0])
-        if (!status_1) throw 'fast move failed before starting'
-        let status_2 = await this.agent.pickup()
-        let status_3 = await this.agent.client.move(option.firstSearch[1])
-        if (!status_3) throw 'cant come back'
-            // status_x = await this.subIntention( 'go_to', {x: me.x-1, y: me.y} );  
-        return true;
-
-    }
-}

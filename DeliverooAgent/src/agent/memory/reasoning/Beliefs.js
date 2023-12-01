@@ -46,14 +46,14 @@ export class Beliefs extends Beliefset {
     this.declareAgent(this.agent.agentID, this.agent.currentPosition)
   }
 
-  /**
-   * Remove all beliefs related to the parcel passed as parameter.
+ /**
+   * Removes a parcel from the belief set.
    * 
-   * @param {Parcel} parcel 
+   * @param {string} id - The ID of the parcel to be removed.
    */
-  deleteParcel(id) {
-    this.removeObject(id)
-  }
+ deleteParcel(id) {
+  this.removeObject(id);
+}
 
   /**
    * Updates beliefs about other players
@@ -95,81 +95,82 @@ export class Beliefs extends Beliefset {
   }
 
   /**
-   * This function iterate over all declared objects in belief set.
-   * Then it return each object with the corresponding type.
-   * This function is used to dinamically build the PDDL problem, the output will correspond to the objects of the problem.
+   * Dynamically builds the PDDL problem, returning each object with its corresponding type.
    * 
-   * @returns {String}
-  */
+   * @returns {string} A string representation of objects with their types.
+   */
   getObjectsWithType() {
-    let objCopy = []
+    let objCopy = [];
     for (let obj of this.objects) {
-      if (obj == this.agent.agentID)
-        objCopy.push(obj + ' - agent')
-      else{
-        let prefix = obj[0]
-        switch (prefix) {
-          case 'a':
-            objCopy.push(obj + ' - agent')
-            break;
-          case 'p':
-            objCopy.push(obj + ' - parcel')
-            break;
-          case 't':
-            objCopy.push(obj + ' - tile')
-            break;
-          default:
-            throw('Object not recognized -> ', obj, this.agent.agentID)
+      let type = 'unknown';
+      if (obj === this.agent.agentID) {
+        type = 'agent';
+      } else {
+        switch (obj[0]) {
+          case 'a': type = 'agent'; break;
+          case 'p': type = 'parcel'; break;
+          case 't': type = 'tile'; break;
+          default: throw new Error(`Object not recognized: ${obj}`);
         }
       }
+      objCopy.push(`${obj} - ${type}`);
     }
-    return objCopy.join(' ')
+    return objCopy.join(' ');
   }
 
-  /**
-   * Initializes the map in the belief set. 
-   * This function is used to generate the PDDL constraint that depend on the map.
-   * It consider the type and available movement for each tile of the map.
-   * ti doesn't consider the presence of other players.
-  */
+/**
+   * Initializes the map in the belief set, declaring constraints based on the map's layout.
+   * It considers the type and available movement for each tile of the map.
+   */
   initMap() {
-    let map = this.agent.environment.fullMap
+    /**
+     * Helper method to declare relations between adjacent tiles.
+     * 
+     * @param {number} i - The current row index.
+     * @param {number} j - The current column index.
+     * @param {number} adjI - The adjacent row index.
+     * @param {number} adjJ - The adjacent column index.
+     */
+    const declareRelation = (i, j, adjI, adjJ) => {
+      this.declare(`left t${i}_${j} t${adjI}_${adjJ}`);
+      this.declare(`right t${adjI}_${adjJ} t${i}_${j}`); // Inverse
+    }
+
+    const map = this.agent.environment.fullMap;
     for (let i = 0; i < this.agent.environment.mapHeight; i++) {
       for (let j = 0; j < this.agent.environment.mapWidth; j++) {
-        const cell = map[i][j]
-        if (cell != 0) {
-          this.addObject(`t${i}_${j}`)
+        const cell = map[i][j];
+        if (cell !== 0) {
+          this.addObject(`t${i}_${j}`);
           this.declare(`active t${i}_${j}`);
-          if (cell == 2) {
+          if (cell === 2) {
             this.declare(`deliveryTile t${i}_${j}`);
           }
         }
       }
     }
 
+    // Declare relations between cells
     for (let i = 0; i < this.agent.environment.mapHeight; i++) {
       for (let j = 0; j < this.agent.environment.mapWidth; j++) {
-        const cell = map[i][j]
-        if (cell != 0) {
-          // declare relations between cells
-          if (j > 0 && map[i][j - 1] != 0) {
-            this.declare(`down t${i}_${j} t${i}_${j - 1}`);
-            this.declare(`up t${i}_${j - 1} t${i}_${j}`); // Inverse
+        const cell = map[i][j];
+        if (cell !== 0) {
+          if (j > 0 && map[i][j - 1] !== 0) {
+            declareRelation(i, j, i, j - 1);
           }
-          if ((j < this.agent.environment.mapHeight - 1) && map[i][j + 1] != 0) {
-            this.declare(`up t${i}_${j} t${i}_${j + 1}`);
-            this.declare(`down t${i}_${j + 1} t${i}_${j}`); // Inverse
+          if (i > 0 && map[i - 1][j] !== 0) {
+            declareRelation(i, j, i - 1, j);
           }
-          if (i > 0 && map[i - 1][j] != 0) {
-            this.declare(`left t${i}_${j} t${i - 1}_${j}`);
-            this.declare(`right t${i - 1}_${j} t${i}_${j}`); // Inverse
+          if (j < this.agent.environment.mapHeight - 1 && map[i][j + 1] !== 0) {
+            declareRelation(i, j, i, j + 1);
           }
-          if ((i < this.agent.environment.mapWidth - 1) && map[i + 1][j] != 0) {
-            this.declare(`right t${i}_${j} t${i + 1}_${j}`);
-            this.declare(`left t${i + 1}_${j} t${i}_${j}`); // Inverse
+          if (i < this.agent.environment.mapWidth - 1 && map[i + 1][j] !== 0) {
+            declareRelation(i, j, i + 1, j);
           }
         }
       }
     }
   }
+
+
 }

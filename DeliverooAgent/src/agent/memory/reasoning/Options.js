@@ -3,25 +3,41 @@ import { Agent } from "../../Agent.js";
 import { Parcel } from "../../Environment/Parcels/Parcel.js";
 import { Option } from "./Option.js";
 
-export class Options{
+/**
+ * Manages the options available to an agent.
+ */
+export class Options {
+    /**
+     * Constructs a new instance of the Options class.
+     * 
+     * @param {Agent} agent - The agent associated with these options.
+     */
+    constructor(agent) {
+        this.agent = agent;
+        this.lastPushedOptions = null;
+    }
 
     /**
+     * Retrieves the last set of pushed options.
      * 
-     * @param {Agent} agent 
+     * @returns {Array<Option>} The last pushed options.
      */
-    constructor(agent){
-        this.agent = agent
-        this.lastPushedOptions = null
+    getOptions() { 
+        return this.lastPushedOptions;
     }
 
-    getOptions(){ return this.lastPushedOptions }
-
-    activate(){
-        this.agent.eventManager.on('update_options', () => this.updateOptions())
-        this.agent.eventManager.on('picked_up_parcels', () => this.updateOptions())
-        this.agent.eventManager.on('delivered_parcels', () => this.updateOptions())
+    /**
+     * Activates the option manager to listen for relevant events.
+     */
+    activate() {
+        this.agent.eventManager.on('update_options', () => this.updateOptions());
+        this.agent.eventManager.on('picked_up_parcels', () => this.updateOptions());
+        this.agent.eventManager.on('delivered_parcels', () => this.updateOptions());
     }
 
+    /**
+     * Updates the options based on the current state of the agent and environment.
+     */
     updateOptions(){
 
         let options = []
@@ -51,6 +67,35 @@ export class Options{
         }
     }
 
+    /**
+     * Updates the given option's utility and search path based on a probability position.
+     * 
+     * @param {Option} option - The option to update.
+     * @param {Position} probPosition - The probability position used for the update.
+     * @returns {Option} The updated option.
+     */
+    luckyUpdateOption(option, probPosition) {
+        // If using PDDL for movement, generate a PDDL plan
+        if (this.agent.moveType === 'PDDL') {
+            this.agent.log(option.toString());
+            option.pddlPlan = this.agent.planner.getPlan(this.agent.problemGenerator.goFromTo(probPosition, option.position), option);
+            return option;
+        }
+
+        // Update utility and search path for non-PDDL movement
+        let utility = null;
+        let search = null;
+
+        if (option.id === 'go_deliver') {
+            [utility, search] = this.deliveryUtility(probPosition);
+        } else if (option.id.startsWith('go_pick_up-')) {
+            [utility, search] = this.pickUpUtility(option.parcel, probPosition);
+        }
+
+        option.firstSearch = search;
+        option.utility = utility;
+        return option;
+    }
     pickUpUtility(p, agentPosition) {
         const movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 0 : (this.agent.MOVEMENT_DURATION) / this.agent.PARCEL_DECADING_INTERVAL;
         const actualReward = this.agent.parcels.getMyParcelsReward()
@@ -113,7 +158,6 @@ export class Options{
 
         const utility = (actualReward * carriedParcelsFactor) - (cost * (carriedParcels));
     
-        /*
         this.agent.log({
             movement_duration: this.agent.MOVEMENT_DURATION,
             decading_interval: this.agent.PARCEL_DECADING_INTERVAL,
@@ -128,31 +172,15 @@ export class Options{
             incentiveFactor,
             carriedParcels,
             utility
-        });*/
+        });
 
         return [utility, search]
     }
-    luckyUpdateOption(option, probPosition){
+}
 
-        if (this.agent.moveType == 'PDDL'){
-            this.agent.log(option.toString())
-            option.pddlPlan = this.agent.planner.getPlan(this.agent.problemGenerator.goFromTo(probPosition, option.position), option)
-            return option
-        }
-
-        let utility = null
-        let search = null
-        if (option.id == 'go_deliver')
-            [utility, search] = this.deliveryUtility(probPosition)
-        if (option.id.startsWith('go_pick_up-'))
-            [utility, search] = this.pickUpUtility(option.parcel, probPosition)
-        
-        option.firstSearch = search
-        option.utility = utility
-        return option
-    }
-
-    generateCombinations(options, minLength, maxLength) {
+/**
+ * 
+ *     generateCombinations(options, minLength, maxLength) {
         let batchOptions = [];
         let seenCombinations = new Set();
         const helper = (start, path) => {
@@ -240,5 +268,6 @@ export class Options{
         this.agent.log(' - total_distance', total_distance)
         return utility
     }
-     
-}
+
+
+ */
