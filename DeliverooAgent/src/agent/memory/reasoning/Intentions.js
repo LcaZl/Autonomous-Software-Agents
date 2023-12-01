@@ -37,28 +37,20 @@ export class Intentions {
      * @param {Array} options 
      * @returns 
     */
-    async push ( options ) {
+    async push ( option ) {
 
-        let newBest = false
-        for (let option of options){
-            // Check if the intention for the given option already exists
-            if (this.intention_queue.has(option.id)) {
-                this.agent.log('[INTENTIONS] Updating intention', option.id);
-                this.intention_queue.updatePriority(option.id, option.utility)
-            }
-            else{
-
-                // Check for special conditions to stop the current intention
-                let chanchingRisk = option.utility * 0.5
-                if (this.currentIntention && (this.currentIntention.option.id === 'patrolling' || this.currentIntention.option.utility < (option.utility - chanchingRisk))) {
-                    newBest = true
-                }
-
-                this.intention_queue.push(option, option.utility);
-                this.agent.log('[INTENTIONS] New intention', option.id);
-            }
+        if (this.intention_queue.has(option.id)) {
+            this.agent.log('[INTENTIONS] Updating intention', option.id);
+            this.intention_queue.updatePriority(option.id, option.utility)
         }
-        if (newBest)
+        else{
+            this.intention_queue.push(option, option.utility);
+            this.agent.log('[INTENTIONS] New intention', option.id);
+        }
+
+        // Check for special conditions to stop the current intention
+        let chanchingRisk = option.utility * 0.5
+        if (this.currentIntention && (this.currentIntention.option.id === 'patrolling' || this.currentIntention.option.utility < (option.utility - chanchingRisk))) 
             this.stopCurrent();
     }
 
@@ -80,7 +72,7 @@ export class Intentions {
             // Consumes intention_queue if not empty
             if ( this.intention_queue.size() == 0 ) {
                 
-                this.push( [this.idle] );
+                this.intention_queue.push( this.idle );
             }
             else {
                 this.agent.log( '[INTENTIONS] Intentions queue:');

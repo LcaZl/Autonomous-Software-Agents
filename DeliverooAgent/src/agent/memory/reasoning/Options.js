@@ -28,7 +28,7 @@ export class Options{
 
         if (this.agent.parcels.carriedParcels() > 0){
             let [utility, search] = this.deliveryUtility()
-            options.push(new Option('go_deliver', null, utility, search, null)) 
+            options.push(new Option('go_deliver', search.position, utility, search, null)) 
         }
 
         for(let [_, parcel] of this.agent.parcels.getParcels()){
@@ -36,8 +36,9 @@ export class Options{
             if ( parcel.isFree() ){
 
                 let [utility, search] = this.pickUpUtility(parcel, this.agent.currentPosition)
+                this.agent.log(search)
                 if (utility > 1)
-                    options.push(new Option(`go_pick_up-${parcel.id}`, parcel.position, utility, search, parcel))
+                    options.push(new Option(`go_pick_up-${parcel.id}`, search.position, utility, search, parcel))
             }
         }
         options.sort( (opt1, opt2) => opt1.utility - opt2.utility )
@@ -46,20 +47,13 @@ export class Options{
         this.agent.log('[OPTIONS] Option pushing:')
         for( let opt of options){
             this.agent.log(' - ', opt.toString())
+            this.agent.intentions.push( opt )
         }
-        if (options.length > 0)
-            this.agent.intentions.push( options )
-
     }
 
     pickUpUtility(p, agentPosition) {
-        const movementPenality = (this.agent.MOVEMENT_DURATION) / this.agent.PARCEL_DECADING_INTERVAL;
+        const movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 0 : (this.agent.MOVEMENT_DURATION) / this.agent.PARCEL_DECADING_INTERVAL;
         const actualReward = this.agent.parcels.getMyParcelsReward()
-
-        if (this.agent.PARCEL_DECADING_INTERVAL === 'infinite') {
-            return [(actualReward + p.reward), null];
-        }
-    
         let search = this.agent.environment.getShortestPath(agentPosition, p.position)
         
         const pickupDistance = search.length
@@ -72,10 +66,10 @@ export class Options{
         const carriedParcels = this.agent.parcels.carriedParcels()
         const carriedParcelsPenality = (1 / (carriedParcels + 1))
         const utility = (((actualReward) * carriedParcelsPenality) + p.reward) - (cost * (carriedParcels + 1))
-        /*
+
         this.agent.log({
             movement_duration: this.agent.MOVEMENT_DURATION,
-            decading_interval: this.agent.PARCEL_DECADING_INTERVAL,
+            decading_interval: movementPenality,
             movementPenality,
             actualReward,
             pickupDistance,
@@ -86,7 +80,7 @@ export class Options{
             carriedParcels,
             utility
         });
-        */
+
         return [utility, search]
     }
     
@@ -102,7 +96,7 @@ export class Options{
         else if ((this.agent.duration - elapsedTime) < (deliveryTime * 3)) {
             return [Infinity, search];
         }
-        else if (this.agent.PARCEL_DECADING_INTERVAL === 'infinite') {
+        else if (this.agent.PARCEL_DECADING_INTERVAL === Infinity) {
             return [1, search];
         }
     
@@ -138,7 +132,26 @@ export class Options{
 
         return [utility, search]
     }
-    
+    luckyUpdateOption(option, probPosition){
+
+        if (this.agent.moveType == 'PDDL'){
+            this.agent.log(option.toString())
+            option.pddlPlan = this.agent.planner.getPlan(this.agent.problemGenerator.goFromTo(probPosition, option.position), option)
+            return option
+        }
+
+        let utility = null
+        let search = null
+        if (option.id == 'go_deliver')
+            [utility, search] = this.deliveryUtility(probPosition)
+        if (option.id.startsWith('go_pick_up-'))
+            [utility, search] = this.pickUpUtility(option.parcel, probPosition)
+        
+        option.firstSearch = search
+        option.utility = utility
+        return option
+    }
+
     generateCombinations(options, minLength, maxLength) {
         let batchOptions = [];
         let seenCombinations = new Set();

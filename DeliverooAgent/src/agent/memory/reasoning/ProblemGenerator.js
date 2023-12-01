@@ -49,4 +49,28 @@ export class ProblemGenerator{
         )
         return problem
     }
+
+    goFromTo(from, to) {    
+
+        this.agent.beliefs.removeObject(`${this.agent.agentID}`)
+        this.agent.beliefs.addObject(`${this.agent.agentID}`)
+        this.agent.beliefs.declare(`me ${this.agent.agentID}`)
+        this.agent.beliefs.declare(`at ${this.agent.agentID} t${from.x}_${from.y}`)   
+
+        var problem = new PddlProblem(
+            `${from.x}_${from.y}-${to.x}_${to.y}`,
+            this.agent.beliefs.getObjectsWithType(),
+            this.agent.beliefs.toPddlString(),
+            `at ${this.agent.agentID} t${to.x}_${to.y}`
+        )
+
+        this.agent.beliefs.removeObject(`${this.agent.agentID}`)
+        this.agent.beliefs.addObject(`${this.agent.agentID}`)
+        this.agent.beliefs.declare(`me ${this.agent.agentID}`)
+        this.agent.beliefs.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)   
+
+        //this.agent.log('False declare. me at t', from.x, '_', from.y)
+        //this.agent.log('real belief (should unchanged):\n', this.agent.beliefs.toPddlString())
+        return problem
+    }
 }

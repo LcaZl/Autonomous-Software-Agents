@@ -103,9 +103,9 @@ export class GoPickUp extends Plan {
     async execute ( option ) {
         if ( this.stopped ) throw ['stopped'];
         if (this.agent.move_type == 'PDDL')
-            await this.subIntention( new Option('go_to_pddl',  option.position)) // -- HERE
+            await this.subIntention( new Option('go_to_pddl',  option.position, option.utility, option. firstSearch, option.parcel)) // -- HERE
         else // BFS
-            await this.subIntention( new Option('go_to_bfs', option.position)) // -- HERE
+            await this.subIntention( new Option('go_to_bfs', option.position, option.utility, option. firstSearch, option.parcel)) // -- HERE
         await this.agent.pickup()
         return true
     }
@@ -119,7 +119,7 @@ export class GoDeliver extends Plan {
 
     async execute ( option ) {
 
-        await this.subIntention(new Option('go_to_bfs', 'delivery', null));
+        await this.subIntention(new Option('go_to_bfs', 'delivery', option.utility, null, option.parcel));
         await this.agent.deliver()
         return true;
 
@@ -133,12 +133,12 @@ export class Patrolling extends Plan {
     }
 
     async execute ( option ) {
-        if ( this.stopped ) return 'stopped'; // if stopped then quit
+        if ( this.stopped ) throw ['stopped']; // if stopped then quit
         let pos = this.agent.environment.getRandomPosition()
         if (this.agent.move_type == 'PDDL')
-            await this.subIntention( new Option('go_to_pddl',  pos)) // -- HERE
+            await this.subIntention( new Option('go_to_pddl',  pos, null, null, null)) // -- HERE
         else // BFS
-            await this.subIntention( new Option('go_to_bfs', pos)) // -- HERE
+            await this.subIntention( new Option('go_to_bfs', pos, null, null, null)) // -- HERE
         return true
     }
 }
@@ -146,7 +146,7 @@ export class Patrolling extends Plan {
 export class DepthSearchMove extends Plan {
 
     static isApplicableTo ( option ) {
-        return option.id == 'go_to_bfs' || option.id == 'delivery';
+        return option.id == 'go_to_bfs';
     }
 
     async execute ( option ) {
@@ -160,23 +160,28 @@ export class DepthSearchMove extends Plan {
             if (option.position == 'delivery') {
 
                 plan = this.agent.environment.getNearestDeliveryTile(this.agent.currentPosition);
+                if ( !plan || plan.length == 0 ) throw ['target not reachable'];
                 target = plan.path.positions[plan.path.positions.length - 1];
 
             } else {
 
                 plan = this.agent.environment.getShortestPath(this.agent.currentPosition, option.position);
+                if ( !plan || plan.length == 0 ) throw ['target not reachable'];
                 target = option.position;
             }
-            if ( !plan || plan.path.actions.length == 0 ) throw 'target not reachable';
 
         }        
         
-        if (!option.search || !this.isPathFree(option.search.path.positions))
-            updatePlanAndTarget()
-        else{
-            plan = option.search
-            target = option.position
+        if (option.firstSearch != null && option.length > 0){
+            if (this.isPathFree(option.firstSearch.path.positions) && option.firstSearch.path.positions[0].isEqual(this.agent.currentPosition)){
+                plan = option.firstSearch
+                target = option.position}
+            else
+                updatePlanAndTarget()
         }
+        else
+            updatePlanAndTarget()
+
 
         do{
             this.agent.client.socket.emit( "path", plan.path.positions);

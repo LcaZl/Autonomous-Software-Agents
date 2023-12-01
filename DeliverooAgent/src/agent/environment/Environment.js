@@ -1,131 +1,111 @@
-#!/usr/bin/env node
-import { PriorityQueue } from '../../utils/PriorityQueue.js';
 import { Position } from '../../utils/Position.js';
 import { Agent } from '../agent.js';
+
 /**
- * The Environment class represents the game environment.
+ * Represents the game environment, handling map information, pathfinding, and position validation.
  */
 export class Environment {
-  
   /**
    * Constructs a new instance of the Environment class.
    * 
-   * @param {Agent} agent
-  */
+   * @param {Agent} agent - The agent associated with the environment.
+   */
   constructor(agent) {
-    
-    this.agent = agent
+    this.agent = agent;
     let { width, height, tiles } = this.agent.client.map;
-    this.tiles = tiles
+    this.tiles = tiles;
     this.mapWidth = width;
     this.mapHeight = height;
-    this.searchCalls = 0
-    this.cacheHit = 0
-    this.fullMap = Array(this.mapHeight).fill().map(() => Array(this.mapWidth).fill(0))
-    tiles.forEach(tile => tile.delivery ? this.fullMap[tile.x][tile.y] = 2 : this.fullMap[tile.x][tile.y] = 1)
-    // Filter and store only delivery tile
-    this.deliveryTiles = new Set();
-    tiles.forEach(tile => tile.delivery ? this.deliveryTiles.add(new Position(tile.x, tile.y)) : null)
+    this.searchCalls = 0;
+    this.cacheHit = 0;
+    this.fullMap = Array(this.mapHeight).fill().map(() => Array(this.mapWidth).fill(0));
+    tiles.forEach(tile => this.fullMap[tile.x][tile.y] = tile.delivery ? 2 : 1);
 
-    this.exploredTiles = Array(this.mapHeight).fill().map(() => Array(this.mapWidth).fill(0));
-    tiles.forEach(tile => tile.delivery ? this.fullMap[tile.x][tile.y] = 2 : this.fullMap[tile.x][tile.y] = 1)
-
-    //setInterval(() => this.decreaseTemperature(), this.agent.MOVEMENT_DURATION * (this.agent.AGENTS_OBSERVATION_DISTANCE + 1))
-
+    this.deliveryTiles = new Set(tiles.filter(tile => tile.delivery).map(tile => new Position(tile.x, tile.y)));
+    this.exploredTiles = Array.from(this.fullMap);
     this.cache = new Map();
-    
+
     this.agent.log("[INIT] Environment Information Initialized.");
-    return this
   }
 
+  /**
+   * Checks if the agent is on a delivery tile.
+   * 
+   * @returns {boolean} True if the agent is on a delivery tile, otherwise false.
+   */
   onDeliveryTile() {
-    for (let pos of this.deliveryTiles) 
-      if (pos.isEqual(this.agent.currentPosition)) 
-        return true
-    return false
+    return [...this.deliveryTiles].some(pos => pos.isEqual(this.agent.currentPosition));
   }
+  
 
+  /**
+   * Validates if a given position is within the game boundaries and not an enemy position.
+   * 
+   * @param {number} x - The x-coordinate of the position.
+   * @param {number} y - The y-coordinate of the position.
+   * @returns {boolean} True if the position is valid, otherwise false.
+   */
   isValidPosition(x, y) {
-    if (x >= 0 && x < this.mapWidth && y >= 0 && y < this.mapHeight)
-      if (this.fullMap[x][y] != 0 && !this.isEnemyPosition(new Position(x, y)))
-        return true
-    return false
+    return x >= 0 && x < this.mapWidth && y >= 0 && y < this.mapHeight &&
+           this.fullMap[x][y] !== 0 && !this.isEnemyPosition(new Position(x, y));
   }
 
-  isEnemyPosition(checkPos){
-    let enemyPlayersPositions = this.agent.players.getCurrentPositions();
-    if (enemyPlayersPositions.length == 0)
-      return false
+  /**
+   * Checks if a given position is occupied by an enemy.
+   * 
+   * @param {Position} checkPos - The position to check.
+   * @returns {boolean} True if an enemy occupies the position, otherwise false.
+   */
+  isEnemyPosition(checkPos) {
+    const enemyPlayersPositions = this.agent.players.getCurrentPositions();
     return enemyPlayersPositions.some(pos => pos.isEqual(checkPos));
   }
 
+  /**
+   * Determines if a given path is safe from enemies.
+   * 
+   * @param {Position[]} path - The path to check.
+   * @returns {boolean} True if the path is safe, otherwise false.
+   */
   isPathSafe(path) {
-    for (const position of path) {
-        if (this.isEnemyPosition(position)) {
-            return false;
-        }
-    }
-    return true;
+    return !path.some(position => this.isEnemyPosition(position));
   }
 
+  /**
+   * Increases the temperature of the agent's current position, indicating recent visitation.
+   */
   increaseTemperature() {
-    let position = this.agent.currentPosition;
-    let obs = this.agent.AGENTS_OBSERVATION_DISTANCE * 2;
+    const position = this.agent.currentPosition;
+    const obs = this.agent.AGENTS_OBSERVATION_DISTANCE * 2;
     this.exploredTiles[position.x][position.y] += obs;
   }
 
-  decreaseTemperature(){
-    for (let i = 0; i < this.exploredTiles.length; i++) 
-      for (let j = 0; j < this.exploredTiles[i].length; j++)
-          this.exploredTiles[i][j] = Math.max(0, this.exploredTiles[i][j] - 1);
-  }
-
-  getRandomPosition(){
-    let position = null
-    do{
-      let tile = this.tiles[Math.round( Math.random() * this.tiles.length)]
-      position = new Position(tile.x, tile.y)
-
-    }while(position.isEqual(this.agent.currentPosition))
-    this.agent.log('[ENVIRONMENT] Random position:', position)
-    return position
-  }
   /**
-   * Gets the available directions for the agent.
-   * 
-   * @returns {Array<Object>} - Returns an array of available destination positions.
+   * Decreases the temperature of all tiles, indicating a decrease in recent visitation.
    */
-  getAvailableDirections() {
-    const currPos = this.agent.currentPosition;
-    let direction = 'right';
-    let bestScore = Infinity;
-
-    // Definizione delle direzioni possibili e delle loro modifiche alle coordinate
-    const directions = [
-        {name: 'right', dx: 1, dy: 0, boundCheck: currPos.x < this.mapWidth},
-        {name: 'left', dx: -1, dy: 0, boundCheck: currPos.x > 0},
-        {name: 'up', dx: 0, dy: 1, boundCheck: currPos.y < this.mapHeight},
-        {name: 'down', dx: 0, dy: -1, boundCheck: currPos.y > 0}
-    ];
-
-    // Iterazione sulle direzioni
-    let scores = []
-    for (const dir of directions) {
-        if (dir.boundCheck) {
-            const pos = new Position(currPos.x + dir.dx, currPos.y + dir.dy);
-            if (this.isValidPosition(pos.x, pos.y)) {
-                scores.push(this.exploredTiles[pos.x][pos.y])
-                if (this.exploredTiles[pos.x][pos.y] < bestScore){
-                  bestScore = this.exploredTiles[pos.x][pos.y];
-                  direction = dir.name;
-                }
-            }
-        }
+  decreaseTemperature() {
+    for (let i = 0; i < this.exploredTiles.length; i++) {
+      for (let j = 0; j < this.exploredTiles[i].length; j++) {
+        this.exploredTiles[i][j] = Math.max(0, this.exploredTiles[i][j] - 1);
+      }
     }
+  }
 
-    this.agent.log('[ENVIRONMENT] Random movement - Exploration map:\n')
-    this.agent.printMap(this.exploredTiles)
-    return direction;
+  /**
+   * Generates a random position within the game environment that is not the agent's current position.
+   * 
+   * @returns {Position} A random valid position.
+   */
+  getRandomPosition() {
+    let position;
+    do {
+      let idx = Math.round(Math.random() * (this.tiles.length - 1));
+      let tile = this.tiles[idx];
+      position = new Position(tile.x, tile.y);
+    } while (position.isEqual(this.agent.currentPosition));
+
+    this.agent.log('[ENVIRONMENT] Random position:', position);
+    return position;
   }
 
   positionKey(startPosition, endPosition) {
@@ -142,8 +122,8 @@ export class Environment {
       return this.bfsSearch(position, null, "delivery");
   }
 
-  bfsSearch(startPosition, endPosition = null, mode = "path") {
-    const cacheKey = this.positionKey(startPosition, endPosition);
+  bfsSearch(startPosition, endPosition, mode) {
+    const cacheKey = this.positionKey(startPosition, endPosition)
     this.searchCalls += 1
 
     if (this.cache.get(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
@@ -174,7 +154,8 @@ export class Environment {
                     positions: [...current.path.positions, newPos],
                     actions: [...current.path.actions, action]
                 },
-                length : [...current.path.actions, action].length
+                length : [...current.path.actions, action].length,
+                lastPosition: newPos
               }
               queue.push(node);
 
@@ -193,7 +174,7 @@ export class Environment {
         }
     }
     this.agent.log('[ENVIRONMENT][BFS_FAILED] BFS for ',mode,' from', startPosition, 'failed (endPosition:', endPosition,')');
-    return {position : startPosition, length : Infinity}
+    return {position : startPosition, length : 0}
   }
 }
 
@@ -216,4 +197,36 @@ export class Environment {
     return closestDelivery ? closestDelivery : null
   }
 
+    getAvailableDirections() {
+      const currPos = this.agent.currentPosition;
+      let direction = 'right';
+      let bestScore = Infinity;
+  
+      // Definizione delle direzioni possibili e delle loro modifiche alle coordinate
+      const directions = [
+          {name: 'right', dx: 1, dy: 0, boundCheck: currPos.x < this.mapWidth},
+          {name: 'left', dx: -1, dy: 0, boundCheck: currPos.x > 0},
+          {name: 'up', dx: 0, dy: 1, boundCheck: currPos.y < this.mapHeight},
+          {name: 'down', dx: 0, dy: -1, boundCheck: currPos.y > 0}
+      ];
+  
+      // Iterazione sulle direzioni
+      let scores = []
+      for (const dir of directions) {
+          if (dir.boundCheck) {
+              const pos = new Position(currPos.x + dir.dx, currPos.y + dir.dy);
+              if (this.isValidPosition(pos.x, pos.y)) {
+                  scores.push(this.exploredTiles[pos.x][pos.y])
+                  if (this.exploredTiles[pos.x][pos.y] < bestScore){
+                    bestScore = this.exploredTiles[pos.x][pos.y];
+                    direction = dir.name;
+                  }
+              }
+          }
+      }
+  
+      this.agent.log('[ENVIRONMENT] Random movement - Exploration map:\n')
+      this.agent.printMap(this.exploredTiles)
+      return direction;
+    }
  */

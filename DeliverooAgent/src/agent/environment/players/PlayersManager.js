@@ -1,73 +1,86 @@
-import { Position } from "../../../utils/Position.js"
-import { Agent } from "../../agent.js"
-import { Player } from "./player.js"
+import { Player } from "./player.js";
 
 /**
- * The Players class manages all enemy and random moving players in the game.
+ * Manages enemy and randomly moving players in the game, tracking their positions and statuses.
  */
-export class PlayersManager{
+export class PlayersManager {
+    /**
+     * Constructs a new instance of PlayersManager.
+     * 
+     * @param {Agent} agent - The agent associated with this manager.
+     */
+    constructor(agent) {
+        this.agent = agent;
+        this.inGamePlayers = 0;
+        this.playersList = new Map();
+        this.ids = new Set();
+        this.agent.log('[INIT] Enemy Agents Manager Initialized');
+    }
 
     /**
-     * Constructs a new instance of the Players class.
+     * Retrieves the list of all players.
      * 
-     * @param {Agent} agent
-    */
-    constructor(agent) {
-        this.agent = agent
-        this.inGamePlayers = 0;
-        this.playersList = new Map()
-        this.ids = new Set()
-        this.agent.log('[INIT] Enemy Agents Manager Initialized')
+     * @returns {Map} A map of all players.
+     */
+    getPlayers() { return this.playersList; }
+
+    /**
+     * Activates the players manager by setting up event listeners.
+     */
+    activate() {
+        this.agent.eventManager.on('players_percept', (sensedPlayers) => this.handlePlayersSensing(sensedPlayers));
     }
 
-    getPlayers() { return this.playersList }
-
-    activate(){
-        this.agent.eventManager.on('players_percept', ((sensedPlayers) => this.handlePlayersSensing(sensedPlayers)))
-    }
-
+    /**
+     * Retrieves the current positions of all visible players.
+     * 
+     * @returns {Position[]} An array of positions of the players.
+     */
     getCurrentPositions() {
-        let positions = []
+        let positions = [];
         for (let player of this.playersList.values()) {
-            if (!player.lost)
-                positions.push(player.getCurrentPosition())
+            if (!player.isLost()) {
+                positions.push(player.getCurrentPosition());
+            }
         }
-        return positions
+        return positions;
     }
-    
+
+    /**
+     * Handles the sensing of players, updating the manager's state accordingly.
+     * 
+     * @param {Object[]} players - An array of sensed player objects.
+     */
     handlePlayersSensing(players) {
+        let updates = false;
 
-        let updates = false
-        for (let player of players){
-
-            if (player.x % 1 == 0 && player.y % 1 == 0) {
-
+        // Update or add new players
+        for (let player of players) {
+            if (player.x % 1 === 0 && player.y % 1 === 0) {
                 if (this.ids.has(player.id)) {
-
-                    let updated = this.playersList.get(player.id).update(player)
-                    if (!updates)
-                        updates = updated
-
+                    let updated = this.playersList.get(player.id).update(player);
+                    updates = updates || updated;
                 } else {
-
-                    this.inGamePlayers += 1;
+                    this.inGamePlayers++;
                     this.ids.add(player.id);
-                    let newPlayer = new Player(this.agent, player)
+                    let newPlayer = new Player(this.agent, player);
                     this.playersList.set(player.id, newPlayer);
-                    updates = true
+                    updates = true;
                 }
             }
         }
 
-        // Check if there are player no more visible
-        for (let playerId of this.playersList.keys()) {
-            if (!players.some((player) => player.id == playerId)) {
-              this.playersList.get(playerId).disappeared()
-              updates = true
+        // Check and mark players no longer visible
+        this.playersList.forEach((player, id) => {
+            if (!players.some(p => p.id === id)) {
+                player.disappeared();
+                updates = true;
             }
-        }
+        });
 
-        if (updates)
+        if (updates){
             this.agent.eventManager.emit('update_players_beliefs')
+            this.agent.eventManager.emit('update_options')
+        }
     }
-} 
+}

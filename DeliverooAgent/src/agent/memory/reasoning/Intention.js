@@ -41,6 +41,7 @@ export class Intention {
         this.agent.log('[INTENTION', this.option.id, '] Started - ', this.#started)
 
         // Trying all plans in the library
+        let errors = false
         for (const planClass of this.agent.planner.getPlanLibrary()) {
 
             if ( this.stopped ) // if stopped then quit
@@ -62,6 +63,7 @@ export class Intention {
                     this.log( '[INTENTION', this.option.id, '] Plan', planClass.name, 'Failed - Message:', error );
                     if ( this.stopped )
                         break;
+                    errors = true
                 }
             }
         }
@@ -70,7 +72,7 @@ export class Intention {
         if ( this.stopped ) throw ['stopped'];
 
         // no plans have been found to satisfy the intention
-        throw `[INTENTION ${this.option.id} ] No plan found or errors in the found ones.`
+        throw errors ? 'Error inside plan' : 'No plan found'
     }
 
 }
