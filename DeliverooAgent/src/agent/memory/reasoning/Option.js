@@ -29,10 +29,19 @@ export class Option {
 export class BatchOption{
 
     constructor(bestOption, options, agent){
+        this.id = 'batch_pick_up'
         this.bestOption = bestOption
         this.options = options
         this.agent = agent
         console.log('Bestoptio :', this.bestOption.toString())
+        this.targetPositions = []
+        this.targetParcels = []
+        for (let opt of this.options){
+            console.log(' - ', opt.data.toString())
+            this.targetPositions.push(opt.data.position)
+            this.targetParcels.push(opt.data.id == 'go_deliver' ? 'delivery' : opt.data.parcel)
+        }
+        this.targetPositions.po
     }
 
     async init(){

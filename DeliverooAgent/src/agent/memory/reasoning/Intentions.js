@@ -92,8 +92,9 @@ export class Intentions {
                 let option = this.intention_queue.pop();
                 if (this.agent.moveType == 'PDDL' && this.intention_queue.size() > 1){
                     option = new BatchOption(option, this.intention_queue.valuesWithPriority(), this.agent)
-                    await option.init()
-                    process.exit(0)
+                    this.intention_queue.flush()
+                    //await option.init()
+                    //process.exit(0)
                 }
                 const intention = this.currentIntention = new Intention( this, option, this.agent );
 

@@ -79,14 +79,15 @@ export class ProblemGenerator{
     }
 
     goToMultipleOption(parcels) {
+        console.log(parcels.toString())
         let goal = `and `;
         
-        // Per ogni parcel, aggiungi il predicato 'carries'
         for (let p of parcels) {
+            if (p === 'delivery')
+                console.log('eccoci')
             goal += `(carries ${this.agent.agentID} ${p.id}) `;
         }
     
-        // Assicurati che l'agente sia nella posizione dell'ultimo pacchetto
         let lastParcel = null
         if (parcels.length > 0) {
             lastParcel = parcels[parcels.length - 1];

@@ -317,6 +317,73 @@ export class PddlMove extends Plan {
     }
 }
 
+export class PddlBatchMove extends Plan {
+    
+    static isApplicableTo ( option ) {
+        return option.id == 'batch_pick_up';
+    }
+
+    async execute ( option ) {
+
+        let problem = null
+        let plan = null
+        let positions = null
+        let actions = null
+        let target = null
+
+        const updatePlan = async () => {
+
+            let goals = option.targetPositions.length
+            for (let i = 0; i < goals; i++){
+                problem = this.agent.problemGenerator.goToMultipleOption('goto', option.targetPositions)
+                plan = await this.agent.planner.getPlan( problem );
+                if ( plan != null && plan.length > 0 ) {
+                    break;
+                };
+                option.targetPositions.pop()   
+            }
+            if ( plan == null || plan.length === 0 ) throw ['target_not_reachable']
+
+            [positions, actions] = this.getPddlPathPositions(plan)
+            target = positions[positions.length - 1];
+        }
+
+        const movementHandle = async (direction) => {
+
+                if ( this.stopped ) throw ['stopped']
+                const status = await this.agent.move(direction);
+                if (!status)  throw ['movement_fail']
+                const freePath = this.isPathFree(positions)
+                if (!freePath) {
+                    this.agent.eventManager.emit('update_options')
+                    await updatePlan()
+                }
+        }
+
+        const pddlExecutor = new PddlExecutor(
+            {name: 'move_right', executor:  () => movementHandle('right')},
+            {name: 'move_left', executor: () => movementHandle('left')},
+            {name: 'move_up', executor: () => movementHandle('up')},
+            {name: 'move_down', executor: () =>  movementHandle('down')},
+            {name: 'deliver', executor: () => this.agent.deliver()},
+            {name: 'pickup', executor: () =>  this.agent.pickup()}
+        );
+
+        await updatePlan()
+        do{
+            this.agent.client.socket.emit( "path", positions);
+
+            await pddlExecutor.exec( plan ).catch((error) =>{
+                if (error[0] !== 'path_not_free')
+                    throw error
+            })
+            if ( this.stopped ) throw ['stopped']
+
+        }while(!this.agent.currentPosition.isEqual(target))
+        return true
+    }
+}
+
 
 export class BlindMove extends Plan {
 

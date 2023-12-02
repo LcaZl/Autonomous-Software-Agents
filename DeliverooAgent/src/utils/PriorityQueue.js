@@ -3,6 +3,9 @@ export class PriorityQueue {
         this.heap = [];
     }
 
+    flush(){
+        this.heap = [];
+    }
     /**
      * Get the size of the queue.
      * @returns {number}
