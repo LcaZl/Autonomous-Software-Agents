@@ -138,8 +138,9 @@ export class Environment {
    * @param {Position} position - The starting position.
    * @returns {Object} The nearest delivery tile information.
    */
-  getNearestDeliveryTile(position) {
-    return this.bfsSearch(position, null, "delivery");
+  getNearestDeliveryTile(startPosition) {
+    let endPosition = this.getEstimatedNearestDeliveryTile()
+    return this.bfsSearch(startPosition, endPosition, "delivery");
   }
   
   /**
@@ -193,7 +194,7 @@ export class Environment {
                 this.cache.set(subPathKey, node);
               }
 
-              if ((mode == "delivery" && this.fullMap[newPos.x][newPos.y] == 2) || (mode == "path" && newPos.isEqual(endPosition))) {
+              if (newPos.isEqual(endPosition)) {
                 this.agent.log('[ENVIRONMENT][BFS_SUCCESS] BFS for', mode, 'from', startPosition, 'to', node.position);
                 this.cache.set((cacheKey || this.positionKey(startPosition, current.position)), node);
                 return node;
@@ -204,11 +205,8 @@ export class Environment {
     this.agent.log('[ENVIRONMENT][BFS_FAILED] BFS for ',mode,' from', startPosition, 'failed (endPosition:', endPosition,')');
     return {position : startPosition, length : 0}
   }
-}
 
-
-/**
- *   getEstimatedNearestDeliveryTile() { 
+  getEstimatedNearestDeliveryTile() { 
     let closestDelivery = null;
     let bestDistance = Infinity; // Imposta una distanza massima iniziale
 
@@ -224,6 +222,11 @@ export class Environment {
 
     return closestDelivery ? closestDelivery : null
   }
+}
+
+
+/**
+ *   
 
     getAvailableDirections() {
       const currPos = this.agent.currentPosition;

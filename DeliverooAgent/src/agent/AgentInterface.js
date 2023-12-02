@@ -17,7 +17,7 @@ export class AgentInterface{
       this.movementAttempts = 0 // Total number of movement attempts
       this.failMovement = 0
       this.score = 0
-      this.consoleActivated = true
+      this.consoleActivated = false
   }
 
   log(message){

@@ -74,7 +74,6 @@ export class PlayersManager {
         this.playersList.forEach((player, id) => {
             if (!players.some(p => p.id === id)) {
                 player.disappeared();
-                updates = true;
             }
         });
 

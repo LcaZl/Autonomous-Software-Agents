@@ -39,7 +39,7 @@ export class Intentions {
          * 
          * @param {Option} option - The option to be added or updated.
          */
-    async push(option) {
+    push(option) {
         if (this.intention_queue.has(option.id)) {
             this.agent.log('[INTENTIONS] Updating intention', option.id);
             this.intention_queue.updatePriority(option.id, option.utility);
@@ -48,7 +48,7 @@ export class Intentions {
             this.agent.log('[INTENTIONS] New intention', option.id);
         }
 
-        let changingRisk = option.utility * 0.5;
+        let changingRisk = option.utility * 0.2;
         if (this.currentIntention && 
             (this.currentIntention.option.id === 'patrolling' || 
             this.currentIntention.option.utility < (option.utility - changingRisk))) {
@@ -103,21 +103,13 @@ export class Intentions {
                     }
 
                 }
-                else if (option.id == 'go_deliver') {
-
-                    if ( this.agent.parcels.carriedParcels() == 0) {
-                        this.agent.log( '[INTENTIONS_REVISION] Delivery', option.id, ' no sense.' );
-                        continue;
-                    }
-
-                }
 
                 // Start achieving intention
                 await intention.achieve().catch( error => {
 
                     if ( !intention.stopped )
                         console.error( '[INTENTIONS_REVISION] Error with intention', intention.option.id, '- Error:', error )
-
+                    
                 });
             }
             

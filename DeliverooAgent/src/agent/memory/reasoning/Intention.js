@@ -27,6 +27,7 @@ export class Intention {
         this.#stopped = true;
         if (this.#current_plan) {
             this.#current_plan.stop();
+
         }
     }
 
@@ -64,18 +65,34 @@ export class Intention {
                 this.#current_plan = new planClass(this.#parent, this.agent);
 
                 try {
+
                     const plan_res = await this.#current_plan.execute(this.option);
                     this.log('[INTENTION', this.option.id, '] Plan', planClass.name, plan_res, 'terminated.');
                     return plan_res;
-                } catch (error) {
+
+                } catch ( error ) {
+
                     this.log('[INTENTION', this.option.id, '] Plan', planClass.name, 'Failed - Message:', error);
-                    if (this.stopped) break;
-                    errors = true;
+
+                    switch(error[0]){
+                        case 'target_not_reachable':
+                            this.stop()
+                            throw ['target_not_reachable',this.option];
+                        case 'path_not_free':
+                            this.stop()
+                            throw ['path_not_free',this.option];
+                        case 'stopped':
+                            throw ['stopped',this.option]
+                        case 'movement_fail':
+                            this.stop()
+                            throw ['movement_fail',this.option];
+                        default:
+                            throw error
+                    }
                 }
             }
         }
 
-        if (this.stopped) throw new ['stopped'];
-        throw errors ? ['Error inside plan'] : ['No plan found'];
+        throw ['No suitable plan found for ', this.option];
     }
 }
