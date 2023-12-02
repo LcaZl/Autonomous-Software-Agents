@@ -77,4 +77,29 @@ export class ProblemGenerator{
 
         return problem
     }
+
+    goToMultipleOption(parcels) {
+        let goal = `and `;
+        
+        // Per ogni parcel, aggiungi il predicato 'carries'
+        for (let p of parcels) {
+            goal += `(carries ${this.agent.agentID} ${p.id}) `;
+        }
+    
+        // Assicurati che l'agente sia nella posizione dell'ultimo pacchetto
+        let lastParcel = null
+        if (parcels.length > 0) {
+            lastParcel = parcels[parcels.length - 1];
+            goal += `(at ${this.agent.agentID} t${lastParcel.position.x}_${lastParcel.position.y})`;
+        }
+    
+        var problem = new PddlProblem(
+            `${this.agent.currentPosition.x}_${lastParcel.position.x}_${lastParcel.position.y}`,
+            this.agent.beliefs.getObjectsWithType(),
+            this.agent.beliefs.toPddlString(),
+            goal
+        );
+    
+        return problem;
+    }
 }

@@ -1,7 +1,7 @@
 import { PriorityQueue } from "../../../utils/PriorityQueue.js";
 import { Agent } from "../../agent.js";
 import { Intention } from "./Intention.js";
-import { Option } from "./Option.js";
+import { BatchOption, Option } from "./Option.js";
 
 /**
  * Manages the intentions of an agent, handling the decision-making process.
@@ -55,12 +55,11 @@ export class Intentions {
                 this.stopCurrent()
 
             if (this.agent.moveType != 'PDDL' && previousOption != null && updated < maxUpdate ){
-                option = this.agent.options.luckyUpdateOption(option, previousOption.position)
+                option = await this.agent.options.luckyUpdateOption(option, previousOption.position)
                 updated++
             }
             this.intention_queue.push(option, option.utility);
             previousOption = option
-
         }
     }
 
@@ -90,8 +89,12 @@ export class Intentions {
             }
             else {
                 this.agent.log( '[INTENTIONS] Intentions queue:');
-                const option = this.intention_queue.pop();
-
+                let option = this.intention_queue.pop();
+                if (this.agent.moveType == 'PDDL' && this.intention_queue.size() > 1){
+                    option = new BatchOption(option, this.intention_queue.valuesWithPriority(), this.agent)
+                    await option.init()
+                    process.exit(0)
+                }
                 const intention = this.currentIntention = new Intention( this, option, this.agent );
 
                 if ( option.id.startsWith('go_pick_up')){

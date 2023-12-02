@@ -39,7 +39,7 @@ export class Planner {
      */
     async getPlan(problem){
         let plan = null
-        this.agent.log('[PLANNER] Requested plan for problem:', problem.name, '(Memory hit ', this.memory.has(problem.name),')')
+        //this.agent.log('[PLANNER] Requested plan for problem:', problem.name, '(Memory hit ', this.memory.has(problem.name),')')
         if (!this.memory.has(problem.name)){
             try{
                 plan = await onlineSolver( this.domain, problem.toPddlString() );

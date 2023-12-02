@@ -2,7 +2,6 @@ import { PddlAction, PddlExecutor, onlineSolver } from "@unitn-asa/pddl-client";
 import { Agent } from "../../agent.js";
 import { Intention } from "./Intention.js";
 import { Option } from "./Option.js";
-import { ProblemGenerator } from "./ProblemGenerator.js";
 import { Position } from "../../../utils/Position.js";
 export class Plan {
 
@@ -19,7 +18,6 @@ export class Plan {
     constructor ( parent, agent) {
         this.#parent = parent;
         this.agent = agent
-        this.problemGenerator = new ProblemGenerator(agent)
     }
     
     get stopped () { return this.#stopped; }
@@ -99,7 +97,6 @@ export class GoPickUp extends Plan {
     static isApplicableTo ( option ) {
         return option.id.startsWith('go_pick_up-');
     }
-
     async execute ( option ) {
         if ( this.stopped ) throw ['stopped'];
         if (this.agent.moveType === 'PDDL')
@@ -116,7 +113,6 @@ export class GoDeliver extends Plan {
     static isApplicableTo ( option ) {
         return option.id == 'go_deliver';
     }
-
     async execute ( option ) {
         if ( this.stopped ) throw ['stopped'];
         await this.subIntention(new Option('go_to_bfs_delivery', null, option.utility, option.firstSearch, null));
@@ -144,9 +140,7 @@ export class Patrolling extends Plan {
 
 export class DepthSearchMove extends Plan {
 
-    static isApplicableTo ( option ) {
-        return option.id == 'go_to_bfs';
-    }
+    static isApplicableTo ( option ) { return option.id == 'go_to_bfs' }
 
     async execute ( option ) {
         
@@ -193,7 +187,6 @@ export class DepthSearchMove extends Plan {
         } while ( !this.agent.currentPosition.isEqual(target));
 
         return true;
-
     }
 }
 
@@ -267,7 +260,7 @@ export class PddlMove extends Plan {
         let target = null
 
         const updatePlan = async () => {
-            problem = this.problemGenerator.getProblem('goto', option.position)
+            problem = this.agent.problemGenerator.getProblem('goto', option.position)
             plan = await this.agent.planner.getPlan( problem );
             if ( plan == null || plan.length == 0 ) throw ['target_not_reachable'];
 
@@ -295,6 +288,7 @@ export class PddlMove extends Plan {
             {name: 'deliver', executor: () => this.agent.deliver()},
             {name: 'pickup', executor: () =>  this.agent.pickup()}
         );
+
         /*
         if (option.firstSearch != null){
             console.log('in', option.firstSearch)

@@ -13,6 +13,7 @@ import { Option } from "./memory/reasoning/Option.js";
 import { Intentions } from "./memory/reasoning/Intentions.js";
 import { AgentInterface } from "./AgentInterface.js";
 import { Intention } from "./memory/Reasoning/Intention.js";
+import { ProblemGenerator } from "./memory/Reasoning/ProblemGenerator.js";
 /**
  * @class
  * 
@@ -40,7 +41,7 @@ export class Agent extends AgentInterface{
 
         this.duration = duration ? duration * 1000 : Infinity;
         this.moveType = moveType
-        this.fastPick = false
+        this.fastPick = true
         this.lookAhead = 2
 
         // Performance information
@@ -105,7 +106,7 @@ export class Agent extends AgentInterface{
         this.options = new Options(this)
         this.intentions = new Intentions(this)
         await this.planner.loadDomain()
-
+        this.problemGenerator = new ProblemGenerator(this)
         // Activate the managment of the events
         this.parcels.activate()
         this.players.activate()

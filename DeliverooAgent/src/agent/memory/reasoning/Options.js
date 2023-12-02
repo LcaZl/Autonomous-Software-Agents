@@ -46,7 +46,7 @@ export class Options {
 
         if (this.agent.parcels.carriedParcels() > 0){
             let [utility, search] = this.deliveryUtility()
-            options.push(new Option('go_deliver', search.position, utility, this.agent.moveType === 'BFS' ? search : null, null)) 
+            options.push(new Option('go_deliver', search.position, utility, search, null)) 
         }
 
         for(let [_, parcel] of this.agent.parcels.getParcels()){

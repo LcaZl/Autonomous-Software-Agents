@@ -1,3 +1,5 @@
+
+
 export class Option {
     /**
      * Constructs a new instance of the Option class.
@@ -20,5 +22,33 @@ export class Option {
 
     toString() {
         return `[ID: ${this.id}, Utility: ${this.utility}, Position: ${this.position}, Parcel_id: ${this.parcel ? this.parcel.id : null}]`;
+    }
+}
+
+
+export class BatchOption{
+
+    constructor(bestOption, options, agent){
+        this.bestOption = bestOption
+        this.options = options
+        this.agent = agent
+        console.log('Bestoptio :', this.bestOption.toString())
+    }
+
+    async init(){
+        let targetPositions = []
+        let targetParcels = []
+        for (let opt of this.options){
+            console.log(' - ', opt.data.toString())
+            targetPositions.push(opt.data.position)
+            targetParcels.push(opt.data.id == 'go_deliver' ? 'delivery' : opt.data.parcel)
+        }
+
+        console.log(' - positions:', targetPositions)
+        console.log(' - parcels:', targetParcels.toString())
+        let problem = this.agent.problemGenerator.goToMultipleOption(targetParcels)
+        console.log(problem)
+        let plan = await this.agent.planner.getPlan( problem )
+        console.log(plan)
     }
 }
