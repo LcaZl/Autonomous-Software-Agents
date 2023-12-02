@@ -39,20 +39,28 @@ export class Intentions {
          * 
          * @param {Option} option - The option to be added or updated.
          */
-    push(option) {
-        if (this.intention_queue.has(option.id)) {
-            this.agent.log('[INTENTIONS] Updating intention', option.id);
-            this.intention_queue.updatePriority(option.id, option.utility);
-        } else {
-            this.intention_queue.push(option, option.utility);
-            this.agent.log('[INTENTIONS] New intention', option.id);
-        }
+    async push(options) {
+        let previousOption = null
+        let updated = 0
+        let maxUpdate = 3
 
-        let changingRisk = option.utility * 0.2;
-        if (this.currentIntention && 
-            (this.currentIntention.option.id === 'patrolling' || 
-            this.currentIntention.option.utility < (option.utility - changingRisk))) {
-            this.stopCurrent();
+        for (let option of options){
+            if (this.intention_queue.has(option.id)) {
+                this.agent.log('[INTENTIONS] Updating intention', option.id);
+                this.intention_queue.removeById(option.id);
+            }
+
+            let changingRisk = option.utility * 0.2;
+            if (this.currentIntention.option.id === 'patrolling' || this.currentIntention.option.utility < (option.utility - changingRisk)) 
+                this.stopCurrent()
+
+            if (previousOption != null && updated < maxUpdate){
+                option = this.agent.options.luckyUpdateOption(option, previousOption.position)
+                updated++
+            }
+            this.intention_queue.push(option, option.utility);
+            previousOption = option
+
         }
     }
 
@@ -82,16 +90,11 @@ export class Intentions {
             }
             else {
                 this.agent.log( '[INTENTIONS] Intentions queue:');
-                for (let intention of this.intention_queue.valuesWithPriority()){
-                    this.agent.log(' - ', intention.data.toString(), intention.priority )
-                }
-            
-                // Current intention
                 const option = this.intention_queue.pop();
-                //option.setSideOptions(this.intention_queue.values())
+
                 const intention = this.currentIntention = new Intention( this, option, this.agent );
-                
-                if ( option.id.startsWith('go_pick_up')){//} && !option.batch) {
+
+                if ( option.id.startsWith('go_pick_up')){
 
                     let id = option.parcel.id
                     this.agent.log('[INTENTIONS_REVISION] Validating pick up for', option.id, ' - Parcel:', id)
@@ -101,7 +104,6 @@ export class Intentions {
                         this.agent.log( '[INTENTIONS_REVISION] Option', option.id, ' no more valid. (Parcel: ', id,')' );
                         continue;
                     }
-
                 }
 
                 // Start achieving intention

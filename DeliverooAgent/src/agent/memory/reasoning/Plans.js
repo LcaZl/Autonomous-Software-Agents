@@ -73,12 +73,11 @@ export class Plan {
         let actions = []
 
         for (let step of plan) {
-            actions.push(step.action.split('_').at(0))
-            positions.push(this.exractTilePositionFromPDDL(step.args[1]))
+            actions.push(step.action.split('_').at(1))
+            positions.push(this.exractTilePositionFromPDDL(step.args[2]))
         }
-        positions.push(this.exractTilePositionFromPDDL(plan[plan.length - 1].args[2]))
 
-        return positions
+        return [positions, actions]
     }
 
     exractTilePositionFromPDDL(str) {
@@ -102,11 +101,11 @@ export class GoPickUp extends Plan {
 
     async execute ( option ) {
         if ( this.stopped ) throw ['stopped'];
-        if (this.agent.move_type == 'PDDL')
+        if (this.agent.moveType === 'PDDL')
             await this.subIntention( new Option('go_to_pddl',  option.position, option.utility, option. firstSearch, option.parcel)) // -- HERE
         else // BFS
             await this.subIntention( new Option('go_to_bfs', option.position, option.utility, option. firstSearch, option.parcel)) // -- HERE
-        this.agent.pickup()
+        await this.agent.pickup()
         return true
     }
 }
@@ -122,10 +121,9 @@ export class GoDeliver extends Plan {
         await this.subIntention(new Option('go_to_bfs_delivery', null, option.utility, null, null));
         await this.agent.deliver()
         return true;
-
     }
-
 }
+
 export class Patrolling extends Plan {
 
     static isApplicableTo ( option ) {
@@ -135,7 +133,7 @@ export class Patrolling extends Plan {
     async execute ( option ) {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
         let pos = this.agent.environment.getRandomPosition()
-        if (this.agent.move_type == 'PDDL')
+        if (this.agent.moveType === 'PDDL')
             await this.subIntention( new Option('go_to_pddl',  pos, null, null, null)) // -- HERE
         else // BFS
             await this.subIntention( new Option('go_to_bfs', pos, null, null, null)) // -- HERE
@@ -173,22 +171,22 @@ export class DepthSearchMove extends Plan {
 
         do{
             this.agent.client.socket.emit( "path", plan.path.positions);
-            let status = true
-            let freePath = true
 
             for (const [index, action] of plan.path.actions.entries()) {
 
+
+
+                if ( this.stopped ) throw ['stopped']; // if stopped then quit
+                const status = await this.agent.move(action);
                 if (!status) {
                     throw ['movement_fail']
                 }
-                freePath = this.isPathFree(plan.path.positions)
+                const freePath = this.isPathFree(plan.path.positions)
                 if (!freePath){
-                     throw ['path_not_free']
+                    updatePlanAndTarget()
+                    this.agent.eventManager.emit('update_option')
+                    break;
                 }
-
-                if ( this.stopped ) throw ['stopped']; // if stopped then quit
-                status = await this.agent.move(action);
-                
             }
             
         } while ( !this.agent.currentPosition.isEqual(target));
@@ -231,22 +229,19 @@ export class DepthSearcDeliveryhMove extends Plan {
 
         do{
             this.agent.client.socket.emit( "path", plan.path.positions);
-            let status = true
-            let freePath = true
             for (const [index, action] of plan.path.actions.entries()) {
 
+                if ( this.stopped ) throw ['stopped']; // if stopped then quit
+                const status = await this.agent.move(action);
                 if (!status) {
-                    updatePlanAndTarget()
-                    break;
+                    throw ['movement_fail']
                 }
-                freePath = this.isPathFree(plan.path.positions)
+                const freePath = this.isPathFree(plan.path.positions)
                 if (!freePath){
                     updatePlanAndTarget()
+                    this.agent.eventManager.emit('update_option')
                     break;
                 }
-
-                if ( this.stopped ) throw ['stopped']; // if stopped then quit
-                status = await this.agent.move(action);
             }
             
         } while ( !this.agent.currentPosition.isEqual(target));
@@ -267,16 +262,15 @@ export class PddlMove extends Plan {
         let problem = null
         let plan = null
         let positions = null
+        let actions = null
         let target = null
-        let moveFailures = 0
-        let pathOccupied = 0
 
         const updatePlan = async () => {
             problem = this.problemGenerator.getProblem('goto', option.position)
             plan = await this.agent.planner.getPlan( problem );
             if ( plan == null || plan.length == 0 ) throw ['target_not_reachable'];
 
-            positions = this.getPddlPathPositions(plan)
+            [positions, actions] = this.getPddlPathPositions(plan)
             target = positions[positions.length - 1];
         }
 
@@ -284,16 +278,11 @@ export class PddlMove extends Plan {
 
                 if ( this.stopped ) throw ['stopped']
                 const status = await this.agent.move(direction);
-                if (!status){
-                    moveFailures++
-                    if (moveFailures == 2) this.agent.options.updateOptions()
-                    if (moveFailures == 4) throw ['movement_fail']
-                }
+                if (!status)  throw ['movement_fail']
                 const freePath = this.isPathFree(positions)
-                if (!freePath){
-                    pathOccupied++
-                    if (pathOccupied == 1) this.agent.options.updateOptions()
-                    if (pathOccupied == 3) throw ['path_not_free']
+                if (!freePath) {
+                    this.agent.eventManager.emit('update_options')
+                    await updatePlan()
                 }
         }
 
@@ -306,13 +295,25 @@ export class PddlMove extends Plan {
             {name: 'pickup', executor: () =>  this.agent.pickup()}
         );
 
-        await updatePlan()
+        if (option.pddlPlan != null){
+            console.log('in')
+            [positions, actions] = this.getPddlPathPositions(option.pddlPlan)
+            if (this.isPathFree(positions) && positions[0].isEqual(this.agent.currentPosition)){
+                plan = option.pddlPlan
+                console.log('luckypddlhit')
+            }
+            else
+                await updatePlan()
+        }
+        else
+            await updatePlan()
         do{
-
             this.agent.client.socket.emit( "path", positions);
 
-            await pddlExecutor.exec( plan )
-
+            await pddlExecutor.exec( plan ).catch((error) =>{
+                if (error[0] !== 'path_not_free')
+                    throw error
+            })
             if ( this.stopped ) throw ['stopped']
 
         }while(!this.agent.currentPosition.isEqual(target))

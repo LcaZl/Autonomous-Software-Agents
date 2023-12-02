@@ -15,6 +15,7 @@ export class Option {
         this.firstSearch = search;
         this.batch = false;
         this.parcel = parcel;
+        this.pddlPlan = null
     }
 
     toString() {

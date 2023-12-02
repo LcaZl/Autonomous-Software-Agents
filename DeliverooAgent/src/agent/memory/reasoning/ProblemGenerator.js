@@ -24,7 +24,6 @@ export class ProblemGenerator{
      */
     getProblem(type, arg){ // arg can be a single position or an array of positions
         this.type = type
-
         switch (type) {
             case 'go_pick_up':
             case 'deliver':

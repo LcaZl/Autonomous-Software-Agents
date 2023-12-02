@@ -2,6 +2,7 @@ import { PriorityQueue } from "../../../utils/PriorityQueue.js";
 import { Agent } from "../../Agent.js";
 import { Parcel } from "../../Environment/Parcels/Parcel.js";
 import { Option } from "./Option.js";
+import { ProblemGenerator } from "./ProblemGenerator.js";
 
 /**
  * Manages the options available to an agent.
@@ -15,6 +16,7 @@ export class Options {
     constructor(agent) {
         this.agent = agent;
         this.lastPushedOptions = null;
+        this.problemGenerator = new ProblemGenerator(agent)
     }
 
     /**
@@ -63,8 +65,9 @@ export class Options {
         this.agent.log('[OPTIONS] Option pushing:')
         for( let opt of options){
             this.agent.log(' - ', opt.toString())
-            this.agent.intentions.push( opt )
         }
+        if (options.length > 0) this.agent.intentions.push( options )
+
     }
 
     /**
@@ -78,7 +81,7 @@ export class Options {
         // If using PDDL for movement, generate a PDDL plan
         if (this.agent.moveType === 'PDDL') {
             this.agent.log(option.toString());
-            option.pddlPlan = this.agent.planner.getPlan(this.agent.problemGenerator.goFromTo(probPosition, option.position), option);
+            option.pddlPlan = this.agent.planner.getPlan(this.problemGenerator.goFromTo(probPosition, option.position), option);
             return option;
         }
 
