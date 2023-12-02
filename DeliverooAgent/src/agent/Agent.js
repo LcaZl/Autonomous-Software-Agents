@@ -41,6 +41,7 @@ export class Agent extends AgentInterface{
         this.duration = duration ? duration * 1000 : Infinity;
         this.moveType = moveType
         this.fastPick = false
+        this.lookAhead = 2
 
         // Performance information
         this.lastPosition = null
@@ -121,67 +122,34 @@ export class Agent extends AgentInterface{
 
     async actualTileCheck() {
 
-        const haveParcels = this.parcels.carriedParcels() > 0;
         const OnDelivery = this.environment.onDeliveryTile()
-      
-        if (haveParcels && OnDelivery) {
-          await this.deliver()
-        }
-      
-        if (this.parcels.getPositions().some(pos => pos.isEqual(this.currentPosition))){
+    
+        if (this.parcels.getPositions().some(pos => pos.isEqual(this.currentPosition)))
             await this.pickup()
-        }
-
+        
         if (!OnDelivery){
 
-
             if (this.fastPick && this.intentions.currentIntention.option.id != 'patrolling'){
-                let up = [new Position(this.currentPosition.x, this.currentPosition.y + 1), 'up']
-                let down = [new Position(this.currentPosition.x, this.currentPosition.y - 1), 'down']
-                let left = [new Position(this.currentPosition.x - 1, this.currentPosition.y), 'left']
-                let right = [new Position(this.currentPosition.x + 1, this.currentPosition.y), 'right']
+                const directions = [
+                    { pos: new Position(this.currentPosition.x, this.currentPosition.y + 1), name: 'up', opposite: 'down' },
+                    { pos: new Position(this.currentPosition.x, this.currentPosition.y - 1), name: 'down', opposite: 'up' },
+                    { pos: new Position(this.currentPosition.x - 1, this.currentPosition.y), name: 'left', opposite: 'right' },
+                    { pos: new Position(this.currentPosition.x + 1, this.currentPosition.y), name: 'right', opposite: 'left' },
+                ];
                 
-                let ref_id = ''
-                if (this.intentions.currentIntention && this.intentions.currentIntention.option && this.intentions.currentIntention.option.parcel)
-                    ref_id = this.intentions.currentIntention.option.parcel.id
-
-                console.log('\nFastCheck:\nPositions:',up, down, left, right)
-                for (let p of this.parcels.getParcels().values()){
-                    if (!this.parcels.myParcels.has(p.id) && p.id != ref_id)
-                        console.log('PArcel position', p.id, p.position)
-                        if (p.position.isEqual(up[0])){
-                            await this.client.move(up[1])
-                            await this.pickup()
-                            await this.client.move(down[1])
-                            console.log('UpCompleted.')
-                            return
+                for (let position of this.parcels.getPositions()) {
+                    if (!position.isEqual(this.intentions.currentIntention.option.position)) {
+                        const direction = directions.find(dir => position.isEqual(dir.pos));
+                        
+                        if (direction) {
+                            this.intentions.intention_queue.push(
+                                new Option('go_to', direction.pos, Infinity, [direction.name, direction.opposite], null), 
+                                Infinity
+                            );
+                            console.log(direction.name);
+                            this.intentions.stopCurrent();
                         }
-                            //this.intentions.push([new Option(`fastPickup_${up[1]}`, up, Infinity, [up[1], down[1]], p)])
-                        else if (p.position.isEqual(down[0])){
-                            await this.client.move(down[1])
-                            await this.pickup()
-                            await this.client.move(up[1])
-                            console.log('DownCompleted.')
-                            return
-                        }
-                            //this.intentions.push([new Option(`fastPickup_${down[1]}`, down, Infinity, [down[1], up[1]], p)])
-                        else if (p.position.isEqual(left[0])){
-                            await this.client.move(left[1])
-                            await this.pickup()
-                            await this.client.move(right[1])
-                            console.log('LeftCompleted.')
-
-                            return;
-                        }
-                            //this.intentions.push([new Option(`fastPickup_${left[1]}`, left, Infinity, [left[1], right[1]], p)])
-                        else if (p.position.isEqual(right[0])){
-                            await this.client.move(right[1])
-                            await this.pickup()
-                            await this.client.move(left[1])
-                            console.log('RightCompleted.')
-                            return;
-                        }
-                            //this.intentions.push([new Option(`fastPickup_${right[1]}`, right, Infinity, [right[1], left[1]], p)])
+                    }
                 }
             }
         }

@@ -75,8 +75,6 @@ export class ProblemGenerator{
         this.agent.beliefs.declare(`me ${this.agent.agentID}`)
         this.agent.beliefs.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)   
 
-        //this.agent.log('False declare. me at t', from.x, '_', from.y)
-        //this.agent.log('real belief (should unchanged):\n', this.agent.beliefs.toPddlString())
         return problem
     }
 }

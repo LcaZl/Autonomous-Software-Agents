@@ -42,7 +42,7 @@ export class Intentions {
     async push(options) {
         let previousOption = null
         let updated = 0
-        let maxUpdate = 3
+        let maxUpdate = this.agent.lookAhead
 
         for (let option of options){
             if (this.intention_queue.has(option.id)) {
@@ -54,7 +54,7 @@ export class Intentions {
             if (this.currentIntention.option.id === 'patrolling' || this.currentIntention.option.utility < (option.utility - changingRisk)) 
                 this.stopCurrent()
 
-            if (previousOption != null && updated < maxUpdate){
+            if (this.agent.moveType != 'PDDL' && previousOption != null && updated < maxUpdate ){
                 option = this.agent.options.luckyUpdateOption(option, previousOption.position)
                 updated++
             }

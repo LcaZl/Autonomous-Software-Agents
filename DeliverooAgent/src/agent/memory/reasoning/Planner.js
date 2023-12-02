@@ -1,6 +1,6 @@
 import { PddlProblem } from '@unitn-asa/pddl-client';
 import { Agent } from '../../agent.js';
-import { DepthSearcDeliveryhMove, DepthSearchMove, GoDeliver, GoPickUp, Patrolling, PddlMove } from './Plans.js';
+import { BlindMove, DepthSearcDeliveryhMove, DepthSearchMove, GoDeliver, GoPickUp, Patrolling, PddlMove } from './Plans.js';
 import fs from 'fs'
 import { PddlAction, PddlExecutor, onlineSolver } from "@unitn-asa/pddl-client";
 
@@ -24,6 +24,7 @@ export class Planner {
         this.library.push( DepthSearcDeliveryhMove)
         this.library.push( Patrolling )
         this.library.push( PddlMove )
+        this.library.push( BlindMove )
         this.memory = new Map()
 
         this.agent.log('[INIT] Planner Initialized.')

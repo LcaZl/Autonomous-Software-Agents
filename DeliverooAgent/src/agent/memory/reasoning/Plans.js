@@ -3,6 +3,7 @@ import { Agent } from "../../agent.js";
 import { Intention } from "./Intention.js";
 import { Option } from "./Option.js";
 import { ProblemGenerator } from "./ProblemGenerator.js";
+import { Position } from "../../../utils/Position.js";
 export class Plan {
 
     // This is used to stop the plan
@@ -83,7 +84,7 @@ export class Plan {
     exractTilePositionFromPDDL(str) {
         const regex = /(\d+)/g;
         let numbers = str.match(regex).map(Number)
-        return {'x': numbers[0], 'y':numbers[1]}
+        return new Position(numbers[0], numbers[1])
       }
 }
 
@@ -102,9 +103,9 @@ export class GoPickUp extends Plan {
     async execute ( option ) {
         if ( this.stopped ) throw ['stopped'];
         if (this.agent.moveType === 'PDDL')
-            await this.subIntention( new Option('go_to_pddl',  option.position, option.utility, option. firstSearch, option.parcel)) // -- HERE
+            await this.subIntention( new Option('go_to_pddl',  option.position, option.utility, option.firstSearch, option.parcel)) // -- HERE
         else // BFS
-            await this.subIntention( new Option('go_to_bfs', option.position, option.utility, option. firstSearch, option.parcel)) // -- HERE
+            await this.subIntention( new Option('go_to_bfs', option.position, option.utility, option.firstSearch, option.parcel)) // -- HERE
         await this.agent.pickup()
         return true
     }
@@ -118,7 +119,7 @@ export class GoDeliver extends Plan {
 
     async execute ( option ) {
         if ( this.stopped ) throw ['stopped'];
-        await this.subIntention(new Option('go_to_bfs_delivery', null, option.utility, null, null));
+        await this.subIntention(new Option('go_to_bfs_delivery', null, option.utility, option.firstSearch, null));
         await this.agent.deliver()
         return true;
     }
@@ -294,19 +295,20 @@ export class PddlMove extends Plan {
             {name: 'deliver', executor: () => this.agent.deliver()},
             {name: 'pickup', executor: () =>  this.agent.pickup()}
         );
-
-        if (option.pddlPlan != null){
-            console.log('in')
-            [positions, actions] = this.getPddlPathPositions(option.pddlPlan)
-            if (this.isPathFree(positions) && positions[0].isEqual(this.agent.currentPosition)){
+        /*
+        if (option.firstSearch != null){
+            console.log('in', option.firstSearch)
+            let posact = this.getPddlPathPositions(option.firstSearch)
+            console.log(posact)
+            if (this.isPathFree(posact[0]) && posact[0][0].isEqual(this.agent.currentPosition)){
                 plan = option.pddlPlan
                 console.log('luckypddlhit')
             }
             else
                 await updatePlan()
         }
-        else
-            await updatePlan()
+        else*/
+        await updatePlan()
         do{
             this.agent.client.socket.emit( "path", positions);
 
@@ -317,6 +319,21 @@ export class PddlMove extends Plan {
             if ( this.stopped ) throw ['stopped']
 
         }while(!this.agent.currentPosition.isEqual(target))
+        return true
+    }
+}
+
+
+export class BlindMove extends Plan {
+
+    static isApplicableTo ( option ) {
+        return option.id == 'go_to';
+    }
+
+    async execute ( option ) {
+        const status_go = await this.agent.client.move( option.firstSearch[0])
+        if (!status_go) throw ['movement_fail']
+        await this.agent.pickup()
         return true
     }
 }

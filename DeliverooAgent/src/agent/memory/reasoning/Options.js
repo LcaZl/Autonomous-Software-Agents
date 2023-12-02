@@ -46,7 +46,7 @@ export class Options {
 
         if (this.agent.parcels.carriedParcels() > 0){
             let [utility, search] = this.deliveryUtility()
-            options.push(new Option('go_deliver', search.position, utility, search, null)) 
+            options.push(new Option('go_deliver', search.position, utility, this.agent.moveType === 'BFS' ? search : null, null)) 
         }
 
         for(let [_, parcel] of this.agent.parcels.getParcels()){
@@ -56,7 +56,7 @@ export class Options {
                 let [utility, search] = this.pickUpUtility(parcel, this.agent.currentPosition)
                 this.agent.log(search)
                 if (utility > 1)
-                    options.push(new Option(`go_pick_up-${parcel.id}`, search.position, utility, search, parcel))
+                    options.push(new Option(`go_pick_up-${parcel.id}`, search.position, utility, this.agent.moveType === 'BFS' ? search : null, parcel))
             }
         }
         options.sort( (opt1, opt2) => opt1.utility - opt2.utility )
@@ -77,11 +77,10 @@ export class Options {
      * @param {Position} probPosition - The probability position used for the update.
      * @returns {Option} The updated option.
      */
-    luckyUpdateOption(option, probPosition) {
+    async luckyUpdateOption(option, probPosition) {
         // If using PDDL for movement, generate a PDDL plan
         if (this.agent.moveType === 'PDDL') {
-            this.agent.log(option.toString());
-            option.pddlPlan = this.agent.planner.getPlan(this.problemGenerator.goFromTo(probPosition, option.position), option);
+            option.firstSearch = await this.agent.planner.getPlan(this.problemGenerator.goFromTo(probPosition, option.position), option);
             return option;
         }
 
