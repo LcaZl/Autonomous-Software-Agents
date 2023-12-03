@@ -83,13 +83,12 @@ export class ProblemGenerator{
         let hasDelivery = false
         let lastPosition = null
         for (let opt of options) {
-            if (opt.id !== 'go_deliver')
+            if (opt.id !== 'pddl_delivery')
             {
                 goal += `(carries ${this.agent.agentID} ${opt.parcel.id}) `
             }
             else{
-                lastPosition = this.agent.environment.getEstimatedNearestDeliveryTile()
-                goal += `(at ${this.agent.agentID} t${lastPosition.x}_${lastPosition.y})`;
+                goal += `(at ${this.agent.agentID} t${opt.position.x}_${opt.position.y})`;
                 hasDelivery = true
             }
         }

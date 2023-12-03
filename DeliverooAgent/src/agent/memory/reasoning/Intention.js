@@ -93,6 +93,6 @@ export class Intention {
             }
         }
 
-        throw ['No suitable plan found for ', this.option];
+        throw ['No suitable plan found for ', this.option.toString()];
     }
 }

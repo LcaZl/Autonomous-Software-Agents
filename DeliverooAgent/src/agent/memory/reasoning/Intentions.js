@@ -66,7 +66,11 @@ export class Intentions {
     async loop ( ) {
         this.agent.eventManager.on('deleted_parcel', async (id) => {
 
-            const realId = `go_pick_up-${id}`
+            let realId = null
+            if (this.agent.moveType == 'BFS')
+                realId = `bfs_pickup-${id}`
+            else
+                realId = `pddl_pickup-${id}`
 
             if (this.currentIntention.option.id == realId)
                 this.stopCurrent()
@@ -89,7 +93,7 @@ export class Intentions {
 
                 const intention = this.currentIntention = new Intention( this, option, this.agent );
 
-                if ( option.id.startsWith('go_pick_up')){
+                if ( option.id.startsWith('bfs_pickup-') || option.id.startsWith('pddl_pickup-') ){
 
                     let id = option.parcel.id
                     this.agent.log('[INTENTIONS_REVISION] Validating pick up for', option.id, ' - Parcel:', id)
@@ -102,12 +106,15 @@ export class Intentions {
                 }
 
                 // Start achieving intention
+                console.log('[INTENTION] Started ',intention.option.id , ' - Utility:', intention.option.utility)
                 await intention.achieve().catch( error => {
 
                     if ( !intention.stopped )
                         console.error( '[INTENTIONS_REVISION] Error with intention', intention.option.id, '- Error:', error )
                     
                 });
+                console.log('[INTENTION] Ended ',intention.option.id)
+
             }
             
             this.agent.log('[INTENTIONS_REVISION] End revision loop.')

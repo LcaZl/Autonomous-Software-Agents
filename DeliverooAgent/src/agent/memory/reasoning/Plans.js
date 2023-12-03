@@ -166,6 +166,7 @@ export class DepthSearchMove extends Plan {
         if (option.firstSearch != null && option.firstSearch.length != 0 && this.isPathFree(option.firstSearch.path.positions) && option.firstSearch.firstPosition.isEqual(this.agent.currentPosition)){
             plan = option.firstSearch
             target = option.position
+            this.agent.lookAheadHits++
         }
         else
             updatePlanAndTarget()
@@ -182,6 +183,7 @@ export class DepthSearchMove extends Plan {
                 }
                 const freePath = this.isPathFree(plan.path.positions.slice(index))
                 if (!freePath){
+                    this.agent.eventManager.emit('update_option')
                     updatePlanAndTarget()
                     break;
                 }
@@ -216,6 +218,7 @@ export class DepthSearcDeliveryhMove extends Plan {
 
         if (option.firstSearch != null && option.length > 0){
             if (this.isPathFree(option.firstSearch.path.positions) && option.firstSearch.path.positions[0].isEqual(this.agent.currentPosition)){
+                this.agent.lookAheadHits++
                 plan = option.firstSearch
                 target = option.position}
             else
@@ -407,6 +410,7 @@ export class BlindMove extends Plan {
         const status_go = await this.agent.client.move( option.firstSearch[0])
         if (!status_go) throw ['movement_fail']
         await this.agent.pickup()
+        this.agent.fastPickMoves++
         return true
     }
 }

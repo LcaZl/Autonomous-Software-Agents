@@ -60,21 +60,22 @@ export class Options {
             if ( parcel.isFree() ){
                 let [utility, search] = this.pickUpUtility(parcel, this.agent.currentPosition)
                 this.agent.log(search)
-                if (utility > 1)
-                    options.push(new Option(`bfs_pickup-${parcel.id}`, search.position, utility, this.agent.moveType === 'BFS' ? search : null, parcel))
+                if (utility >= 0) 
+                    options.push(new Option(`bfs_pickup-${parcel.id}`, search.position, utility, search, parcel))
             }
         }
 
         options.sort( (opt1, opt2) => opt2.utility - opt1.utility )
 
         if (options.length > 1){
-            let previousOption = this.agent.intentions.currentIntention.option.position
+            let previousOption = null
+            if (this.agent.intentions.currentIntention.option.id !== 'patrolling')
+                previousOption = this.agent.intentions.currentIntention.option
+
             let updated = 0
             for (let opt of options){
                 if (previousOption != null && updated < this.agent.lookAhead){
-                    console.log('Before lucky pick up', opt.toString())
                     opt = await this.agent.options.luckyUpdateOption(opt, previousOption.position)
-                    console.log('After lucky pick up', opt.toString())
                     updated++
                 }
                 previousOption = opt
@@ -83,10 +84,10 @@ export class Options {
 
         this.lastPushedOptions = options
         
-        console.log('[OPTIONS] Option pushing:')
-        for( let opt of options){
-            console.log(' - ', opt.toString())
-        }
+        //console.log('[OPTIONS] Option pushing:')
+        //for( let opt of options){
+            //console.log(' - ', opt.toString())
+        //}
 
         if (options.length > 0) this.agent.intentions.push( options )
 
@@ -99,7 +100,7 @@ export class Options {
 
             let options = []
             if (this.agent.parcels.carriedParcels() > 0){
-                let deliveryPosition = this.agent.environment.getEstimatedNearestDeliveryTile()
+                let deliveryPosition = this.agent.environment.getEstimatedNearestDeliveryTile(this.agent.currentPosition)
                 let utility = this.simplifiedDeliveryUtility(this.agent.currentPosition, deliveryPosition)
                 options.push(new Option('pddl_delivery', deliveryPosition, utility, null, null)) 
             }
@@ -113,7 +114,7 @@ export class Options {
                 }
             }
 
-            options.sort( (opt1, opt2) => opt1.utility - opt2.utility )
+            options.sort( (opt1, opt2) => opt2.utility - opt1.utility )
     
             console.log('Movetype:',this.agent.moveType)
             let newOptions = []
@@ -123,24 +124,22 @@ export class Options {
             let lastPosition = this.agent.intentions.currentIntention.option.position
 
             console.log('Oprions len:', options.length)
-            if (options.length > 0){
-                for (let i = 0; i < options.length; i++){
+            for (let i = 0; i < options.length; i++){
 
-                    batch.push(options[i])
-                    utility += utility === 0 ? options[i].utility : this.updateBatchUtility(utility, options[i], lastPosition)
-                    id += options[i].id === 'go_deliver' ? 'del' : options[i].id.split('-')[1].split('p')[1];
+                batch.push(options[i])
+                utility += utility === 0 ? options[i].utility : this.updateBatchUtility(utility, options[i], lastPosition)
+                id += options[i].id === 'pddl_delivery' ? 'del' : options[i].id.split('-')[1].split('p')[1];
 
-                    if (batch.length % this.agent.batchSize == 0){
-                        newOptions.push(new BatchOption(id, batch, this.agent))
-                        batch = []
-                        id = 'batch_pickup-'
-                    }
-
-                    lastPosition = options[i].position
-                }
-                if (options.length <= this.agent.batchSize)
+                if (batch.length % this.agent.batchSize == 0){
                     newOptions.push(new BatchOption(id, batch, this.agent))
+                    batch = []
+                    id = 'batch_pickup-'
+                }
+
+                lastPosition = options[i].position
             }
+            if (batch.length > 0)
+                newOptions.push(new BatchOption(id, batch, this.agent))
             this.agent.log('[OPTIONS] Options:')
             for( let opt of options){
                 this.agent.log(' - ', opt.toString())
@@ -181,7 +180,6 @@ export class Options {
             option.firstSearch = await this.agent.planner.getPlan(this.problemGenerator.goFromTo(probPosition, option.position), option);
             return option;
         }
-
         // Update utility and search path for non-PDDL movement
         let utility = null;
         let search = null;
@@ -197,7 +195,7 @@ export class Options {
         }
 
         option.firstSearch = search;
-        option.utility = utility;
+        //option.utility = utility;
         return option;
     }
 
@@ -231,7 +229,6 @@ export class Options {
     }
 
     pickUpUtility(p, agentPosition) {
-        console.log(p.toString(), agentPosition)
         const movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 0 : (this.agent.MOVEMENT_DURATION) / this.agent.PARCEL_DECADING_INTERVAL;
         const actualReward = this.agent.parcels.getMyParcelsReward()
         let search = this.agent.environment.getShortestPath(agentPosition, p.position)
@@ -247,7 +244,7 @@ export class Options {
         const carriedParcelsPenality = (1 / (carriedParcels + 1))
         const utility = (((actualReward) * carriedParcelsPenality) + p.reward) - (cost * (carriedParcels + 1))
 
-        console.log({
+        this.agent.log({
             movement_duration: this.agent.MOVEMENT_DURATION,
             decading_interval: movementPenality,
             movementPenality,
@@ -293,7 +290,7 @@ export class Options {
 
         const utility = (actualReward * carriedParcelsFactor) - (cost * (carriedParcels));
     
-        console.log({
+        this.agent.log({
             movement_duration: this.agent.MOVEMENT_DURATION,
             decading_interval: this.agent.PARCEL_DECADING_INTERVAL,
             elapsedTime,

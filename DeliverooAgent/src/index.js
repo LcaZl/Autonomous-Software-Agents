@@ -1,11 +1,11 @@
 import { Agent } from './agent/agent.js'
 import { config_1 } from './config.js'
 
-const duration  = 300 // seconds
+const duration  = 100 // seconds
 const moveType = 'BFS' // BFS or PDDL
 const batchSize = 3 // Only for PDDL configuration
 // Number of option to calculate the path from the end of the previous, based on actual utility order.
-const lookAhead = 2 // For both PDDL and BFS
+const lookAhead = 3 // For both PDDL and BFS
 const fastPick = true // Only for BFS, for now
 const {host, token, name} = config_1;
 

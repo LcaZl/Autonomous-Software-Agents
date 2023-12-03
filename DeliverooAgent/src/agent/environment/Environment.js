@@ -139,7 +139,7 @@ export class Environment {
    * @returns {Object} The nearest delivery tile information.
    */
   getNearestDeliveryTile(startPosition) {
-    let endPosition = this.getEstimatedNearestDeliveryTile()
+    let endPosition = this.getEstimatedNearestDeliveryTile(startPosition)
     return this.bfsSearch(startPosition, endPosition, "delivery");
   }
   
@@ -206,13 +206,13 @@ export class Environment {
     return {position : startPosition, length : 0}
   }
 
-  getEstimatedNearestDeliveryTile() { 
+  getEstimatedNearestDeliveryTile(currentPosition) { 
     let closestDelivery = null;
     let bestDistance = Infinity; // Imposta una distanza massima iniziale
 
     for (let position of this.deliveryTiles) {
       if (!this.isEnemyPosition(position)){
-        let dist = position.distanceTo(this.agent.currentPosition)
+        let dist = position.distanceTo(currentPosition)
         if (dist < bestDistance) {
             bestDistance = dist;
             closestDelivery = position;

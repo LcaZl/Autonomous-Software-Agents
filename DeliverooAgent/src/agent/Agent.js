@@ -177,7 +177,6 @@ export class Agent extends AgentInterface{
             this.lastPosition = this.currentPosition
             this.currentPosition = new Position(moveResult.x, moveResult.y)
             this.log('[MOVE',this.movementAttempts,'] Moved:', direction, '- New Position', this.currentPosition, ' - From', this.lastPosition)
-
             this.eventManager.emit('movement')
         }
         else{

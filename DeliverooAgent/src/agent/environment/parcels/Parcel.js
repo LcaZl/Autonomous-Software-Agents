@@ -29,7 +29,7 @@ export class Parcel {
      */
     decayReward() {
         this.reward -= (this.agent.PARCEL_DECADING_INTERVAL / 1000);
-        if (this.reward <= 1) {
+        if (this.reward <= 0) {
             clearInterval(this.decayInterval);
             this.agent.parcels.deleteParcel(this.id);
         }

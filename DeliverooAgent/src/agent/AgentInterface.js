@@ -17,7 +17,11 @@ export class AgentInterface{
       this.movementAttempts = 0 // Total number of movement attempts
       this.failMovement = 0
       this.score = 0
+      this.lookAheadHits = 0
+      this.fastPickMoves = 0
+      
       this.consoleActivated = false
+
   }
 
   log(message){
@@ -42,7 +46,6 @@ export class AgentInterface{
 
   // Console agent info
   agentInfo(agent) {
-    if (this.consoleActivated){
       console.log('[INIT] Agent info:\n')
       console.log(' - ID: ', this.agentID)
       console.log(' - Name: ', this.name)
@@ -61,7 +64,6 @@ export class AgentInterface{
       this.printMap(this.environment.fullMap)
       console.log('\n - Delivery Tiles',this.environment.deliveryTiles)
       console.log(' - PARCEL_DECADING_INTERVAL:', this.PARCEL_DECADING_INTERVAL)
-    }
   }
 
   status() {
@@ -96,12 +98,14 @@ export class AgentInterface{
     console.log(' - Moves effectively performed:', this.effectiveMovement)
     console.log(' - Failed movements:', this.failMovement)
     console.log(' - Pick up performed:', this.pickUpActions)
-    console.log(' - Delivery performed:', this.deliveryActions, '\n')
+    console.log(' - Delivery performed:', this.deliveryActions)
     console.log(' - Delivered parcels:', this.parcelsDelivered)
     console.log(' - Exploration map:\n')
     this.printMap(this.environment.exploredTiles)
     console.log(' - Search call', this.environment.searchCalls)
     console.log(' - Cache hits', this.environment.cacheHit)
+    console.log(' - Look ahead hits:', this.lookAheadHits)
+    console.log(' - Fast pick moves:', this.fastPickMoves)
     //console.log(' - Chached BFS paths (',this.environment.cache.size,'):\n', this.environment.cache)
   }
 
