@@ -231,6 +231,7 @@ export class Options {
     }
 
     pickUpUtility(p, agentPosition) {
+        console.log(p.toString(), agentPosition)
         const movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 0 : (this.agent.MOVEMENT_DURATION) / this.agent.PARCEL_DECADING_INTERVAL;
         const actualReward = this.agent.parcels.getMyParcelsReward()
         let search = this.agent.environment.getShortestPath(agentPosition, p.position)
@@ -292,7 +293,7 @@ export class Options {
 
         const utility = (actualReward * carriedParcelsFactor) - (cost * (carriedParcels));
     
-        this.agent.log({
+        console.log({
             movement_duration: this.agent.MOVEMENT_DURATION,
             decading_interval: this.agent.PARCEL_DECADING_INTERVAL,
             elapsedTime,
