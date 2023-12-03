@@ -184,7 +184,7 @@ export class Environment {
                     actions: [...current.path.actions, action]
                 },
                 length : [...current.path.actions, action].length,
-                lastPosition: newPos
+                firstPosition: startPosition
               }
               queue.push(node);
 

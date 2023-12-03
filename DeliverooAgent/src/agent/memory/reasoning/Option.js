@@ -21,30 +21,39 @@ export class Option {
     }
 
     toString() {
-        return `[ID: ${this.id}, Utility: ${this.utility}, Position: ${this.position}, Parcel_id: ${this.parcel ? this.parcel.id : null}]`;
+        return `[ID: ${this.id}, Utility: ${this.utility}, Position: ${this.position}, Parcel_id: ${this.parcel ? this.parcel.id : null}, Search: ${this.firstSearch ? this.firstSearch.firstPosition : null}]`;
     }
 }
 
 
 export class BatchOption{
 
-    constructor(bestOption, options, agent){
-        this.id = 'batch_pick_up'
-        this.bestOption = bestOption
-        this.options = options
+    constructor(id, options, agent){
+        this.id = id
         this.agent = agent
-        console.log('Bestoptio :', this.bestOption.toString())
-        this.targetPositions = []
-        this.targetParcels = []
-        for (let opt of this.options){
-            console.log(' - ', opt.data.toString())
-            this.targetPositions.push(opt.data.position)
-            this.targetParcels.push(opt.data.id == 'go_deliver' ? 'delivery' : opt.data.parcel)
+        this.utility = 0
+        this.targetOptions = options
+
+        
+        console.log('Building batch with these options:')
+        for (let opt of options){
+            console.log(' - ', opt.toString())
         }
-        this.targetPositions.po
+        console.log(' Batch: ', this.toString(), '\n')
     }
 
-    async init(){
+    toString() {
+        let str = `BatchOption - ID: ${this.id}, Agent: ${this.agent}, Utility: ${this.utility}, Target Options: `;
+        this.targetOptions.forEach((option, index) => {
+            str += `\n   Option ${index + 1}: ${option.toString()}`;
+        });
+        return str;
+    }
+}
+
+/**
+ * 
+ *     async init(){
         let targetPositions = []
         let targetParcels = []
         for (let opt of this.options){
@@ -60,4 +69,5 @@ export class BatchOption{
         let plan = await this.agent.planner.getPlan( problem )
         console.log(plan)
     }
-}
+
+ */

@@ -36,13 +36,14 @@ export class Agent extends AgentInterface{
      * @param {string} token - The token for the agent.
      */
 
-    constructor(host, token, name, duration, moveType) {
+    constructor(host, token, name, duration, moveType, fastPick, lookAhead, batchSize) {
         super()
 
         this.duration = duration ? duration * 1000 : Infinity;
         this.moveType = moveType
-        this.fastPick = true
-        this.lookAhead = 2
+        this.fastPick = fastPick
+        this.lookAhead = lookAhead
+        this.batchSize = batchSize
 
         // Performance information
         this.lastPosition = null

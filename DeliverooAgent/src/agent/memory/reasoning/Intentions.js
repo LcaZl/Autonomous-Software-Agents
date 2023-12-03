@@ -40,24 +40,20 @@ export class Intentions {
          * @param {Option} option - The option to be added or updated.
          */
     async push(options) {
+
         let previousOption = null
         let updated = 0
-        let maxUpdate = this.agent.lookAhead
 
         for (let option of options){
             if (this.intention_queue.has(option.id)) {
-                this.agent.log('[INTENTIONS] Updating intention', option.id);
+                this.agent.log('[INTENTIONS] Removing intention', option.id);
                 this.intention_queue.removeById(option.id);
             }
 
-            let changingRisk = option.utility * 0.2;
+            let changingRisk = option.utility * 0.35;
             if (this.currentIntention.option.id === 'patrolling' || this.currentIntention.option.utility < (option.utility - changingRisk)) 
                 this.stopCurrent()
 
-            if (this.agent.moveType != 'PDDL' && previousOption != null && updated < maxUpdate ){
-                option = await this.agent.options.luckyUpdateOption(option, previousOption.position)
-                updated++
-            }
             this.intention_queue.push(option, option.utility);
             previousOption = option
         }
@@ -90,12 +86,7 @@ export class Intentions {
             else {
                 this.agent.log( '[INTENTIONS] Intentions queue:');
                 let option = this.intention_queue.pop();
-                if (this.agent.moveType == 'PDDL' && this.intention_queue.size() > 1){
-                    option = new BatchOption(option, this.intention_queue.valuesWithPriority(), this.agent)
-                    this.intention_queue.flush()
-                    //await option.init()
-                    //process.exit(0)
-                }
+
                 const intention = this.currentIntention = new Intention( this, option, this.agent );
 
                 if ( option.id.startsWith('go_pick_up')){

@@ -18,8 +18,6 @@ export class Planner {
 
         this.agent = agent
         this.library = []
-        this.library.push( GoPickUp )
-        this.library.push( GoDeliver )
         this.library.push( DepthSearchMove )
         this.library.push( DepthSearcDeliveryhMove)
         this.library.push( Patrolling )

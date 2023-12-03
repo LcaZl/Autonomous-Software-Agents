@@ -1,10 +1,24 @@
-import { Agent } from './Agent/agent.js';
-import { config_1, config_2, agent_parameters } from './config.js'
+import { Agent } from './agent/agent.js'
+import { config_1 } from './config.js'
 
-let duration  = 300 // seconds
-let move_type = 'PDDL'
+const duration  = 300 // seconds
+const moveType = 'BFS' // BFS or PDDL
+const batchSize = 3 // Only for PDDL configuration
+// Number of option to calculate the path from the end of the previous, based on actual utility order.
+const lookAhead = 2 // For both PDDL and BFS
+const fastPick = true // Only for BFS, for now
 const {host, token, name} = config_1;
-const agent = new Agent(host, token, name, duration, move_type);
+
+const agent = new Agent(
+    host, 
+    token, 
+    name, 
+    duration, 
+    moveType, 
+    fastPick, 
+    lookAhead, 
+    batchSize );
+
 process.on('SIGINT', () => {
     agent.finalMetrics()
     process.exit(0)

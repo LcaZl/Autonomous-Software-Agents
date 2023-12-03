@@ -1,7 +1,7 @@
 import { PriorityQueue } from "../../../utils/PriorityQueue.js";
 import { Agent } from "../../Agent.js";
 import { Parcel } from "../../Environment/Parcels/Parcel.js";
-import { Option } from "./Option.js";
+import { BatchOption, Option } from "./Option.js";
 import { ProblemGenerator } from "./ProblemGenerator.js";
 
 /**
@@ -32,44 +32,142 @@ export class Options {
      * Activates the option manager to listen for relevant events.
      */
     activate() {
-        this.agent.eventManager.on('update_options', () => this.updateOptions());
-        this.agent.eventManager.on('picked_up_parcels', () => this.updateOptions());
-        this.agent.eventManager.on('delivered_parcels', () => this.updateOptions());
+        this.agent.eventManager.on('update_options', () => {
+            if (this.agent.moveType === 'BFS') this.updateOptionsForBfs()
+            else this.updateOptionsForPddl()});
+        this.agent.eventManager.on('picked_up_parcels', () => {
+            if (this.agent.moveType === 'BFS') this.updateOptionsForBfs()
+            else this.updateOptionsForPddl()});
+        this.agent.eventManager.on('delivered_parcels', () => {
+            if (this.agent.moveType === 'BFS') this.updateOptionsForBfs()
+            else this.updateOptionsForPddl()});
     }
 
     /**
      * Updates the options based on the current state of the agent and environment.
      */
-    updateOptions(){
+    async updateOptionsForBfs(){
 
         let options = []
 
         if (this.agent.parcels.carriedParcels() > 0){
             let [utility, search] = this.deliveryUtility()
-            options.push(new Option('go_deliver', search.position, utility, search, null)) 
+            options.push(new Option('bfs_delivery', search.position, utility, search, null)) 
         }
 
         for(let [_, parcel] of this.agent.parcels.getParcels()){
 
             if ( parcel.isFree() ){
-
                 let [utility, search] = this.pickUpUtility(parcel, this.agent.currentPosition)
                 this.agent.log(search)
                 if (utility > 1)
-                    options.push(new Option(`go_pick_up-${parcel.id}`, search.position, utility, this.agent.moveType === 'BFS' ? search : null, parcel))
+                    options.push(new Option(`bfs_pickup-${parcel.id}`, search.position, utility, this.agent.moveType === 'BFS' ? search : null, parcel))
             }
         }
-        options.sort( (opt1, opt2) => opt1.utility - opt2.utility )
+
+        options.sort( (opt1, opt2) => opt2.utility - opt1.utility )
+
+        if (options.length > 1){
+            let previousOption = this.agent.intentions.currentIntention.option.position
+            let updated = 0
+            for (let opt of options){
+                if (previousOption != null && updated < this.agent.lookAhead){
+                    console.log('Before lucky pick up', opt.toString())
+                    opt = await this.agent.options.luckyUpdateOption(opt, previousOption.position)
+                    console.log('After lucky pick up', opt.toString())
+                    updated++
+                }
+                previousOption = opt
+            }
+        }
+
         this.lastPushedOptions = options
         
-        this.agent.log('[OPTIONS] Option pushing:')
+        console.log('[OPTIONS] Option pushing:')
         for( let opt of options){
-            this.agent.log(' - ', opt.toString())
+            console.log(' - ', opt.toString())
         }
+
         if (options.length > 0) this.agent.intentions.push( options )
 
     }
 
+        /**
+     * Updates the options based on the current state of the agent and environment.
+     */
+        updateOptionsForPddl(){
+
+            let options = []
+            if (this.agent.parcels.carriedParcels() > 0){
+                let deliveryPosition = this.agent.environment.getEstimatedNearestDeliveryTile()
+                let utility = this.simplifiedDeliveryUtility(this.agent.currentPosition, deliveryPosition)
+                options.push(new Option('pddl_delivery', deliveryPosition, utility, null, null)) 
+            }
+    
+            for(let [_, parcel] of this.agent.parcels.getParcels()){
+                if ( parcel.isFree() ){
+    
+                    let utility = this.simplifiedPickUpUtility(this.agent.currentPosition, parcel)
+                    if (utility > 1)
+                        options.push(new Option(`pddl_pickup-${parcel.id}`, parcel.position, utility, null, parcel))
+                }
+            }
+
+            options.sort( (opt1, opt2) => opt1.utility - opt2.utility )
+    
+            console.log('Movetype:',this.agent.moveType)
+            let newOptions = []
+            let batch = []
+            let id = 'pddl_batch-'
+            let utility = 0
+            let lastPosition = this.agent.intentions.currentIntention.option.position
+
+            console.log('Oprions len:', options.length)
+            if (options.length > 0){
+                for (let i = 0; i < options.length; i++){
+
+                    batch.push(options[i])
+                    utility += utility === 0 ? options[i].utility : this.updateBatchUtility(utility, options[i], lastPosition)
+                    id += options[i].id === 'go_deliver' ? 'del' : options[i].id.split('-')[1].split('p')[1];
+
+                    if (batch.length % this.agent.batchSize == 0){
+                        newOptions.push(new BatchOption(id, batch, this.agent))
+                        batch = []
+                        id = 'batch_pickup-'
+                    }
+
+                    lastPosition = options[i].position
+                }
+                if (options.length <= this.agent.batchSize)
+                    newOptions.push(new BatchOption(id, batch, this.agent))
+            }
+            this.agent.log('[OPTIONS] Options:')
+            for( let opt of options){
+                this.agent.log(' - ', opt.toString())
+            }
+
+            options = newOptions
+
+            this.agent.log('[OPTIONS] newOptions:')
+            for( let opt of options){
+                this.agent.log(' - ', opt.toString())
+            }
+
+            this.lastPushedOptions = options
+            
+            this.agent.log('[OPTIONS] Option pushing:')
+            for( let opt of options){
+                this.agent.log(' - ', opt.toString())
+            }
+            if (options.length > 0) this.agent.intentions.push( options )
+    
+        }
+
+
+    updateBatchUtility(actualUtility, option, startPosition){
+        
+        
+    }
     /**
      * Updates the given option's utility and search path based on a probability position.
      * 
@@ -88,16 +186,50 @@ export class Options {
         let utility = null;
         let search = null;
 
-        if (option.id === 'go_deliver') {
-            [utility, search] = this.deliveryUtility(probPosition);
-        } else if (option.id.startsWith('go_pick_up-')) {
-            [utility, search] = this.pickUpUtility(option.parcel, probPosition);
+        if (option.id === 'bfs_delivery') {
+            const output = this.deliveryUtility(probPosition);
+            utility = output[0]
+            search = output[1]
+        } else if (option.id.startsWith('bfs_pickup-')) {
+            const output = this.pickUpUtility(option.parcel, probPosition);
+            utility = output[0]
+            search = output[1]
         }
 
         option.firstSearch = search;
         option.utility = utility;
         return option;
     }
+
+    /**
+     * 
+     * @param {Position} startPosition 
+     * @param {Position} endPosition 
+     */
+    simplifiedPickUpUtility(startPosition, parcel){
+        const endPosition = parcel.position
+        const extimatedDistance = startPosition.distanceTo(endPosition)
+        const movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 0 : (this.agent.MOVEMENT_DURATION) / this.agent.PARCEL_DECADING_INTERVAL;
+        const cost = extimatedDistance * movementPenality
+        const actualReward = this.agent.parcels.getMyParcelsReward()
+        const carriedParcels = this.agent.parcels.carriedParcels()
+        const utility = (actualReward + parcel.reward) - cost * (carriedParcels + 1)
+        return utility
+    }
+
+    simplifiedDeliveryUtility(startPosition, endPosition){
+
+        const extimatedDistance = startPosition.distanceTo(endPosition)
+        const movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 0 : (this.agent.MOVEMENT_DURATION) / this.agent.PARCEL_DECADING_INTERVAL;
+        const cost = extimatedDistance * movementPenality
+        const actualReward = this.agent.parcels.getMyParcelsReward()
+        const carriedParcels = this.agent.parcels.carriedParcels()
+        const carriedParcelsFactor = 1 + (carriedParcels / this.agent.MAX_PARCELS)
+        const utility = (actualReward * carriedParcelsFactor) - (cost * (carriedParcels));
+
+        return utility
+    }
+
     pickUpUtility(p, agentPosition) {
         const movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 0 : (this.agent.MOVEMENT_DURATION) / this.agent.PARCEL_DECADING_INTERVAL;
         const actualReward = this.agent.parcels.getMyParcelsReward()
@@ -114,7 +246,7 @@ export class Options {
         const carriedParcelsPenality = (1 / (carriedParcels + 1))
         const utility = (((actualReward) * carriedParcelsPenality) + p.reward) - (cost * (carriedParcels + 1))
 
-        this.agent.log({
+        console.log({
             movement_duration: this.agent.MOVEMENT_DURATION,
             decading_interval: movementPenality,
             movementPenality,

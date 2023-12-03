@@ -78,24 +78,29 @@ export class ProblemGenerator{
         return problem
     }
 
-    goToMultipleOption(parcels) {
-        console.log(parcels.toString())
+    goToMultipleOption(options) {
         let goal = `and `;
-        
-        for (let p of parcels) {
-            if (p === 'delivery')
-                console.log('eccoci')
-            goal += `(carries ${this.agent.agentID} ${p.id}) `;
+        let hasDelivery = false
+        let lastPosition = null
+        for (let opt of options) {
+            if (opt.id !== 'go_deliver')
+            {
+                goal += `(carries ${this.agent.agentID} ${opt.parcel.id}) `
+            }
+            else{
+                lastPosition = this.agent.environment.getEstimatedNearestDeliveryTile()
+                goal += `(at ${this.agent.agentID} t${lastPosition.x}_${lastPosition.y})`;
+                hasDelivery = true
+            }
         }
     
-        let lastParcel = null
-        if (parcels.length > 0) {
-            lastParcel = parcels[parcels.length - 1];
-            goal += `(at ${this.agent.agentID} t${lastParcel.position.x}_${lastParcel.position.y})`;
+        if (!hasDelivery && options.length > 0) {
+            lastPosition = options[options.length - 1].position;
+            goal += `(at ${this.agent.agentID} t${lastPosition.x}_${lastPosition.y})`;
         }
     
         var problem = new PddlProblem(
-            `${this.agent.currentPosition.x}_${lastParcel.position.x}_${lastParcel.position.y}`,
+            `${this.agent.currentPosition.x}_${this.agent.currentPosition.y}-${lastPosition.x}_${lastPosition.y}`,
             this.agent.beliefs.getObjectsWithType(),
             this.agent.beliefs.toPddlString(),
             goal
