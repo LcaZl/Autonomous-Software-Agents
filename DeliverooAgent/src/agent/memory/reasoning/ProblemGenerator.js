@@ -78,25 +78,15 @@ export class ProblemGenerator{
         return problem
     }
 
-    goToMultipleOption(options) {
+    goToMultipleOption(parcels) {
         let goal = `and `;
-        let hasDelivery = false
         let lastPosition = null
-        for (let opt of options) {
-            if (opt.id !== 'pddl_delivery')
-            {
-                goal += `(carries ${this.agent.agentID} ${opt.parcel.id}) `
-            }
-            else{
-                goal += `(at ${this.agent.agentID} t${opt.position.x}_${opt.position.y})`;
-                hasDelivery = true
-            }
-        }
+
+        for (let parcel of parcels) 
+            goal += `(carries ${this.agent.agentID} ${parcel.id}) `
     
-        if (!hasDelivery && options.length > 0) {
-            lastPosition = options[options.length - 1].position;
-            goal += `(at ${this.agent.agentID} t${lastPosition.x}_${lastPosition.y})`;
-        }
+        lastPosition = parcels[parcels.length - 1].position;
+        goal += ` (at ${this.agent.agentID} t${lastPosition.x}_${lastPosition.y})`;        
     
         var problem = new PddlProblem(
             `${this.agent.currentPosition.x}_${this.agent.currentPosition.y}-${lastPosition.x}_${lastPosition.y}`,
@@ -104,7 +94,7 @@ export class ProblemGenerator{
             this.agent.beliefs.toPddlString(),
             goal
         );
-    
+
         return problem;
     }
 }

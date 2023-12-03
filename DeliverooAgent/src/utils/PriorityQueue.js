@@ -34,6 +34,17 @@ export class PriorityQueue {
     }
 
     /**
+     * Returns an array of ids of elements whose id contains the specified substring.
+     * @param {string} searchString - The substring to search for in the ids.
+     * @returns {Array<number>} An array of ids that contain the specified substring.
+     */
+    searchByIdSubstring(searchString) {
+        return this.heap
+            .filter(item => item.data.id.toString().includes(searchString))
+            .map(item => item.data.id);
+    }
+
+    /**
      * Updates the priority of an item based on its ID.
      * @param {number} id - The ID of the item.
      * @param {number} newPriority - The new priority to set.

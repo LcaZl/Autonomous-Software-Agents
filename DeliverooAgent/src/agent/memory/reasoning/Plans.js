@@ -94,45 +94,6 @@ export class Plan {
       }
 }
 
-/**
- * This function wrap the chosen method between BFS and PDDL. 
- * By setting the first parameter of Option object is possible to define if the
- * will use the bfs or the pddl to get the paths. 
- * 
- */
-export class GoPickUp extends Plan {
-
-    static isApplicableTo ( option ) {
-        return option.id.startsWith('go_pick_up-');
-    }
-    async execute ( option ) {
-        if ( this.stopped ) throw ['stopped'];
-        if (this.agent.moveType === 'PDDL')
-            await this.subIntention( new Option('pddl_move',  option.position, option.utility, option.firstSearch, option.parcel)) // -- HERE
-        else // BFS
-            await this.subIntention( new Option('go_to_bfs', option.position, option.utility, option.firstSearch, option.parcel)) // -- HERE
-        await this.agent.pickup()
-        return true
-    }
-}
-
-export class GoDeliver extends Plan {
-
-    static isApplicableTo ( option ) {
-        return option.id == 'bfs_delivery' || option.id == 'pddl_delivery';
-    }
-    async execute ( option ) {
-        if ( this.stopped ) throw ['stopped'];
-        if (this.agent.moveType === 'PDDL')
-            await this.subIntention(new Option('pddl_move', option.position, option.utility, option.firstSearch, null));
-        else
-            await this.subIntention(new Option('go_to_bfs_delivery', null, option.utility, option.firstSearch, null));
-        console.log('Ora dovrei conseganre')
-        await this.agent.deliver()
-        return true;
-    }
-}
-
 export class Patrolling extends Plan {
 
     static isApplicableTo ( option ) {
@@ -142,7 +103,22 @@ export class Patrolling extends Plan {
     async execute ( option ) {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
         let pos = this.agent.environment.getRandomPosition()
-        await this.subIntention( new Option('go_to_bfs', pos, null, null, null)) // -- HERE
+        await this.subIntention( new Option('bfs_patrolling', pos, null, null, null))
+        return true
+    }
+}
+
+export class BlindMove extends Plan {
+
+    static isApplicableTo ( option ) {
+        return option.id == 'go_to';
+    }
+
+    async execute ( option ) {
+        const status_go = await this.agent.client.move( option.firstSearch[0])
+        if (!status_go) throw ['movement_fail']
+        await this.agent.pickup()
+        this.agent.fastPickMoves++
         return true
     }
 }
@@ -150,7 +126,7 @@ export class Patrolling extends Plan {
 export class DepthSearchMove extends Plan {
 
     static isApplicableTo ( option ) { 
-        return option.id.startsWith('bfs_pickup-') || option.id == 'go_to_bfs' }
+        return option.id.startsWith('bfs_pickup-') || option.id == 'bfs_patrolling' }
 
     async execute ( option ) {
         
@@ -272,7 +248,6 @@ export class PddlMove extends Plan {
 
             [positions, actions] = this.getPddlPathPositions(plan)
             target = option.position
-            console.log(option.toString(), positions, actions,plan)
         }
 
         const movementHandle = async (direction) => {
@@ -346,14 +321,14 @@ export class PddlBatchMove extends Plan {
         const updatePlan = async () => {
 
             //console.log(option.targetOptions.length)
-            let goals = option.targetOptions.length
+            let goals = option.parcels.length
             for (let i = 0; i < goals; i++){
-                problem = this.agent.problemGenerator.goToMultipleOption(option.targetOptions)
+                problem = this.agent.problemGenerator.goToMultipleOption(option.parcels)
                 plan = await this.agent.planner.getPlan( problem );
                 if ( plan != null && plan.length > 0 ) {
                     break;
                 };
-                option.targetOptions.pop()   
+                option.parcels.pop()   
             }
             if ( plan == null || plan.length === 0 ) throw ['target_not_reachable']
 
@@ -384,7 +359,10 @@ export class PddlBatchMove extends Plan {
             {name: 'pickup', executor: () =>  this.agent.pickup()}
         );
 
-        await updatePlan()
+        if (option.pddlPlan != null && option.positions[0].isEqual(this.agent.currentPosition))
+            plan = option.pddlPlan
+        else
+            await updatePlan()
         do{
             this.agent.client.socket.emit( "path", positions);
             if ( this.stopped ) throw ['stopped']
@@ -400,17 +378,46 @@ export class PddlBatchMove extends Plan {
 }
 
 
-export class BlindMove extends Plan {
+
+
+/**
+ * 
+ * 
+ * This function wrap the chosen method between BFS and PDDL. 
+ * By setting the first parameter of Option object is possible to define if the
+ * will use the bfs or the pddl to get the paths. 
+ * 
+ 
+export class GoPickUp extends Plan {
 
     static isApplicableTo ( option ) {
-        return option.id == 'go_to';
+        return option.id.startsWith('go_pick_up-');
     }
-
     async execute ( option ) {
-        const status_go = await this.agent.client.move( option.firstSearch[0])
-        if (!status_go) throw ['movement_fail']
+        if ( this.stopped ) throw ['stopped'];
+        if (this.agent.moveType === 'PDDL')
+            await this.subIntention( new Option('pddl_move',  option.position, option.utility, option.firstSearch, option.parcel)) // -- HERE
+        else // BFS
+            await this.subIntention( new Option('go_to_bfs', option.position, option.utility, option.firstSearch, option.parcel)) // -- HERE
         await this.agent.pickup()
-        this.agent.fastPickMoves++
         return true
     }
 }
+
+export class GoDeliver extends Plan {
+
+    static isApplicableTo ( option ) {
+        return option.id == 'bfs_delivery' || option.id == 'pddl_delivery';
+    }
+    async execute ( option ) {
+        if ( this.stopped ) throw ['stopped'];
+        if (this.agent.moveType === 'PDDL')
+            await this.subIntention(new Option('pddl_move', option.position, option.utility, option.firstSearch, null));
+        else
+            await this.subIntention(new Option('go_to_bfs_delivery', null, option.utility, option.firstSearch, null));
+        console.log('Ora dovrei conseganre')
+        await this.agent.deliver()
+        return true;
+    }
+}
+ */

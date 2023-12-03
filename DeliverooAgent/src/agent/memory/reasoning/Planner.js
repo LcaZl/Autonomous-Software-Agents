@@ -1,8 +1,8 @@
 import { PddlProblem } from '@unitn-asa/pddl-client';
 import { Agent } from '../../agent.js';
-import { BlindMove, DepthSearcDeliveryhMove, DepthSearchMove, GoDeliver, GoPickUp, Patrolling, PddlBatchMove, PddlMove } from './Plans.js';
+import { BlindMove, DepthSearcDeliveryhMove, DepthSearchMove, Patrolling, PddlBatchMove, PddlMove } from './Plans.js';
 import fs from 'fs'
-import { PddlAction, PddlExecutor, onlineSolver } from "@unitn-asa/pddl-client";
+import { onlineSolver } from "@unitn-asa/pddl-client";
 
 /**
  * Classe used to manage the selection of the next action of the agent

@@ -155,9 +155,13 @@ export class Environment {
     const cacheKey = this.positionKey(startPosition, endPosition)
     this.searchCalls += 1
 
-    if (this.cache.get(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
+    if (this.cache.has(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
         this.cacheHit += 1
-        return this.cache.get(cacheKey);
+        this.cache.get(cacheKey).uses++
+        if(this.cache.get(cacheKey).uses >= 3)
+          this.cache.delete(cacheKey)
+        else
+          return this.cache.get(cacheKey);
     }
 
     const visited = new Set();
@@ -184,7 +188,8 @@ export class Environment {
                     actions: [...current.path.actions, action]
                 },
                 length : [...current.path.actions, action].length,
-                firstPosition: startPosition
+                firstPosition: startPosition,
+                uses : 0
               }
               queue.push(node);
 

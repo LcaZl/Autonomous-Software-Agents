@@ -61,3 +61,7 @@ console.log('domain:\n', domain)
 
 const plan = await tester.getPlan()
 console.log('plan:\n', plan)
+
+let a = 'ciao come stas'
+let b = a.search('come')
+console.log(b)
