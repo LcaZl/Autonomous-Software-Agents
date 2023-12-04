@@ -10,18 +10,18 @@ export class Option {
      * @param {boolean} search - Contains information of the first search.
      * @param {Parcel} parcel - The parcel associated with this option, if any.
      */
-    constructor(id, position, utility, search, parcel) {
-        this.id = id;
+    constructor(id, startPosition, finalPosition, utility, bfsSearch, parcel) {
+
+        this.id = id
+        this.startPosition = startPosition
+        this.finalPosition = finalPosition
         this.utility = utility;
-        this.position = position;
-        this.firstSearch = search;
-        this.batch = false;
-        this.parcel = parcel;
-        this.pddlPlan = null
+        this.bfsSearch = bfsSearch
+        this.parcel = parcel
     }
 
     toString() {
-        return `[ID: ${this.id}, Utility: ${this.utility}, Position: ${this.position}, Parcel_id: ${this.parcel ? this.parcel.id : ''}, Search: ${this.firstSearch ? this.firstSearch.firstPosition : ''}]`;
+        return `[ID: ${this.id}, Utility: ${this.utility}, S_POS: ${this.startPosition}, F_POS: ${this.finalPosition}, Parcel_id: ${this.parcel ? this.parcel.id : ''}, Search: ${this.search ? this.search.firstPosition : ''}]`;
     }
 }
 

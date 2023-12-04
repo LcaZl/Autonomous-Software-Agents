@@ -165,13 +165,13 @@ export class Environment {
     }
 
     const visited = new Set();
-    const queue = [{ position: startPosition, path: { positions: [], actions: [] } }];
+    const queue = [{ finalPosition: startPosition, startPosition: startPosition, uses:0, path: { positions: [], actions: [] } }];
 
     while (queue.length > 0) {
         const current = queue.shift();
 
-        const x = current.position.x;
-        const y = current.position.y;
+        const x = current.finalPosition.x;
+        const y = current.finalPosition.y;
 
         if (visited.has(`${x},${y}`)) continue;
         visited.add(`${x},${y}`);
@@ -182,33 +182,33 @@ export class Environment {
 
             if (this.isValidPosition(newPos.x, newPos.y) && !visited.has(`${newPos.x},${newPos.y}`)) {
               let node = {
-                position: newPos,
+                finalPosition: newPos,
+                startPosition: startPosition,
+                length : [...current.path.actions, action].length,
+                uses : 0,
                 path: {
                     positions: [...current.path.positions, newPos],
                     actions: [...current.path.actions, action]
-                },
-                length : [...current.path.actions, action].length,
-                firstPosition: startPosition,
-                uses : 0
+                }
               }
               queue.push(node);
 
               // Add subpaths
-              const subPathKey = this.positionKey(startPosition, node.position);
+              const subPathKey = this.positionKey(startPosition, node.finalPosition);
               if (!this.cache.get(subPathKey)) {
                 this.cache.set(subPathKey, node);
               }
 
               if (newPos.isEqual(endPosition)) {
-                this.agent.log('[ENVIRONMENT][BFS_SUCCESS] BFS for', mode, 'from', startPosition, 'to', node.position);
-                this.cache.set((cacheKey || this.positionKey(startPosition, current.position)), node);
+                this.agent.log('[ENVIRONMENT][BFS_success] BFS for ',mode,' from', node.startPosition, ' to ', node.finalPosition);
+                this.cache.set((cacheKey || this.positionKey(startPosition, current.finalPosition)), node);
                 return node;
               }
             }
         }
     }
     this.agent.log('[ENVIRONMENT][BFS_FAILED] BFS for ',mode,' from', startPosition, 'failed (endPosition:', endPosition,')');
-    return {position : startPosition, length : 0}
+    return {startPosition : startPosition, finalPosition: startPosition, length : 0}
   }
 
   getEstimatedNearestDeliveryTile(currentPosition) { 

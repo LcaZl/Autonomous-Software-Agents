@@ -125,33 +125,35 @@ export class Agent extends AgentInterface{
     async actualTileCheck() {
 
         const OnDelivery = this.environment.onDeliveryTile()
-    
-        if (this.parcels.getPositions().some(pos => pos.isEqual(this.currentPosition)))
-            await this.pickup()
+        if (OnDelivery && this.parcels.carriedParcels() > 0)
+            await this.deliver()
+        else if (this.parcels.getParcels().size > 0){
+            for(let parcel of this.parcels.getParcels().values()){
+                if (this.intentions.currentIntention.option.id !== parcel.id && parcel.position.isEqual(this.currentPosition)){
+                    await this.pickup()
+                    break;
+                }
+            }
+        }
         
-        if (!OnDelivery){
 
-            if (this.fastPick && this.intentions.currentIntention.option.id != 'patrolling'){
-                const directions = [
-                    { pos: new Position(this.currentPosition.x, this.currentPosition.y + 1), name: 'up', opposite: 'down' },
-                    { pos: new Position(this.currentPosition.x, this.currentPosition.y - 1), name: 'down', opposite: 'up' },
-                    { pos: new Position(this.currentPosition.x - 1, this.currentPosition.y), name: 'left', opposite: 'right' },
-                    { pos: new Position(this.currentPosition.x + 1, this.currentPosition.y), name: 'right', opposite: 'left' },
-                ];
+        if (this.fastPick && this.intentions.currentIntention.option.id != 'patrolling'){
+            const directions = [
+                { pos: new Position(this.currentPosition.x, this.currentPosition.y + 1), name: 'up', opposite: 'down' },
+                { pos: new Position(this.currentPosition.x, this.currentPosition.y - 1), name: 'down', opposite: 'up' },
+                { pos: new Position(this.currentPosition.x - 1, this.currentPosition.y), name: 'left', opposite: 'right' },
+                { pos: new Position(this.currentPosition.x + 1, this.currentPosition.y), name: 'right', opposite: 'left' },
+            ];
+            
+            for (let position of this.parcels.getPositions()) {
+                const direction = directions.find(dir => position.isEqual(dir.pos));
                 
-                for (let position of this.parcels.getPositions()) {
-                    if (!position.isEqual(this.intentions.currentIntention.option.position)) {
-                        const direction = directions.find(dir => position.isEqual(dir.pos));
-                        
-                        if (direction) {
-                            this.intentions.intention_queue.push(
-                                new Option('go_to', direction.pos, Infinity, [direction.name, direction.opposite], null), 
-                                Infinity
-                            );
-                            console.log(direction.name);
-                            this.intentions.stopCurrent();
-                        }
-                    }
+                if (direction) {
+                    this.intentions.intention_queue.push(
+                        new Option('go_to', this.currentPosition, direction.pos, Infinity, [direction.name, direction.opposite], null), 
+                        Infinity
+                    );
+                    this.intentions.stopCurrent();
                 }
             }
         }

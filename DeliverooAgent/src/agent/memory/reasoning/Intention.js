@@ -19,7 +19,7 @@ export class Intention {
     }
 
     get stopped() { return this.#stopped; }
-
+    get nextPosition() { return this.#current_plan.nextPosition}
     /**
      * Stops the execution of the current plan and sets the intention as stopped.
      */
@@ -77,15 +77,15 @@ export class Intention {
                     switch(error[0]){
                         case 'target_not_reachable':
                             this.stop()
-                            throw ['target_not_reachable',this.option];
+                            throw ['target_not_reachable',this.option.toString()];
                         case 'path_not_free':
                             this.stop()
-                            throw ['path_not_free',this.option];
+                            throw ['path_not_free',this.option.toString()];
                         case 'stopped':
-                            throw ['stopped',this.option]
+                            throw ['stopped',this.option.toString()]
                         case 'movement_fail':
                             this.stop()
-                            throw ['movement_fail',this.option];
+                            throw ['movement_fail',this.option.toString()];
                         default:
                             throw error
                     }

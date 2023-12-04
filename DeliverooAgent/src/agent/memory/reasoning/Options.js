@@ -3,7 +3,7 @@ import { Agent } from "../../Agent.js";
 import { Parcel } from "../../Environment/Parcels/Parcel.js";
 import { BatchOption, Option } from "./Option.js";
 import { ProblemGenerator } from "./ProblemGenerator.js";
-import { UtilityCalcolator } from "./utilitiesCalcolator.js";
+import { UtilityCalcolator } from "./UtilityCalcolator.js";
 
 /**
  * Manages the options available to an agent.
@@ -54,7 +54,7 @@ export class Options {
 
         if (this.agent.parcels.carriedParcels() > 0){
             let [utility, search] = this.utilityCalcolator.deliveryUtility()
-            options.push(new Option('bfs_delivery', search.position, utility, search, null)) 
+            options.push(new Option('bfs_delivery', search.startPosition, search.finalPosition, utility, search, null)) 
         }
 
         for(let [_, parcel] of this.agent.parcels.getParcels()){
@@ -63,27 +63,33 @@ export class Options {
                 let [utility, search] = this.utilityCalcolator.pickUpUtility(parcel, this.agent.currentPosition)
                 this.agent.log(search)
                 if (utility >= 0) 
-                    options.push(new Option(`bfs_pickup-${parcel.id}`, search.position, utility, search, parcel))
+                    options.push(new Option(`bfs_pickup-${parcel.id}`, search.startPosition, search.finalPosition, utility, search, parcel))
             }
         }
 
-        options.sort( (opt1, opt2) => opt2.utility - opt1.utility )
 
         if (options.length > 1){
             let previousOption = null
+            let lastPosition = null
+            if (this.agent.intentions.currentIntention.option.id !== 'patrolling'){
+                lastPosition = this.agent.intentions.currentIntention.option.finalPosition
+
+            }
+
             if (this.agent.intentions.currentIntention.option.id !== 'patrolling')
                 previousOption = this.agent.intentions.currentIntention.option
 
             let updated = 0
             for (let opt of options){
                 if (previousOption != null && updated < this.agent.lookAhead){
-                    opt = await this.agent.options.luckyUpdateOption(opt, previousOption.position)
+                    opt = await this.agent.options.luckyUpdateOption(opt, previousOption.finalPosition)
                     updated++
                 }
                 previousOption = opt
             }
         }
 
+        options.sort( (opt1, opt2) => opt2.utility - opt1.utility )
         this.lastPushedOptions = options
 
         if (options.length > 0) this.agent.intentions.push( options )
@@ -100,7 +106,7 @@ export class Options {
             if (this.agent.parcels.carriedParcels() > 0){
                 let deliveryPosition = this.agent.environment.getEstimatedNearestDeliveryTile(this.agent.currentPosition)
                 let utility = this.utilityCalcolator.simplifiedDeliveryUtility(this.agent.currentPosition, deliveryPosition)
-                deliveryOption = new Option('pddl_delivery', deliveryPosition, utility, null, null)
+                deliveryOption = new Option('pddl_delivery', this.agent.currentPosition, deliveryPosition, utility, null, null)
             }
     
             for(let [_, parcel] of this.agent.parcels.getParcels())
@@ -108,18 +114,22 @@ export class Options {
                     parcelsToTake.push(parcel)
 
             let options = []
-            if (parcelsToTake.length > 1){
+            if (parcelsToTake.length > 1 && this.agent.batchSize > 1){
                 console.log('0 - Batching ...')
                 options = this.createBatchOptions(parcelsToTake)
             }
+            else{
+                options = this.singlePddlOption(parcelsToTake)
+            }
+
             if (deliveryOption != null)
                 options.push(deliveryOption)
 
             console.log('1 - Current intention id:',  this.agent.intentions.currentIntention.option.id)
             let lastPosition = null
             if (this.agent.intentions.currentIntention.option.id !== 'patrolling'){
-                console.log('2 - Current intention pos:',  this.agent.intentions.currentIntention.option.position)
-                lastPosition = this.agent.intentions.currentIntention.option.position
+                console.log('2 - Current intention pos:',  this.agent.intentions.currentIntention.option.finalPosition)
+                lastPosition = this.agent.intentions.currentIntention.option.finalPosition
             }
 
             let updated = 0
@@ -139,6 +149,15 @@ export class Options {
             
         }
 
+    singlePddlOption(parcels){
+        let options = []
+        for (let parcel of parcels){
+            let utility = this.utilityCalcolator.simplifiedPickUpUtility(this.agent.currentPosition, parcel)
+            if (utility > 0) 
+                options.push(new Option(`pddl_pickup-${parcel.id}`, this.agent.currentPosition, parcel.position, utility, null, parcel))
+        }
+        return options
+    }
     createBatchOptions(parcelsToTake){
         let newOptions = []
         let batchParcels = []
@@ -189,20 +208,20 @@ export class Options {
     async luckyUpdateOption(option, probPosition) {
         // If using PDDL for movement, generate a PDDL plan
         if (this.agent.moveType === 'PDDL') {
-            console.log('3.2 - probPosition', probPosition)
-            console.log('3.2 - option.position', option.position)
-            console.log('3.2 - option.toString()', option.toString())
+            //console.log('3.2 - probPosition', probPosition)
+            //console.log('3.2 - option.position', option.position)
+            //console.log('3.2 - option.toString()', option.toString())
             //console.log('3.2 - Problem', this.problemGenerator.goFromTo(probPosition, option.position))
             //console.log('3.2 - option.pddlPlan', option.pddlPlan)
 
             //console.log(probPosition, option.position, option.toString())
-            option.pddlPlan = await this.agent.planner.getPlan(this.problemGenerator.goFromTo(probPosition, option.position));
+            option.pddlPlan = await this.agent.planner.getPlan(this.problemGenerator.goFromTo(probPosition, option.finalPosition));
             return option;
         }
         // Update utility and search path for non-PDDL movement
         let utility = null;
         let search = null;
-
+        //console.log(option.toString(), '\n', probPosition)
         if (option.id === 'bfs_delivery') {
             const output = this.utilityCalcolator.deliveryUtility(probPosition);
             utility = output[0]

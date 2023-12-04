@@ -16,8 +16,7 @@ export class Intentions {
         this.agent = agent;
         this.intention_queue = new PriorityQueue();
         this.currentIntention = null;
-        this.idle = new Option('patrolling', null, 0, null, null);
-        this.stucked = false
+        this.idle = new Option('patrolling', this.agent.currentPosition, null, 0, null, null);
         this.agent.log('[INIT] Intentions Initialized.');
     }
 
@@ -51,7 +50,7 @@ export class Intentions {
             }
 
             let changingRisk = option.utility * 0.35;
-            if (this.currentIntention.option.id === 'patrolling' || ((this.currentIntention.option.utility < (option.utility - changingRisk)) && this.agent.moveType !== 'PDDL')) 
+            if (this.currentIntention.option.id === 'patrolling' || this.currentIntention.option.utility < (option.utility - changingRisk)) 
                 this.stopCurrent()
 
             this.intention_queue.push(option, option.utility);
@@ -83,7 +82,7 @@ export class Intentions {
                 this.intention_queue.removeById(realId)
             else {
                 let realBatchIds = this.intention_queue.searchByIdSubstring(batchId)
-                realBatchIds.forEach(id => this.intention_queue.removeById(realBatchIds))
+                realBatchIds.forEach(id => this.intention_queue.removeById(id))
             }
         })
 
@@ -115,24 +114,14 @@ export class Intentions {
                 }
 
                 // Start achieving intention
-                if (option.id !== 'patrolling')
-                    this.stucked = false
-                if (!this.stucked)
-                    console.log('[INTENTION] Started ',intention.option.id , ' - Utility:', intention.option.utility)
                 await intention.achieve().catch( error => {
 
                     if ( !intention.stopped ){
                         console.error( '[INTENTIONS_REVISION] Error with intention', intention.option.id, '- Error:', error )
+                        this.intention_queue.push(this.currentIntention.option, this.currentIntention.utility)
                     }
-                    else{
-                        if (intention.option.id === 'patrolling'){
-                            this.stucked = true
-                        }
-                    }
-                    
+                
                 });
-                if (!this.stucked)
-                    console.log('[INTENTION] Ended ',intention.option.id)
             }
             
             this.agent.log('[INTENTIONS_REVISION] End revision loop.')

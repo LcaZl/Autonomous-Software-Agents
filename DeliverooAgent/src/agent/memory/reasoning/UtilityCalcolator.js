@@ -90,7 +90,7 @@ export class UtilityCalcolator{
         const deliveryDistance = p.pathToDelivery.length 
         const deliveryCost = deliveryDistance * this.movementPenality;
 
-        const cost = pickupCost + deliveryCost;
+        const cost = pickupCost //+ deliveryCost;
 
         const utility = (((actualReward) * carriedParcelsPenality) + p.reward) - (cost * (carriedParcels + 1))
 
@@ -160,7 +160,7 @@ export class UtilityCalcolator{
         const utility = (actualReward + totalReward) - cost * (carriedParcels + 1)
         
         console.log('Batch Utility:')
-        console.log(' - movementPenality:', movementPenality)
+        console.log(' - movementPenality:', this.movementPenality)
         console.log(' - totalDistance:', totalDistance)
         console.log(' - totalReward:', totalReward)
         console.log(' - cost:', cost)

@@ -1,6 +1,6 @@
 import { PddlProblem } from '@unitn-asa/pddl-client';
 import { Agent } from '../../agent.js';
-import { BlindMove, DepthSearcDeliveryhMove, DepthSearchMove, Patrolling, PddlBatchMove, PddlMove } from './Plans.js';
+import { BlindMove, BreadthFirstSearchMove, Patrolling, PddlBatchMove, PddlMove } from './Plans.js';
 import fs from 'fs'
 import { onlineSolver } from "@unitn-asa/pddl-client";
 
@@ -18,8 +18,7 @@ export class Planner {
 
         this.agent = agent
         this.library = []
-        this.library.push( DepthSearchMove )
-        this.library.push( DepthSearcDeliveryhMove)
+        this.library.push( BreadthFirstSearchMove )
         this.library.push( Patrolling )
         this.library.push( PddlMove )
         this.library.push( BlindMove )

@@ -14,6 +14,7 @@ export class PlayersManager {
         this.inGamePlayers = 0;
         this.playersList = new Map();
         this.ids = new Set();
+        this.playerInView = false
         this.agent.log('[INIT] Enemy Agents Manager Initialized');
     }
 
@@ -67,6 +68,7 @@ export class PlayersManager {
                     this.playersList.set(player.id, newPlayer);
                     updates = true;
                 }
+                this.playerInView = true
             }
         }
 
@@ -80,6 +82,9 @@ export class PlayersManager {
         if (updates){
             this.agent.eventManager.emit('update_players_beliefs')
             this.agent.eventManager.emit('update_options')
+        }
+        else{
+            this.playerInView = false
         }
     }
 }
