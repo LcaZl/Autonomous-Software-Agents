@@ -175,10 +175,10 @@ export class Agent extends AgentInterface{
         if (moveResult != false) {
 
             this.effectiveMovement += 1
-            this.environment.increaseTemperature()
+            //this.environment.increaseTemperature()
             this.lastPosition = this.currentPosition
             this.currentPosition = new Position(moveResult.x, moveResult.y)
-            this.log('[MOVE',this.movementAttempts,'] Moved:', direction, '- New Position', this.currentPosition, ' - From', this.lastPosition)
+            //this.log('[MOVE',this.movementAttempts,'] Moved:', direction, '- New Position', this.currentPosition, ' - From', this.lastPosition)
             this.eventManager.emit('movement')
         }
         else{
@@ -187,7 +187,7 @@ export class Agent extends AgentInterface{
         }
 
         await this.actualTileCheck()
-        this.status()
+        //this.status()
 
         return moveResult != false
     }

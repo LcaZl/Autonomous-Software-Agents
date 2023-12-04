@@ -155,7 +155,6 @@ export class BreadthFirstSearchMove extends Plan {
                 this.setBfsPath()
             }
         }        
-        
         const movementHandle = async (direction, index) => {
             if (this.agent.players.playerInView){
                 const freePath = this.isPathFree(index)
@@ -185,6 +184,7 @@ export class BreadthFirstSearchMove extends Plan {
             this.plan = option.bfsSearch
             this.setBfsPath()
             this.agent.lookAheadHits++
+            console.log
         }
         else
             updatePlan()
@@ -197,7 +197,7 @@ export class BreadthFirstSearchMove extends Plan {
         
         if (option.id.startsWith('bfs_pickup-'))
             this.agent.pickup()
-        if (option.id == 'bfs_delivery' )
+        if (option.id === 'bfs_delivery' )
             this.agent.deliver()
         return true
     }
