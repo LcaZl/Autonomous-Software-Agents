@@ -25,7 +25,7 @@ export class Environment {
     this.exploredTiles = Array.from(this.fullMap);
     this.cache = new Map();
 
-    this.agent.log("[INIT] Environment Information Initialized.");
+    console.log("[INIT] Environment information initialized.");
   }
 
   /**
@@ -72,26 +72,6 @@ export class Environment {
   }
 
   /**
-   * Increases the temperature of the agent's current position, indicating recent visitation.
-   */
-  increaseTemperature() {
-    const position = this.agent.currentPosition;
-    const obs = this.agent.AGENTS_OBSERVATION_DISTANCE * 2;
-    this.exploredTiles[position.x][position.y] += obs;
-  }
-
-  /**
-   * Decreases the temperature of all tiles, indicating a decrease in recent visitation.
-   */
-  decreaseTemperature() {
-    for (let i = 0; i < this.exploredTiles.length; i++) {
-      for (let j = 0; j < this.exploredTiles[i].length; j++) {
-        this.exploredTiles[i][j] = Math.max(0, this.exploredTiles[i][j] - 1);
-      }
-    }
-  }
-
-  /**
    * Generates a random position within the game environment that is not the agent's current position.
    * 
    * @returns {Position} A random valid position.
@@ -104,7 +84,7 @@ export class Environment {
       position = new Position(tile.x, tile.y);
     } while (position.isEqual(this.agent.currentPosition));
 
-    this.agent.log('[ENVIRONMENT] Random position:', position);
+    //this.agent.log('[ENVIRONMENT] Random position:', position);
     return position;
   }
 
@@ -158,7 +138,7 @@ export class Environment {
     if (this.cache.has(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
         this.cacheHit += 1
         this.cache.get(cacheKey).uses++
-        if(this.cache.get(cacheKey).uses >= 3)
+        if(this.cache.get(cacheKey).uses >= 2)
           this.cache.delete(cacheKey)
         else
           return this.cache.get(cacheKey);
@@ -200,14 +180,14 @@ export class Environment {
               }
 
               if (newPos.isEqual(endPosition)) {
-                this.agent.log('[ENVIRONMENT][BFS_success] BFS for ',mode,' from', node.startPosition, ' to ', node.finalPosition);
+                //console.log('[ENVIRONMENT][BFS_success] BFS for ',mode,' from', node.startPosition, ' to ', node.finalPosition);
                 this.cache.set((cacheKey || this.positionKey(startPosition, current.finalPosition)), node);
                 return node;
               }
             }
         }
     }
-    this.agent.log('[ENVIRONMENT][BFS_FAILED] BFS for ',mode,' from', startPosition, 'failed (endPosition:', endPosition,')');
+    //console.log('[ENVIRONMENT][BFS_FAILED] BFS for ',mode,' from', startPosition, 'failed (endPosition:', endPosition,')');
     return {startPosition : startPosition, finalPosition: startPosition, length : 0}
   }
 
@@ -261,8 +241,25 @@ export class Environment {
           }
       }
   
-      this.agent.log('[ENVIRONMENT] Random movement - Exploration map:\n')
+      //this.agent.log('[ENVIRONMENT] Random movement - Exploration map:\n')
       this.agent.printMap(this.exploredTiles)
       return direction;
     }
+
+  // Increases the temperature of the agent's current position, indicating recent visitation.
+  increaseTemperature() {
+    const position = this.agent.currentPosition;
+    const obs = this.agent.AGENTS_OBSERVATION_DISTANCE * 2;
+    this.exploredTiles[position.x][position.y] += obs;
+  }
+
+  // Decreases the temperature of all tiles, indicating a decrease in recent visitation.
+  decreaseTemperature() {
+    for (let i = 0; i < this.exploredTiles.length; i++) {
+      for (let j = 0; j < this.exploredTiles[i].length; j++) {
+        this.exploredTiles[i][j] = Math.max(0, this.exploredTiles[i][j] - 1);
+      }
+    }
+  }
+
  */

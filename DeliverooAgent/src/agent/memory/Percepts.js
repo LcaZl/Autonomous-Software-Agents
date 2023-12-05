@@ -12,11 +12,11 @@ export class AgentPercepts{
         this.firstSense = false // False until first onYou event
 
         this.agent.client.onDisconnect(() => {
-            this.agent.log("[CONN] Socket Disconnected!")
+            console.log("[INIT] Socket Disconnected!")
         });
 
         this.agent.client.onConnect(() => {
-            this.agent.log("[CONN] Agent Connected to Deliveroo!")
+            console.log("[INIT] Agent Connected to Deliveroo!")
             this.agent.connected = true
         });
 
@@ -34,7 +34,6 @@ export class AgentPercepts{
 
         this.agent.client.onYou((info) => {
             if (info.x % 1 == 0 && info.y % 1 == 0) {
-                this.agent.log('[PERCEPT] On you received.')
                 if (!this.firstSense) { // First sincro
                     this.firstSense = true
                     this.agent.initialScore = info.score
@@ -50,6 +49,6 @@ export class AgentPercepts{
             }
             this.agent.score = info.score
         });
-        this.agent.log('[INIT] Sensing Activated')
+        console.log('[INIT] Sensing Activated')
     }
 }

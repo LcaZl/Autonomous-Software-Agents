@@ -40,7 +40,7 @@ export class Intention {
         if (this.#parent && this.#parent.log) {
             this.#parent.log(...args);
         } else {
-            this.agent.log(...args);
+            //this.agent.log(...args);
         }
     }
 
@@ -55,7 +55,7 @@ export class Intention {
             return this;
         }
         this.#started = true;
-        this.agent.log('[INTENTION', this.option.id, '] Started - ', this.#started);
+        //this.agent.log('[INTENTION', this.option.id, '] Started - ', this.#started);
 
         let errors = false;
         for (const planClass of this.agent.planner.getPlanLibrary()) {
@@ -67,12 +67,12 @@ export class Intention {
                 try {
 
                     const plan_res = await this.#current_plan.execute(this.option);
-                    this.log('[INTENTION', this.option.id, '] Plan', planClass.name, plan_res, 'terminated.');
+                    //console.log('[INTENTION', this.option.id, '] Plan', planClass.name, plan_res, 'terminated.');
                     return plan_res;
 
                 } catch ( error ) {
 
-                    this.log('[INTENTION', this.option.id, '] Plan', planClass.name, 'Failed - Message:', error);
+                    //console.log('[INTENTION', this.option.id, '] Plan', planClass.name, 'Failed - Message:', error);
 
                     switch(error[0]){
                         case 'target_not_reachable':

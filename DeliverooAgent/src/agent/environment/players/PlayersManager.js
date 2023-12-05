@@ -15,7 +15,7 @@ export class PlayersManager {
         this.playersList = new Map();
         this.ids = new Set();
         this.playerInView = false
-        this.agent.log('[INIT] Enemy Agents Manager Initialized');
+        console.log('[INIT] Enemy Agents Manager Initialized');
     }
 
     /**

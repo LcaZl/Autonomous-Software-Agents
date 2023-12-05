@@ -16,9 +16,10 @@ export class Options {
      */
     constructor(agent) {
         this.agent = agent;
-        this.lastPushedOptions = null;
+        this.lastPushedOptions = [];
         this.problemGenerator = new ProblemGenerator(agent)
         this.utilityCalcolator = new UtilityCalcolator(agent)
+        console.log('[INIT] Options initialized.')
     }
 
     /**
@@ -48,7 +49,7 @@ export class Options {
     /**
      * Updates the options based on the current state of the agent and environment.
      */
-    async updateOptionsForBfs(){
+    updateOptionsForBfs(){
 
         let options = []
 
@@ -61,31 +62,22 @@ export class Options {
 
             if ( parcel.isFree() ){
                 let [utility, search] = this.utilityCalcolator.pickUpUtility(parcel, this.agent.currentPosition)
-                this.agent.log(search)
-                if (utility >= 0) 
+                if (utility > 0) 
                     options.push(new Option(`bfs_pickup-${parcel.id}`, search.startPosition, search.finalPosition, utility, search, parcel))
             }
         }
 
 
         if (options.length > 1){
-            let previousOption = null
-            let lastPosition = null
-            if (this.agent.intentions.currentIntention.option.id !== 'patrolling'){
-                lastPosition = this.agent.intentions.currentIntention.option.finalPosition
-
-            }
-
-            if (this.agent.intentions.currentIntention.option.id !== 'patrolling')
-                previousOption = this.agent.intentions.currentIntention.option
+            let lastPosition = this.agent.intentions.currentIntention.option.finalPosition
 
             let updated = 0
             for (let opt of options){
-                if (previousOption != null && updated < this.agent.lookAhead){
-                    opt = await this.agent.options.luckyUpdateOption(opt, previousOption.finalPosition)
+                if (updated < this.agent.lookAhead){
+                    opt = this.agent.options.updateBfsOption(opt, lastPosition)
                     updated++
                 }
-                previousOption = opt
+                lastPosition = opt.finalPosition
             }
         }
 
@@ -99,53 +91,54 @@ export class Options {
         /**
      * Updates the options based on the current state of the agent and environment.
      */
-        updateOptionsForPddl(){
+        async updateOptionsForPddl(){
 
             let parcelsToTake = []
             let deliveryOption = null
+            let options = []
+
+            // Delivery option only if needed
             if (this.agent.parcels.carriedParcels() > 0){
                 let deliveryPosition = this.agent.environment.getEstimatedNearestDeliveryTile(this.agent.currentPosition)
                 let utility = this.utilityCalcolator.simplifiedDeliveryUtility(this.agent.currentPosition, deliveryPosition)
                 deliveryOption = new Option('pddl_delivery', this.agent.currentPosition, deliveryPosition, utility, null, null)
             }
-    
+            
+            // Parcels available
             for(let [_, parcel] of this.agent.parcels.getParcels())
                 if ( parcel.isFree() && parcel.reward > 1)                    
                     parcelsToTake.push(parcel)
 
-            let options = []
-            if (parcelsToTake.length > 1 && this.agent.batchSize > 1){
-                console.log('0 - Batching ...')
-                options = this.createBatchOptions(parcelsToTake)
-            }
-            else{
-                options = this.singlePddlOption(parcelsToTake)
-            }
+            if (parcelsToTake.length > 1 && this.agent.batchSize > 1)
+                options = this.createBatchOptions(parcelsToTake) // PDDL for batch pickup/delivery
+            else
+                options = this.singlePddlOption(parcelsToTake) // PDDL for single pickup/delivery
+        
 
             if (deliveryOption != null)
                 options.push(deliveryOption)
 
-            console.log('1 - Current intention id:',  this.agent.intentions.currentIntention.option.id)
-            let lastPosition = null
-            if (this.agent.intentions.currentIntention.option.id !== 'patrolling'){
-                console.log('2 - Current intention pos:',  this.agent.intentions.currentIntention.option.finalPosition)
-                lastPosition = this.agent.intentions.currentIntention.option.finalPosition
-            }
-
+            // Use the final position of the current intention to set the start of the future path
+            let actualLastPosition = this.agent.intentions.currentIntention.option.finalPosition
+            
             let updated = 0
+
             for (let opt of options){
-                console.log('3 - Option:',  opt.toString())
-                console.log('3.1 - lastPosition', lastPosition)
-                if (lastPosition != null && updated < this.agent.lookAhead){
-                    opt = this.agent.options.luckyUpdateOption(opt, lastPosition)
+
+                if (updated < this.agent.lookAhead){
+                    // Update the option for the future
+                    opt = await this.agent.options.updatePddlOption(opt, actualLastPosition)
                     updated++
                 }
-                lastPosition = opt.position
             }
 
+
+            if (options.length > 0) 
+            {
+                options.sort( (opt1, opt2) => opt2.utility - opt1.utility )
+                this.agent.intentions.push( options )
+            }
             this.lastPushedOptions = options
-            options.sort( (opt1, opt2) => opt2.utility - opt1.utility )
-            if (options.length > 0) this.agent.intentions.push( options )
             
         }
 
@@ -153,8 +146,9 @@ export class Options {
         let options = []
         for (let parcel of parcels){
             let utility = this.utilityCalcolator.simplifiedPickUpUtility(this.agent.currentPosition, parcel)
+            const id = `pddl_pickup-${parcel.id}`
             if (utility > 0) 
-                options.push(new Option(`pddl_pickup-${parcel.id}`, this.agent.currentPosition, parcel.position, utility, null, parcel))
+                options.push(new Option(id, this.agent.currentPosition, parcel.position, utility, null, parcel))
         }
         return options
     }
@@ -205,19 +199,7 @@ export class Options {
      * @param {Position} probPosition - The probability position used for the update.
      * @returns {Option} The updated option.
      */
-    async luckyUpdateOption(option, probPosition) {
-        // If using PDDL for movement, generate a PDDL plan
-        if (this.agent.moveType === 'PDDL') {
-            //console.log('3.2 - probPosition', probPosition)
-            //console.log('3.2 - option.position', option.position)
-            //console.log('3.2 - option.toString()', option.toString())
-            //console.log('3.2 - Problem', this.problemGenerator.goFromTo(probPosition, option.position))
-            //console.log('3.2 - option.pddlPlan', option.pddlPlan)
-
-            //console.log(probPosition, option.position, option.toString())
-            option.pddlPlan = await this.agent.planner.getPlan(this.problemGenerator.goFromTo(probPosition, option.finalPosition));
-            return option;
-        }
+    updateBfsOption(option, probPosition) {
         // Update utility and search path for non-PDDL movement
         let utility = null;
         let search = null;
@@ -226,16 +208,43 @@ export class Options {
             const output = this.utilityCalcolator.deliveryUtility(probPosition);
             utility = output[0]
             search = output[1]
+            option.finalPosition = search.finalPosition
         } else if (option.id.startsWith('bfs_pickup-')) {
             const output = this.utilityCalcolator.pickUpUtility(option.parcel, probPosition);
             utility = output[0]
             search = output[1]
         }
 
-        option.firstSearch = search;
-        option.utility = utility;
+        option.startPosition = probPosition
+        option.bfsSearch = search;
+        //option.utility = utility;
+
         return option;
     }
 
-   
+       /**
+     * Updates the given option's utility and search path based on a probability position.
+     * 
+     * @param {Option} option - The option to update.
+     * @param {Position} probPosition - The probability position used for the update.
+     * @returns {Option} The updated option.
+     */
+    async updatePddlOption(option, probPosition) {
+
+        option.pddlPlan = await this.agent.planner.getPlan(this.problemGenerator.goFromTo(probPosition, option.finalPosition));
+        
+        let utility  = null
+
+        if (option.id === 'pddl_delivery') 
+            utility = this.utilityCalcolator.simplifiedDeliveryUtility(probPosition, option.finalPosition);
+        else
+            utility = this.utilityCalcolator.simplifiedPickUpUtility(probPosition, option.parcel);
+
+        option.utility = utility
+
+        if (option.id !== 'pddl_delivery')
+            option.startPosition = probPosition
+
+        return option;
+    }4
 }

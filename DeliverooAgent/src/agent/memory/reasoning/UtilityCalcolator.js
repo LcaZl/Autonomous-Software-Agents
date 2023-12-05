@@ -2,7 +2,7 @@ export class UtilityCalcolator{
 
     constructor(agent){
         this.agent = agent
-        this.movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 0 : (this.agent.MOVEMENT_DURATION) / this.agent.PARCEL_DECADING_INTERVAL;
+        this.movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 0 : (this.agent.MOVEMENT_DURATION * 2) / this.agent.PARCEL_DECADING_INTERVAL;
     }
 
      /**
@@ -24,7 +24,7 @@ export class UtilityCalcolator{
         const cost = pickupCost + deliveryCost;
 
         const utility = (actualReward + parcel.reward) - cost * (carriedParcels + 1)
-        
+        /*
         this.agent.log({
             movement_duration: this.agent.MOVEMENT_DURATION,
             decading_interval: this.movementPenality,
@@ -38,7 +38,7 @@ export class UtilityCalcolator{
             cost,
             utility
         });
-
+        */
         return utility
     }
 
@@ -60,7 +60,7 @@ export class UtilityCalcolator{
         if ((this.agent.duration - elapsedTime) < (deliveryCost * 3)) {  return Infinity }
 
         const utility = (actualReward * carriedParcelsFactor) - (deliveryCost * (carriedParcels));
-
+        /*
         this.agent.log({
             carriedParcels,
             movement_duration: this.agent.MOVEMENT_DURATION,
@@ -72,6 +72,7 @@ export class UtilityCalcolator{
             deliveryCost,
             utility
         });
+        */
 
         return utility
     }
@@ -90,10 +91,10 @@ export class UtilityCalcolator{
         const deliveryDistance = p.pathToDelivery.length 
         const deliveryCost = deliveryDistance * this.movementPenality;
 
-        const cost = pickupCost //+ deliveryCost;
+        const cost = pickupCost + deliveryCost;
 
         const utility = (((actualReward) * carriedParcelsPenality) + p.reward) - (cost * (carriedParcels + 1))
-
+        /*
         this.agent.log({
             movement_duration: this.agent.MOVEMENT_DURATION,
             decading_interval: this.movementPenality,
@@ -107,7 +108,7 @@ export class UtilityCalcolator{
             cost,
             utility
         });
-
+        */
         return [utility, search]
     }
     
@@ -134,6 +135,7 @@ export class UtilityCalcolator{
         const incentiveFactor = 2 + (1 / (1 + deliveryDistance))
         const utility = (actualReward * carriedParcelsFactor) - (cost * (carriedParcels));
     
+        /*
         this.agent.log({
             carriedParcels,
             movement_duration: this.agent.MOVEMENT_DURATION,
@@ -147,7 +149,7 @@ export class UtilityCalcolator{
             incentiveFactor,
             utility
         });
-
+        */
         return [utility, search]
     }
 
@@ -159,15 +161,15 @@ export class UtilityCalcolator{
         const carriedParcels = this.agent.parcels.carriedParcels()
         const utility = (actualReward + totalReward) - cost * (carriedParcels + 1)
         
-        console.log('Batch Utility:')
-        console.log(' - movementPenality:', this.movementPenality)
-        console.log(' - totalDistance:', totalDistance)
-        console.log(' - totalReward:', totalReward)
-        console.log(' - cost:', cost)
-        console.log(' - actualReward:', actualReward)
-        console.log(' - carriedParcels:', carriedParcels)
-        console.log(' - utility:', utility)
-        
+        //console.log('Batch Utility:')
+        //console.log(' - movementPenality:', this.movementPenality)
+        //console.log(' - totalDistance:', totalDistance)
+        //console.log(' - totalReward:', totalReward)
+        //console.log(' - cost:', cost)
+        //console.log(' - actualReward:', actualReward)
+        //console.log(' - carriedParcels:', carriedParcels)
+        //console.log(' - utility:', utility)
+        /*
         this.agent.log({
             carriedParcels,
             movement_duration: this.agent.MOVEMENT_DURATION,
@@ -179,7 +181,7 @@ export class UtilityCalcolator{
             carriedParcels,
             utility
         });
-
+        */
         return utility
     }
 }

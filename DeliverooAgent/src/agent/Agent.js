@@ -36,7 +36,7 @@ export class Agent extends AgentInterface{
      * @param {string} token - The token for the agent.
      */
 
-    constructor(host, token, name, duration, moveType, fastPick, lookAhead, batchSize) {
+    constructor(host, token, name, duration, moveType, fastPick, lookAhead, batchSize, changingRisk) {
         super()
 
         this.duration = duration ? duration * 1000 : Infinity;
@@ -44,7 +44,8 @@ export class Agent extends AgentInterface{
         this.fastPick = fastPick
         this.lookAhead = lookAhead
         this.batchSize = batchSize
-
+        this.changingRisk = changingRisk
+        
         // Performance information
         this.lastPosition = null
         this.currentPosition = null
@@ -114,11 +115,10 @@ export class Agent extends AgentInterface{
         this.beliefs.activate()
         this.options.activate()
 
-        this.agentInfo(this)
+        this.info()
         this.log('[INIT] Initialization Ended Succesfully.\n\n')
 
         // Start effectively the agent
-        console.log('\n[',this.agentID,']Agent', this.name, 'Started!\n')
         await this.intentions.loop()
     }
 
@@ -175,15 +175,14 @@ export class Agent extends AgentInterface{
         if (moveResult != false) {
 
             this.effectiveMovement += 1
-            //this.environment.increaseTemperature()
             this.lastPosition = this.currentPosition
             this.currentPosition = new Position(moveResult.x, moveResult.y)
-            //this.log('[MOVE',this.movementAttempts,'] Moved:', direction, '- New Position', this.currentPosition, ' - From', this.lastPosition)
+            //console.log('[MOVE',this.movementAttempts,'] Moved:', direction, '- New Position', this.currentPosition, ' - From', this.lastPosition)
             this.eventManager.emit('movement')
         }
         else{
             this.failMovement += 1
-            this.log('[MOVE',this.movementAttempts,'] Moved:', moveResult, '- Fail - Position', this.currentPosition)
+            //console.log('[MOVE',this.movementAttempts,'] Moved:', moveResult, '- Fail - Position', this.currentPosition)
         }
 
         await this.actualTileCheck()
@@ -204,7 +203,7 @@ export class Agent extends AgentInterface{
         if (pickedUpParcels && pickedUpParcels.length > 0) {
 
             this.parcelsPickedUp += pickedUpParcels.length
-            this.log('[AGENT] Picked up', pickedUpParcels.length,'parcel(s):')
+            console.log('[AGENT] Picked up', pickedUpParcels.length,'parcel(s):')
             
             this.eventManager.emit('picked_up_parcels', pickedUpParcels)            
         }

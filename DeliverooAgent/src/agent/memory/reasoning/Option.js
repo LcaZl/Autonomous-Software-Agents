@@ -18,6 +18,7 @@ export class Option {
         this.utility = utility;
         this.bfsSearch = bfsSearch
         this.parcel = parcel
+        this.pddlPlan = null
     }
 
     toString() {
@@ -41,8 +42,8 @@ export class BatchOption{
         })
         this.position = this.positions[this.positions.length - 1]
         this.pddlPlan = null
-        console.log('Target parcel ids:', this.parcelIds)
-        console.log(this.toString(), '\n')
+        //console.log('Target parcel ids:', this.parcelIds)
+        //console.log(this.toString(), '\n')
     }
 
     toString() {

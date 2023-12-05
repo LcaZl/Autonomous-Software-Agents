@@ -20,7 +20,7 @@ export class Player {
         this.score = player.score;
         this.positionHistory = new Map();
         this.positionHistory.set(Date.now(), this.currentPosition);
-        this.agent.log('[NEWPLAYER] ', this.name, ' entered in tile', this.currentPosition.toString());
+        console.log('[AGENT][NEW_PLAYER] ', this.name, ' entered in tile', this.currentPosition.toString());
     }
 
     /**
@@ -44,7 +44,7 @@ export class Player {
             this.lastPosition = this.currentPosition;
             this.currentPosition = newPosition;
             this.positionHistory.set(Date.now(), this.currentPosition);
-            this.agent.log('[PLAYER ', this.name, '] Moved from', this.lastPosition, 'to', this.currentPosition);
+            console.log('[AGENT][PLAYER ', this.name, '] Moved from', this.lastPosition, 'to', this.currentPosition);
             positionalUpdates = true;
         }
 

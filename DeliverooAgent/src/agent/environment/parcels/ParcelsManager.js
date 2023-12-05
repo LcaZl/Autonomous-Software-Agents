@@ -15,7 +15,7 @@ export class ParcelsManager {
         this.myParcels = new Set();
         this.deletedParcels = new Set();
         this.parcelsTimerStarted = false;
-        this.agent.log('[INIT] Parcels Manager Initialized.');
+        console.log('[INIT] Parcels Manager Initialized.');
     }
 
     /**

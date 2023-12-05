@@ -45,7 +45,7 @@ export class AgentInterface{
   }
 
   // Console agent info
-  agentInfo(agent) {
+  info() {
       console.log('[INIT] Agent info:\n')
       console.log(' - ID: ', this.agentID)
       console.log(' - Name: ', this.name)
@@ -67,8 +67,7 @@ export class AgentInterface{
   }
 
   status() {
-    if (this.consoleActivated){
-
+    if(this.consoleActivated){
       console.log('|------------------------------------|')
       console.log('|            Agent status            |')
       console.log('|------------------------------------|')
@@ -80,11 +79,12 @@ export class AgentInterface{
       this.showPlayers(this.players.getPlayers())
       this.showOptions(this.options.getOptions())
       console.log('|- Current intention:', this.intentions.currentIntention.option.toString())
+      this.showIntentions(this.intentions.intention_queue.valuesWithPriority())
       console.log('|------------------------------------|')
       console.log('|                 END                |')
       console.log('|------------------------------------|')
-    }
   }
+}
 
   finalMetrics() {
     this.finishAt = new Date().getTime()
@@ -113,7 +113,6 @@ export class AgentInterface{
    * @param {ParcelsManager} parcels - The parcels object to be displayed.
    */
   showParcels(parcels) {
-    if (this.consoleActivated){
       console.log('|- Parcels detected: ', parcels.getParcels().size)
       
       if (parcels.getParcels().size > 0){
@@ -126,14 +125,12 @@ export class AgentInterface{
 
       console.log('|-- My parcels:', parcels.myParcels.size == 0 ? 0 : [...parcels.myParcels].join(', '));
       console.log('|-- Deleted parcels:', parcels.deletedParcels.size == 0 ? 0 : [...parcels.deletedParcels].join(', '));
-    }
   }
 
   /**
    * @param {Array} options 
    */
   showOptions(options){
-    if (this.consoleActivated){
       console.log('|- Last pushed options: ', options ? options.length : 0)
       if (options && options.length > 0){
         let i = 1
@@ -142,24 +139,22 @@ export class AgentInterface{
           i++
         }
       }
-    }
   }
 
   /**
    * @param {Intentions} intentions 
    */
   showIntentions(intentions){
-    if (this.consoleActivated){
       console.log('|- Intentions: ', intentions.length)
       if (intentions.length > 0){
         let i = 1
 
         for (let o of intentions) {
-          console.log('|--',i, '-', o.toString())
+          console.log('|--',i, '- ',o.priority,' -', o.data.toString())
           i++
         }
       }
-    }
+    
   }
 
 
@@ -167,7 +162,6 @@ export class AgentInterface{
    * @param {Array<Player>} players - The players object to be displayed.
   */
   showPlayers(players) {
-    if (this.consoleActivated){
       console.log('|- Player encountered: ', players.size)
       if(players.size > 0){
         let i = 1
@@ -177,7 +171,6 @@ export class AgentInterface{
           i++
         }
       }
-    }
   }
 
 
@@ -185,7 +178,6 @@ export class AgentInterface{
    * @param {Beliefs}
   */
  showBeliefs(beliefs){
-    if (this.consoleActivated){
       let count = 1
       let string = ''
       for (let v of beliefs.entries){
@@ -197,5 +189,4 @@ export class AgentInterface{
         count++
       }
     }
-  }
 }
