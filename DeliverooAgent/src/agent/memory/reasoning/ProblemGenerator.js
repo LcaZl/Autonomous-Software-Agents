@@ -15,22 +15,6 @@ export class ProblemGenerator{
     constructor(agent) {
         this.agent = agent
     }
-
-    /**
-     * 
-     * @param {String} type 
-     * @param {Parcel} data 
-     * @returns 
-     */
-    getProblem(type, arg){ // arg can be a single position or an array of positions
-        this.type = type
-        switch (type) {
-            case 'go_pick_up':
-            case 'deliver':
-            case 'goto':
-                return this.gotoOption(arg)
-        }
-    }
  
     /**
      * Generate an option to go from a tile to another
@@ -39,24 +23,19 @@ export class ProblemGenerator{
      * @param {Object} endTile 
      * @returns {String}
      */
-    gotoOption(destination) {       
+    go(from, to) {
+
         var problem = new PddlProblem(
-            `${this.agent.currentPosition.x}_${this.agent.currentPosition.y}-${destination.x}_${destination.y}`,
+            `go_from_to-${from.x}_${from.y}-${to.x}_${to.y}`,
             this.agent.beliefs.getObjectsWithType(),
             this.agent.beliefs.toPddlString(),
-            `at ${this.agent.agentID} t${destination.x}_${destination.y}`
+            `at ${this.agent.agentID} t${to.x}_${to.y}`
         )
-        return problem
+        return problem.toPddlString()
     }
 
-    /**
-     * Generates a PDDL problem to go from a specified start position to a specified end position.
-     * 
-     * @param {Object} from - The start position.
-     * @param {Object} to - The end position.
-     * @returns {PddlProblem} A PDDL problem instance for moving from the start position to the end position.
-     */
-    goFromTo(from, to) {    
+    pickupFrom(from, parcelId){
+        const goal = `carries ${this.agent.agentID} ${parcelId}`
 
         this.agent.beliefs.removeObject(`${this.agent.agentID}`)
         this.agent.beliefs.addObject(`${this.agent.agentID}`)
@@ -64,28 +43,59 @@ export class ProblemGenerator{
         this.agent.beliefs.declare(`at ${this.agent.agentID} t${from.x}_${from.y}`)   
 
         var problem = new PddlProblem(
-            `${from.x}_${from.y}-${to.x}_${to.y}`,
+            `pickup_from-${from.x}_${from.y}`,
             this.agent.beliefs.getObjectsWithType(),
             this.agent.beliefs.toPddlString(),
-            `at ${this.agent.agentID} t${to.x}_${to.y}`
-        )
+            goal
+        );
 
         this.agent.beliefs.removeObject(`${this.agent.agentID}`)
         this.agent.beliefs.addObject(`${this.agent.agentID}`)
         this.agent.beliefs.declare(`me ${this.agent.agentID}`)
         this.agent.beliefs.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)   
+        this.agent.beliefs.removeFact(`carries ${this.agent.agentID} ${parcelId}`)
 
-        return problem
+        return problem.toPddlString()
     }
 
-    goToMultipleOption(parcels) {
+    deliverFrom(from, parcelId){
+        const goal = `not (carries ${this.agent.agentID} ${parcelId})`
+
+        this.agent.beliefs.removeObject(`${this.agent.agentID}`)
+        this.agent.beliefs.addObject(`${this.agent.agentID}`)
+        this.agent.beliefs.declare(`me ${this.agent.agentID}`)
+        this.agent.beliefs.declare(`at ${this.agent.agentID} t${from.x}_${from.y}`)   
+        this.agent.beliefs.declare(`carries ${this.agent.agentID} ${parcelId}`)
+
+        var problem = new PddlProblem(
+            `deliver_from-${from.x}_${from.y}`,
+            this.agent.beliefs.getObjectsWithType(),
+            this.agent.beliefs.toPddlString(),
+            goal
+        );
+
+        this.agent.beliefs.removeObject(`${this.agent.agentID}`)
+        this.agent.beliefs.addObject(`${this.agent.agentID}`)
+        this.agent.beliefs.declare(`me ${this.agent.agentID}`)
+        this.agent.beliefs.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)   
+        this.agent.beliefs.removeFact(`carries ${this.agent.agentID} ${parcelId}`)
+
+        return problem.toPddlString()
+    }
+}
+
+/**
+ * 
+ * 
+    multipleGoto(parcels) {
         let goal = `and `;
         let lastPosition = null
 
-        for (let parcel of parcels) 
+        for (let parcel of parcels) {
             goal += `(carries ${this.agent.agentID} ${parcel.id}) `
-    
-        lastPosition = parcels[parcels.length - 1].position;
+            lastPosition = parcel.position;
+        }
+
         goal += ` (at ${this.agent.agentID} t${lastPosition.x}_${lastPosition.y})`;        
     
         var problem = new PddlProblem(
@@ -97,4 +107,4 @@ export class ProblemGenerator{
 
         return problem;
     }
-}
+ */

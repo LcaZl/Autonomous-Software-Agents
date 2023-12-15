@@ -44,7 +44,7 @@ export class Player {
             this.lastPosition = this.currentPosition;
             this.currentPosition = newPosition;
             this.positionHistory.set(Date.now(), this.currentPosition);
-            console.log('[AGENT][PLAYER ', this.name, '] Moved from', this.lastPosition, 'to', this.currentPosition);
+            //console.log('[AGENT][PLAYER ', this.name, '] Moved from', this.lastPosition, 'to', this.currentPosition);
             positionalUpdates = true;
         }
 

@@ -35,6 +35,20 @@ export class ParcelsManager {
     getParcels() { return this.parcels; }
 
     /**
+     * Retrieves all parcels.
+     * 
+     * @returns {Map} A map of all parcels.
+     */
+    getMyParcels() { 
+        let myParcels = []
+        this.parcels.forEach(p => {
+            if(this.myParcels.has(p.id))
+                myParcels.push(p)
+        }); 
+        return myParcels
+    }
+
+    /**
      * Counts the number of parcels currently carried by the agent.
      * 
      * @returns {number} The count of carried parcels.
@@ -51,6 +65,22 @@ export class ParcelsManager {
         return this.parcels.has(id) && !this.deletedParcels.has(id) && !this.myParcels.has(id);
     }
 
+    getOneOfMyParcels(){
+        return this.parcels.get(this.myParcels.values().next().value)
+    }
+    /**
+     * Validates if a parcel can be picked up.
+     * 
+     * @returns {Array} - Available parcels
+     */
+    getFreeParcels(){
+        let freeParcels = []
+        this.parcels.forEach(p => {
+            if (p.isFree())
+                freeParcels.push(p)
+        })
+        return freeParcels
+    }
     /**
      * Deletes a parcel from the manager.
      * 

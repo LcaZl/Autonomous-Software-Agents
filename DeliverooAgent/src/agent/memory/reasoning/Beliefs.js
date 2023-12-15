@@ -108,7 +108,10 @@ export class Beliefs extends Beliefset {
           case 'a': type = 'agent'; break;
           case 'p': type = 'parcel'; break;
           case 't': type = 'tile'; break;
-          default: throw new Error(`Object not recognized: ${obj}`);
+          default: 
+            console.log(obj)
+            console.log(this.toPddlString())
+            process.exit(0)
         }
       }
       objCopy.push(`${obj} - ${type}`);

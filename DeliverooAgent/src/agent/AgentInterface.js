@@ -19,7 +19,8 @@ export class AgentInterface{
       this.score = 0
       this.lookAheadHits = 0
       this.fastPickMoves = 0
-      
+      this.cacheHit = 0
+      this.onlineSolverCalls = 0
       this.consoleActivated = false
 
   }
@@ -103,9 +104,11 @@ export class AgentInterface{
     console.log(' - Exploration map:\n')
     this.printMap(this.environment.exploredTiles)
     console.log(' - Search call', this.environment.searchCalls)
-    console.log(' - Cache hits', this.environment.cacheHit)
+    console.log(' - Cache hits', this.cacheHit)
     console.log(' - Look ahead hits:', this.lookAheadHits)
     console.log(' - Fast pick moves:', this.fastPickMoves)
+    console.log(' - Online solver calls:', this.onlineSolverCalls)
+
     //console.log(' - Chached BFS paths (',this.environment.cache.size,'):\n', this.environment.cache)
   }
 

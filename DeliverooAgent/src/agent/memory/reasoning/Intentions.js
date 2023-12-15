@@ -1,7 +1,7 @@
 import { PriorityQueue } from "../../../utils/PriorityQueue.js";
 import { Agent } from "../../agent.js";
 import { Intention } from "./Intention.js";
-import { BatchOption, Option } from "./Option.js";
+import { Option } from "./Option.js";
 
 /**
  * Manages the intentions of an agent, handling the decision-making process.
@@ -38,24 +38,26 @@ export class Intentions {
          * @param {Option} option - The option to be added or updated.
          */
     async push(options) {
-        //console.log('\n\n[INTENTIONS] Actual itnentions:')
-        //console.log('|--Curr- ',this.currentIntention.option.utility,' -', this.currentIntention.option.toString())
-        //this.agent.showIntentions(this.intention_queue.valuesWithPriority())
+        console.log('\n\n|--Curr- ',this.currentIntention.option.utility,' -', this.currentIntention.option.id)
+        this.agent.showIntentions(this.intention_queue.valuesWithPriority())
         
         let newBest = false
         for (let option of options){
-            if (option.id != this.currentIntention.option.id){
-                //console.log('[INTENTIONS] IN -> ', option.toString() )
-                if (this.intention_queue.has(option.id)) {
-                    //console.log('[INTENTIONS]Same in Queue -> ', this.intention_queue.getById(option.id).toString())                
-                    this.intention_queue.removeById(option.id);
-                }
+            console.log('IN -> ', option.toString() )
+
+            if (this.intention_queue.has(option.id)) {
+                console.log('[INTENTIONS]Same in Queue -> ', this.intention_queue.getById(option.id).toString())                
+                this.intention_queue.removeById(option.id);
+            }
+            
+            if (this.currentIntention.option.id != option.id){
                 this.intention_queue.push(option, option.utility);
-                if (this.currentIntention.option.id != option.id){
-                    if (this.currentIntention.option.id === 'patrolling' || this.currentIntention.option.utility < (option.utility * this.agent.changingRisk)) {
-                        //console.log('[INTENTIONS] Cause stop -> ', option.toString() )
-                        newBest = true
-                    }
+
+                if (this.currentIntention.option.id === 'patrolling' || 
+                this.currentIntention.option.utility < (option.utility * this.agent.changingRisk)) {
+                    
+                    console.log('[INTENTIONS] Cause stop -> ', option.toString() )
+                    newBest = true
                 }
             }
         }
@@ -71,22 +73,15 @@ export class Intentions {
         this.agent.eventManager.on('deleted_parcel', async (id) => {
 
             let realId = null
-            let batchId = null
             if (this.agent.moveType === 'BFS')
                 realId = `bfs_pickup-${id}`
-            else{
+            else
                 realId = `pddl_pickup-${id}`
-                batchId = `${id}`
-            }
 
-            if ((this.currentIntention.option.id === realId))
+            if (this.currentIntention.option.id === realId)
                 this.stopCurrent()
-            else if (this.intention_queue.has(realId))
+            if (this.intention_queue.has(realId))
                 this.intention_queue.removeById(realId)
-            else if (this.agent.batchSize > 1){
-                let realBatchIds = this.intention_queue.searchByIdSubstring(batchId)
-                realBatchIds.forEach(id => this.intention_queue.removeById(id))
-            }
         })
 
         while ( true ) {
@@ -96,7 +91,7 @@ export class Intentions {
             // Consumes intention_queue if not empty
             if ( this.intention_queue.size() == 0 ) {
                 let rndPosition = this.agent.environment.getRandomPosition()
-                let idle = new Option('patrolling', this.agent.currentPosition, rndPosition, 0, null, null);
+                let idle = new Option('patrolling', this.agent.currentPosition, rndPosition, 0);
                 this.intention_queue.push( idle );
             }
             else {
@@ -105,27 +100,27 @@ export class Intentions {
 
                 const intention = this.currentIntention = new Intention( this, option, this.agent );
 
-                if ( option.id.startsWith('bfs_pickup-') || option.id.startsWith('pddl_pickup-') ){
+                if ( option.id.startsWith('bfs_pickup-') || option.id.startsWith('pddl_pickup-')){
 
-                    let id = option.parcel.id
-                    //console.log('[INTENTIONS_REVISION] Validating pick up for', option.id, ' - Parcel:', id)
-
-                    if ( !this.agent.parcels.isValidPickUp(id) ) {
-                        //console.log( '[INTENTIONS_REVISION] Option', option.id, ' no more valid. (Parcel: ', id,')' );
+                    if ( !this.agent.parcels.isValidPickUp(option.parcel.id) ) 
                         continue;
-                    }
                 }
 
+                if (option.id === 'bfs_delivery' || option.id === 'pddl_delivery')
+                    if (this.agent.parcels.carriedParcels() === 0){
+                        console.log( '[INTENTIONS_REVISION] Option', option.id, ' no more valid.' );
+                        continue;
+                    }
+
                 // Start achieving intention
-                //console.log('\n[INTENTIONS] Started : ', this.currentIntention.option.id)
+                console.log('\n[INTENTIONS] Started : ', this.currentIntention.option.id)
                 await intention.achieve().catch( error => {
 
                     if ( !intention.stopped ){
-                        console.error( '[INTENTIONS_REVISION] Error with intention', intention.option.id, '- Error:', error )
-                        this.intention_queue.push(this.currentIntention.option, this.currentIntention.utility)
+                        console.log( '[INTENTIONS_REVISION] Error with intention', intention.option.id, '- Error:', error )
                     }
                 });
-                //console.log('[INTENTIONS] Ended   : ', this.currentIntention.option.id)
+                console.log('[INTENTIONS] Ended   : ', this.currentIntention.option.id)
 
             }
             

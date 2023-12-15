@@ -57,7 +57,6 @@ export class Intention {
         this.#started = true;
         //this.agent.log('[INTENTION', this.option.id, '] Started - ', this.#started);
 
-        let errors = false;
         for (const planClass of this.agent.planner.getPlanLibrary()) {
             if (this.stopped) break;
 
@@ -72,7 +71,7 @@ export class Intention {
 
                 } catch ( error ) {
 
-                    //console.log('[INTENTION', this.option.id, '] Plan', planClass.name, 'Failed - Message:', error);
+                    console.log('[INTENTION', this.option.id, '] Plan', planClass.name, 'Failed - Message:', error);
 
                     switch(error[0]){
                         case 'target_not_reachable':
@@ -86,6 +85,11 @@ export class Intention {
                         case 'movement_fail':
                             this.stop()
                             throw ['movement_fail',this.option.toString()];
+                        case 'alignment_fail':
+                            this.stop()
+                            throw ['alignment_fail',this.option.toString()]
+                        case 'last_checkpoint_error':
+                            throw ['last_checkpoint_error']
                         default:
                             throw error
                     }

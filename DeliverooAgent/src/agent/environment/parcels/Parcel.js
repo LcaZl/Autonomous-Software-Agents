@@ -17,7 +17,9 @@ export class Parcel {
         this.position = new Position(parcel.x, parcel.y);
         this.reward = parcel.reward;
         this.carriedBy = parcel.carriedBy;
-        this.pathToDelivery = this.agent.environment.getNearestDeliveryTile(this.position);
+        if ( this.agent.moveType === 'BFS')
+            this.pathToDelivery = this.agent.environment.getNearestDeliveryTile(this.position);
+        this.movementPenality = this.agent.options.utilityCalcolator.movementPenality
 
         if (this.agent.PARCEL_DECADING_INTERVAL !== Infinity) {
             this.decayInterval = setInterval(() => this.decayReward(), this.agent.PARCEL_DECADING_INTERVAL);
@@ -29,7 +31,11 @@ export class Parcel {
      */
     decayReward() {
         this.reward -= (this.agent.PARCEL_DECADING_INTERVAL / 1000);
-        if (this.reward < 1) {
+
+        // How much i need, minnimum, to take and deliver this parcel ?
+        //const cost = (this.agent.currentPosition.distanceTo(this.position) + this.pathToDelivery.length) * this.movementPenality
+        //console.log('Cost for', this.id, ' is ', cost, ' Reward is ', this.reward)
+        if ((this.reward)  < 1) {
             clearInterval(this.decayInterval);
             this.agent.parcels.deleteParcel(this.id);
         }

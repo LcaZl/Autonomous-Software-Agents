@@ -9,11 +9,11 @@ import { Planner } from "./memory/Reasoning/planner.js"
 import { Beliefs } from "./memory/Reasoning/Beliefs.js"
 import EventEmitter from "events";
 import { Options } from "./memory/reasoning/Options.js";
-import { Option } from "./memory/reasoning/Option.js";
 import { Intentions } from "./memory/reasoning/Intentions.js";
 import { AgentInterface } from "./AgentInterface.js";
 import { Intention } from "./memory/Reasoning/Intention.js";
 import { ProblemGenerator } from "./memory/Reasoning/ProblemGenerator.js";
+import { BfsOption } from "./memory/reasoning/Option.js";
 /**
  * @class
  * 
@@ -28,7 +28,6 @@ import { ProblemGenerator } from "./memory/Reasoning/ProblemGenerator.js";
  */
 export class Agent extends AgentInterface{
 
-
     /**
      * Create a new DeliverooAgent.
      * @constructor
@@ -36,7 +35,7 @@ export class Agent extends AgentInterface{
      * @param {string} token - The token for the agent.
      */
 
-    constructor(host, token, name, duration, moveType, fastPick, lookAhead, batchSize, changingRisk) {
+    constructor(host, token, name, duration, moveType, fastPick, lookAhead, batchSize, changingRisk, adjMovementCostWindow) {
         super()
 
         this.duration = duration ? duration * 1000 : Infinity;
@@ -45,6 +44,7 @@ export class Agent extends AgentInterface{
         this.lookAhead = lookAhead
         this.batchSize = batchSize
         this.changingRisk = changingRisk
+        this.adjMovementCostWindow = adjMovementCostWindow
         
         // Performance information
         this.lastPosition = null
@@ -150,7 +150,7 @@ export class Agent extends AgentInterface{
                 
                 if (direction) {
                     this.intentions.intention_queue.push(
-                        new Option('go_to', this.currentPosition, direction.pos, Infinity, [direction.name, direction.opposite], null), 
+                        new BfsOption('go_to', this.currentPosition, direction.pos, Infinity, [direction.name, direction.opposite], null), 
                         Infinity
                     );
                     this.intentions.stopCurrent();

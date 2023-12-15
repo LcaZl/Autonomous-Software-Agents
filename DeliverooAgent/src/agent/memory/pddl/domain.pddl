@@ -1,7 +1,7 @@
 (define (domain deliveroo)
     (:requirements :strips :typing :negative-preconditions)
     (:types
-    tile parcel agent
+        tile parcel agent
     )
     (:predicates
         (deliveryTile ?t - tile) 
@@ -14,6 +14,7 @@
         (up ?t1 - tile ?t2 - tile)
         (left ?t1 - tile ?t2 - tile)
     )
+
     (:action move_right
         :parameters (?me - agent ?from ?to - tile)
         :precondition (and
@@ -56,6 +57,7 @@
             (not (at ?me ?from))
         )
     )
+    
     (:action move_down
         :parameters (?me - agent ?from ?to - tile)
         :precondition (and
@@ -70,6 +72,7 @@
             (not (at ?me ?from))
         )
     )
+
     (:action pickup
         :parameters (?me - agent ?p - parcel ?t - tile)
         :precondition (and
@@ -88,13 +91,11 @@
         :parameters (?me - agent ?p - parcel ?t - tile)
         :precondition (and
             (me ?me)
-            (carries ?me ?p)
             (deliveryTile ?t)
             (at ?me ?t)
         )
         :effect (and
-            (not (carries ?me ?p))
-            (not (at ?p ?t)) ; parcel is delivered, no longer on the tile
+            (forall (?p - parcel) (not (carries ?me ?p)))
         )
     )
 )

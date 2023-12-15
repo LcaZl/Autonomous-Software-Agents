@@ -17,7 +17,6 @@ export class Environment {
     this.mapWidth = width;
     this.mapHeight = height;
     this.searchCalls = 0;
-    this.cacheHit = 0;
     this.fullMap = Array(this.mapHeight).fill().map(() => Array(this.mapWidth).fill(0));
     tiles.forEach(tile => this.fullMap[tile.x][tile.y] = tile.delivery ? 2 : 1);
 
@@ -86,7 +85,7 @@ export class Environment {
 
     //this.agent.log('[ENVIRONMENT] Random position:', position);
     return position;
-  }
+  }W
 
   /**
    * Generates a key for caching based on start and end positions.
@@ -109,7 +108,7 @@ export class Environment {
    * @returns {Object} The shortest path and associated actions.
    */
   getShortestPath(startPosition, endPosition) {
-    return this.bfsSearch(startPosition, endPosition, "path");
+    return this.BFS(startPosition, endPosition, "path");
   }
 
   /**
@@ -119,8 +118,8 @@ export class Environment {
    * @returns {Object} The nearest delivery tile information.
    */
   getNearestDeliveryTile(startPosition) {
-    let endPosition = this.getEstimatedNearestDeliveryTile(startPosition)
-    return this.bfsSearch(startPosition, endPosition, "delivery");
+    let endPosition = this.getEstimatedNearestDeliveryTile(startPosition).position
+    return this.BFS(startPosition, endPosition, "delivery");
   }
   
   /**
@@ -131,12 +130,12 @@ export class Environment {
    * @param {string} mode - The search mode ('path' or 'delivery').
    * @returns {Object} The path information including positions and actions.
    */
-  bfsSearch(startPosition, endPosition, mode) {
+  BFS(startPosition, endPosition, mode) {
     const cacheKey = this.positionKey(startPosition, endPosition)
     this.searchCalls += 1
 
     if (this.cache.has(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
-        this.cacheHit += 1
+        this.agent.cacheHit += 1
         this.cache.get(cacheKey).uses++
         if(this.cache.get(cacheKey).uses >= 2)
           this.cache.delete(cacheKey)
@@ -205,7 +204,7 @@ export class Environment {
       }
     }
 
-    return closestDelivery ? closestDelivery : null
+    return closestDelivery ? {position : closestDelivery, distance: bestDistance} : null
   }
 }
 
