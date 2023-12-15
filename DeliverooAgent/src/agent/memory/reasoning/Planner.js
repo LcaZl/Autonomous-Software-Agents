@@ -28,7 +28,6 @@ export class Planner {
         this.agent.log('[INIT] Planner Initialized.')
     }
 
-    METODO PER SALVARE I SOTTO PATH DI CIASCUN PIANO RICHIESTO
     getPlanLibrary(){ return this.library }
 
     /**
@@ -42,6 +41,7 @@ export class Planner {
         if (!this.memory.has(problem.name)){
             try{
                 plan = await onlineSolver( this.domain, problem.toPddlString() );
+                
             }
             catch (error){
                 console.log(error)
@@ -52,6 +52,9 @@ export class Planner {
         else{
             plan = this.memory.get(problem.name)
         }
+
+        console.log(plan)
+        process.exit(0)
         return plan
     }
 
