@@ -128,7 +128,7 @@ export class Intentions {
                     }
 
                 // Start achieving intention
-                console.log('[INTENTIONS] Started : ', this.currentIntention.option.id)
+                //console.log('[INTENTIONS] Started : ', this.currentIntention.option.id)
                 await intention.achieve().catch( error => {
 
                     if ( !intention.stopped ){
@@ -136,7 +136,7 @@ export class Intentions {
                         process.exit(0)
                     }
                 });
-                console.log('[INTENTIONS] Ended   : ', this.currentIntention.option.id)
+                //console.log('[INTENTIONS] Ended   : ', this.currentIntention.option.id)
 
             }
             

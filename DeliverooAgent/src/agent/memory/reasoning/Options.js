@@ -77,12 +77,10 @@ export class Options {
             }
         }
 
-
         if (this.agent.parcels.carriedParcels() > 0 && currentOptionId !== 'pddl_delivery'){
             let utility = this.utilityCalcolator.deliveryUtility(this.agent.currentPosition)
             options.push(new BfsOption('bfs_delivery', utility.search.startPosition, utility.search.finalPosition, utility.value, utility.search, this.agent.parcels.getOneOfMyParcels())) 
         }
-
 
         for(let [_, parcel] of this.agent.parcels.getParcels()){
             const id = `bfs_pickup-${parcel.id}`

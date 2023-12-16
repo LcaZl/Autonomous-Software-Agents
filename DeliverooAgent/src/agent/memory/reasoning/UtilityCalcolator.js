@@ -26,7 +26,7 @@ export class UtilityCalcolator{
                 const avgMoveTime = Math.round(diff / Math.max(movementAttempts, 1))
                 const prev = this.movementPenality
                 this.movementPenality = avgMoveTime / this.agent.PARCEL_DECADING_INTERVAL;
-                console.log('[UPDATEDMVPEN] From', prev, 'to', this.movementPenality)
+                //console.log('[UPDATEDMVPEN] From', prev, 'to', this.movementPenality)
             }, this.agent.adjMovementCostWindow);
         }
     }

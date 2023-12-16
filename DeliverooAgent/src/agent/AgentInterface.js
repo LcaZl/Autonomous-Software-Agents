@@ -108,7 +108,7 @@ export class AgentInterface{
     console.log(' - Look ahead hits:', this.lookAheadHits)
     console.log(' - Fast pick moves:', this.fastPickMoves)
     console.log(' - Online solver calls:', this.onlineSolverCalls)
-
+    console.log(' - Team score: ', this.teamScore + this.score)
     //console.log(' - Chached BFS paths (',this.environment.cache.size,'):\n', this.environment.cache)
   }
 

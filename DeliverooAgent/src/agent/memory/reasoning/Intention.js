@@ -71,7 +71,7 @@ export class Intention {
 
                 } catch ( error ) {
 
-                    console.log('[INTENTION', this.option.id, '] Plan', planClass.name, 'Failed - Status:', error[0]);
+                    //console.log('[INTENTION', this.option.id, '] Plan', planClass.name, 'Failed - Status:', error[0]);
 
                     switch(error[0]){
                         case 'target_not_reachable':

@@ -14,7 +14,7 @@ import { AgentInterface } from "./AgentInterface.js";
 import { Intention } from "./memory/Reasoning/Intention.js";
 import { ProblemGenerator } from "./memory/Reasoning/ProblemGenerator.js";
 import { goToOption } from "./memory/reasoning/Option.js";
-import { Communication } from "./memory/communication.js";
+import { Communication, TeamManager } from "./memory/communication.js";
 /**
  * @class
  * 
@@ -36,7 +36,7 @@ export class Agent extends AgentInterface{
      * @param {string} token - The token for the agent.
      */
 
-    constructor(host, token, name, duration, moveType, fastPick, lookAhead, changingRisk, adjMovementCostWindow, multiagent) {
+    constructor(host, token, name, duration, moveType, fastPick, lookAhead, changingRisk, adjMovementCostWindow, multiagent, teamNames, teamSize) {
         super()
 
         this.duration = duration ? duration * 1000 : Infinity;
@@ -45,16 +45,17 @@ export class Agent extends AgentInterface{
         this.lookAhead = lookAhead
         this.changingRisk = changingRisk
         this.adjMovementCostWindow = adjMovementCostWindow
-        this.multiagent = multiagent
-        this.teamMate = false
 
-        // Performance information
+        // Multiagent configuration
+        this.multiagent = multiagent
+        this.teamNames = teamNames
+        this.teamScore = 0
+        this.teamSize = teamSize
+
+        // Path info
         this.lastPosition = null
         this.currentPosition = null
         this.lastDirection = null
-
-        // For multi-agent
-        this.master = false
 
         this.connected = false 
         this.client = new DeliverooApi(host, token) // Class to establish a connection to the target server
@@ -110,13 +111,17 @@ export class Agent extends AgentInterface{
         this.options = new Options(this)
         this.problemGenerator = new ProblemGenerator(this)
         this.intentions = new Intentions(this)
+        this.teamManager = new TeamManager(this)
         this.communication = new Communication(this)
+        
         await this.planner.loadDomain()
-        await this.communication.initialization()
         
         if (this.multiagent)
-            while (!this.teamMate) { await new Promise(resolve => setTimeout(resolve, 5)) }
+            while (!this.teamManager.sincronized) { await new Promise(resolve => setTimeout(resolve, 5)) }
 
+        console.log(this.teamManager.master)
+        console.log(this.teamManager.team)
+        process.exit(0)
         // Activate the managment of the events
         this.parcels.activate()
         this.players.activate()
@@ -127,7 +132,7 @@ export class Agent extends AgentInterface{
         this.log('[INIT] Initialization Ended Succesfully.\n\n')
 
         // Start effectively the agent
-        //await this.intentions.loop()
+        await this.intentions.loop()
     }
 
     /**
@@ -176,7 +181,8 @@ export class Agent extends AgentInterface{
             this.parcelsPickedUp += pickedUpParcels.length
             console.log('[AGENT] Picked up', pickedUpParcels.length,'parcel(s):')
             
-            this.eventManager.emit('picked_up_parcels', pickedUpParcels)            
+            this.eventManager.emit('picked_up_parcels', pickedUpParcels)     
+            this.communication.pickedUpParcels(pickedUpParcels)       
         }
     }
 
@@ -191,11 +197,13 @@ export class Agent extends AgentInterface{
 
         if (deliveredParcels && deliveredParcels.length > 0){
 
+            const reward = this.parcels.getMyParcelsReward()
             this.parcelsDelivered += deliveredParcels.length
-            this.score += this.parcels.getMyParcelsReward()
+            this.score += reward
             console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Score: ',this.score - this.initialScore,' - Delivered', deliveredParcels.length ,'parcel(s) - Reward: ', this.parcels.getMyParcelsReward())
 
             this.eventManager.emit('delivered_parcels', deliveredParcels)
+            this.communication.deliveredParcels(deliveredParcels, reward)
         }
     }
 
