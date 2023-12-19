@@ -1,43 +1,42 @@
 import { Agent } from './agent/agent.js'
 import { configurations } from './config.js'
 
-// PARAMETERS
+// SINGLE AGENT CONFIGURATION --------------------------------------------------------------------
+const duration  = 300 // (s) Duration of the agent, if not Infinity the value will be used by the agent.
+const moveType = 'PDDL' // BFS or PDDL.
 
-// Duration of the agent, if not Infinity the value will be used by the agent.
-const duration  = 100 // seconds
+// Number of option to calculate the path from the end of the current, based on actual utility order.
+const lookAhead = 1 // For both PDDL and BFS.
 
-// Two option: BFS or PDDL.
-const moveType = 'BFS'
-
-// Number of option to calculate the path from the end of the previous, based on actual utility order.
-const lookAhead = 2 // For both PDDL and BFS.
-
-const fastPick = false //  For both PDDL and BFS.
+// Do a fast movement to an adiacent tile to take a parcel.
+const fastPick = true //  For both PDDL and BFS.
 
 // Percentage penality in new option utility, if the actual is stopped for the new one.
-const changingRisk = 0.5 
+const changingRisk = 0.6 // current_option_utility < (new_option_utility * 0.8)
 
 // Time window to adjust the movemnt penality, used to calcul,ate the utility of each option.
-const adjustMovementCostWindow = 3000 //ms
+const adjustMovementCostWindow = 4000 // (ms)
 
-// Multiagent settings
-const multiagent = true // Enable the multiagent functionalities
-const teamSize = 3 // Size of the team
-
-// The agent configuration id must be specified with 'node index.js [ConfigurationIndex]'
-const currentConfigurationIndex = process.argv[2] - 1
-
-// The other configurations in config.js are the one used by other agents
-// Use them to get the team member names
+// MULTI AGENT CONFIGURATION --------------------------------------------------------------------
+const multiagent = false // Enable the multiagent functionalities
+const teamSize = 2 // Size of the team
+let currentConfigurationIndex = 0
 let teamNames = new Set()
-for (const [index, configuration] of configurations.entries()){
-    if (index !== currentConfigurationIndex && teamNames.size < (teamSize - 1))
-        teamNames.add(configuration.username)
+
+if (multiagent){
+    // The agent configuration id must be specified with 'node index.js [ConfigurationIndex]'
+    currentConfigurationIndex = process.argv[2] - 1
+
+    // The other configurations in config.js are the one used by other agents
+    // Use them to get the team member names
+    for (const [index, configuration] of configurations.entries()){
+        if (index !== currentConfigurationIndex && teamNames.size < (teamSize - 1))
+            teamNames.add(configuration.username)
+    }
 }
 
-// Current agent configuration
+// Initialize agent
 const {host, token, name} = configurations[currentConfigurationIndex];
-
 const agent = new Agent(
     host, 
     token, 
@@ -58,6 +57,7 @@ process.on('SIGINT', () => {
     process.exit(0)
 });
 
+// Start
 await agent.start()
 
 

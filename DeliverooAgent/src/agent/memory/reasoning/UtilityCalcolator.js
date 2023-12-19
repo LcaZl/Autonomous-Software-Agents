@@ -31,8 +31,103 @@ export class UtilityCalcolator{
         }
     }
 
+    pickUpUtility(p, agentPosition) {
+        
+        const actualReward = this.agent.parcels.getMyParcelsReward()
+        const carriedParcels = this.agent.parcels.carriedParcels()
+        const carriedParcelsPenality = 1 - (1 / (carriedParcels + 1))
+
+        let search = this.agent.environment.getShortestPath(agentPosition, p.position)
+        if (search.length === 0) return {value:0, search:search}
+        const pickupDistance = search.length
+        const pickupCost = pickupDistance * this.movementPenality;
+
+        const deliveryDistance = p.pathToDelivery.length 
+        const deliveryCost = deliveryDistance * this.movementPenality;
+
+        const cost = pickupCost + deliveryCost;
+
+        const utility = ((actualReward * carriedParcelsPenality) + p.reward) - (cost * (carriedParcels + 1))
+
+        return {value:utility, search:search}
+    }
     
-    pddlUtilityWithAll(parcels){
+    deliveryUtility(from) {
+        let search = this.agent.environment.getNearestDeliveryTile(from)
+        
+        const elapsedTime = new Date().getTime() - this.agent.startedAt;
+        const deliveryDistance = search.length;
+        const deliveryCost = deliveryDistance * this.movementPenality;
+
+        if ((this.agent.duration - elapsedTime) < (deliveryCost * 2)) { 
+            return {value:Infinity, search:search} }
+        
+        const carriedParcels = this.agent.parcels.carriedParcels()
+
+        if (carriedParcels === this.agent.MAX_PARCELS) { 
+            return {value:Infinity, search:search} }
+
+        if (this.agent.PARCEL_DECADING_INTERVAL === Infinity) { return {value:1, search:search} }
+
+        const cost = deliveryCost
+        const actualReward = this.agent.parcels.getMyParcelsReward()
+
+        const carriedParcelsFactor = 1 + (carriedParcels / this.agent.MAX_PARCELS)
+
+        const utility = (actualReward * carriedParcelsFactor) - (cost * (carriedParcels));
+    
+        return {value:utility, search:search}
+    }
+
+    /**
+     * 
+     * @param {Position} startPosition 
+     * @param {Position} endPosition 
+     */
+    simplifiedPickUpUtility(startPosition, parcel){
+        const endPosition = parcel.position
+        const actualReward = this.agent.parcels.getMyParcelsReward()
+        const carriedParcels = this.agent.parcels.carriedParcels()
+
+        const pickupDistance = startPosition.distanceTo(endPosition)
+        const pickupCost = pickupDistance * this.movementPenality
+        
+        const deliverySearch = this.agent.environment.getEstimatedNearestDeliveryTile(parcel.position)
+        const deliveryCost = deliverySearch.distance * this.movementPenality;  
+
+        const cost = pickupCost + deliveryCost;
+
+        const utility = (actualReward + parcel.reward) - cost * (carriedParcels + 1)
+
+        return utility
+    }
+
+    simplifiedDeliveryUtility(startPosition, endPosition){
+        const elapsedTime = new Date().getTime() - this.agent.startedAt;
+        const deliveryDistance = startPosition.distanceTo(endPosition)
+        const deliveryCost = deliveryDistance * this.movementPenality
+
+        if ((this.agent.duration - elapsedTime) < (deliveryCost * 3)) {  return Infinity }
+
+        const carriedParcels = this.agent.parcels.carriedParcels()
+
+        if (carriedParcels === this.agent.MAX_PARCELS) { return Infinity }
+
+        if (this.agent.PARCEL_DECADING_INTERVAL === Infinity) { return 1 }
+
+        const actualReward = this.agent.parcels.getMyParcelsReward()
+        const carriedParcelsFactor = 1 + (carriedParcels / this.agent.MAX_PARCELS)
+
+        const utility = (actualReward * carriedParcelsFactor) - (deliveryCost * (carriedParcels));
+
+        return utility
+    }
+}
+
+
+/**
+ * 
+ *     pddlUtilityWithAll(parcels){
         let bestSequence = [];
         let bestUtility = 0;
 
@@ -79,159 +174,6 @@ export class UtilityCalcolator{
         search(this.agent.currentPosition, parcels, 0, 0, 0, []);
         return {sequence : bestSequence, utility : bestUtility}
     }
-
-    pickUpUtility(p, agentPosition) {
-        
-        const actualReward = this.agent.parcels.getMyParcelsReward()
-        const carriedParcels = this.agent.parcels.carriedParcels()
-        const carriedParcelsPenality = 1 - (1 / (carriedParcels + 1))
-
-        let search = this.agent.environment.getShortestPath(agentPosition, p.position)
-
-        const pickupDistance = search.length
-        const pickupCost = pickupDistance * this.movementPenality;
-
-        const deliveryDistance = p.pathToDelivery.length 
-        const deliveryCost = deliveryDistance * this.movementPenality;
-
-        const cost = pickupCost + deliveryCost;
-
-        const utility = ((actualReward * carriedParcelsPenality) + p.reward) - (cost * (carriedParcels + 1))
-        
-        /*
-        this.agent.log({
-            movement_duration: this.agent.MOVEMENT_DURATION,
-            decading_interval: this.movementPenality,
-            actualReward,
-            carriedParcels,
-            carriedParcelsPenality,
-            pickupDistance,
-            pickupCost,
-            deliveryDistance,
-            deliveryCost,
-            cost,
-            utility
-        });
-        */
-
-        return {value:utility, search:search}
-    }
-    
-    deliveryUtility(from) {
-        let search = this.agent.environment.getNearestDeliveryTile(from)
-
-        if (this.agent.PARCEL_DECADING_INTERVAL === Infinity) { return {value:1, search:search} }
-
-        const carriedParcels = this.agent.parcels.carriedParcels()
-
-        if (carriedParcels === this.MAX_PARCELS) { return {value:Infinity, search:search} }
-
-        const elapsedTime = new Date().getTime() - this.agent.startedAt;
-        const actualReward = this.agent.parcels.getMyParcelsReward()
-        const carriedParcelsFactor = 1 + (carriedParcels / this.agent.MAX_PARCELS)
-
-        const deliveryDistance = search.length;
-        const deliveryCost = deliveryDistance * this.movementPenality;
-
-        if ((this.agent.duration - elapsedTime) < (deliveryCost * 3)) { return {value:Infinity, search:search} }
-
-        const cost = deliveryCost
-
-        const utility = (actualReward * carriedParcelsFactor) - (cost * (carriedParcels));
-    
-        /*
-        this.agent.log({
-            carriedParcels,
-            movement_duration: this.agent.MOVEMENT_DURATION,
-            decading_interval: this.agent.PARCEL_DECADING_INTERVAL,
-            elapsedTime,
-            actualReward,
-            carriedParcelsFactor,
-            deliveryDistance,
-            deliveryCost,
-            cost,
-            incentiveFactor,
-            utility
-        });
-        */
-        return {value:utility, search:search}
-    }
-
-    /**
-     * 
-     * @param {Position} startPosition 
-     * @param {Position} endPosition 
-     */
-    simplifiedPickUpUtility(startPosition, parcel){
-        const endPosition = parcel.position
-        const actualReward = this.agent.parcels.getMyParcelsReward()
-        const carriedParcels = this.agent.parcels.carriedParcels()
-
-        const pickupDistance = startPosition.distanceTo(endPosition)
-        const pickupCost = pickupDistance * this.movementPenality
-        
-        const deliverySearch = this.agent.environment.getEstimatedNearestDeliveryTile(parcel.position)
-        const deliveryCost = deliverySearch.distance * this.movementPenality;  
-
-        const cost = pickupCost + deliveryCost;
-
-        const utility = (actualReward + parcel.reward) - cost * (carriedParcels + 1)
-        /*
-        this.agent.log({
-            movement_duration: this.agent.MOVEMENT_DURATION,
-            decading_interval: this.movementPenality,
-            endPosition,
-            actualReward,
-            carriedParcels,
-            pickupDistance,
-            pickupCost,
-            deliveryDistance,
-            deliveryCost,
-            cost,
-            utility
-        });
-        */
-        return utility
-    }
-
-    simplifiedDeliveryUtility(startPosition, endPosition){
-
-        if (this.agent.PARCEL_DECADING_INTERVAL === Infinity) { return 1 }
-
-        const carriedParcels = this.agent.parcels.carriedParcels()
-
-        if (carriedParcels === this.agent.MAX_PARCELS) { return Infinity }
-        
-        const elapsedTime = new Date().getTime() - this.agent.startedAt;
-        const actualReward = this.agent.parcels.getMyParcelsReward()
-        const carriedParcelsFactor = 1 + (carriedParcels / this.agent.MAX_PARCELS)
-        
-        const deliveryDistance = startPosition.distanceTo(endPosition)
-        const deliveryCost = deliveryDistance * this.movementPenality
-
-        if ((this.agent.duration - elapsedTime) < (deliveryCost * 3)) {  return Infinity }
-
-        const utility = (actualReward * carriedParcelsFactor) - (deliveryCost * (carriedParcels));
-        /*
-        this.agent.log({
-            carriedParcels,
-            movement_duration: this.agent.MOVEMENT_DURATION,
-            decading_interval: this.movementPenality,
-            elapsedTime,
-            actualReward,
-            carriedParcelsFactor,
-            deliveryDistance,
-            deliveryCost,
-            utility
-        });
-        */
-
-        return utility
-    }
-}
-
-
-/**
  * 
  *     generateCombinations(options, minLength, maxLength) {
         let batchOptions = [];

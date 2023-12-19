@@ -1,3 +1,4 @@
+import { Position } from '../../../utils/Position.js';
 import { Parcel } from './Parcel.js';
 
 /**
@@ -51,22 +52,31 @@ export class ParcelsManager {
     /**
      * Counts the number of parcels currently carried by the agent.
      * 
-     * @returns {number} The count of carried parcels.
+     * @returns {Number} The count of carried parcels.
      */
     carriedParcels() { return this.myParcels.size; }
 
     /**
      * Validates if a parcel can be picked up.
      * 
-     * @param {number} id - The parcel's identifier.
-     * @returns {boolean} True if the parcel can be picked up, otherwise false.
+     * @param {String} id - The parcel's identifier.
+     * @returns {Boolean} True if the parcel can be picked up, otherwise false.
      */
     isValidPickUp(id) {
         return this.parcels.has(id) && !this.deletedParcels.has(id) && !this.myParcels.has(id);
     }
 
+    /**
+     * Returns the parcle object associated with the first parcel id of my parcels.
+     * 
+     * @returns {Parcel} - One of my parcel
+     */
     getOneOfMyParcels(){
-        return this.parcels.get(this.myParcels.values().next().value)
+        let p = this.parcels.get(this.myParcels.values().next().value)
+        if (p) 
+            return p
+        p = this.agent.intentions.currentIntention.option.parcelId
+        return p
     }
     /**
      * Validates if a parcel can be picked up.
@@ -84,7 +94,7 @@ export class ParcelsManager {
     /**
      * Deletes a parcel from the manager.
      * 
-     * @param {number} id - The identifier of the parcel to delete.
+     * @param {String} id - The identifier of the parcel to delete.
      */
     deleteParcel(id) {
         this.parcels.delete(id);
@@ -113,7 +123,7 @@ export class ParcelsManager {
     /**
      * Calculates the total reward of parcels carried by the agent.
      * 
-     * @returns {number} The total reward.
+     * @returns {Number} Total reward.
      */
     getMyParcelsReward() {
         let val = 0;
@@ -152,7 +162,7 @@ export class ParcelsManager {
      * Handles the sensing of parcels in the environment.
      * 
      * @param {Object[]} sensedParcels - An array of parcels detected in the environment.
-     * @returns {boolean} True if there were updates to the parcels, false otherwise.
+     * @returns {Boolean} True if there were updates to the parcels, false otherwise.
      */
     handleParcelsSensing(sensedParcels) {
         let updates = false;

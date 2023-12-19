@@ -1,16 +1,15 @@
-import { PriorityQueue } from "../../../utils/PriorityQueue.js";
-import { Parcel } from "../../Environment/Parcels/Parcel.js";
+import { PriorityQueue } from "../../../../utils/PriorityQueue.js";
+import { Parcel } from "../../../Environment/Parcels/Parcel.js";
 import { BfsOption, PddlOption} from "./Option.js";
-import { ProblemGenerator } from "./ProblemGenerator.js";
-import { UtilityCalcolator } from "./UtilityCalcolator.js";
+import { ProblemGenerator } from "../planning/ProblemGenerator.js";
+import { UtilityCalcolator } from "../UtilityCalcolator.js";
 
 /**
  * Manages the options available to an agent.
  */
 export class Options {
+
     /**
-     * Constructs a new instance of the Options class.
-     * 
      * @param {Agent} agent - The agent associated with these options.
      */
     constructor(agent) {
@@ -23,7 +22,7 @@ export class Options {
 
 
     /**
-     * Activates the option manager to listen for relevant events.
+     * Activates the event manager to listen for relevant events.
      */
     activate() {
 
@@ -41,60 +40,63 @@ export class Options {
         this.agent.eventManager.on('update_options', () => notification())
         this.agent.eventManager.on('picked_up_parcels', () => notification());
         this.agent.eventManager.on('delivered_parcels', () => notification());
-        if ( this.agent.moveType === 'PDDL')
-            this.agent.eventManager.on('movement', () => notification());
+        this.agent.eventManager.on('movement', () => 
+        {
+            if (this.agent.movementAttempts & 2 == 0)
+                notification()}
+        );
 
     }
 
     /**
      * Updates the options based on the current state of the agent and environment.
+     * This function is specifi for BFS configuration
      */
     updateOptionsForBfs(){
 
         const currentOptionId = this.agent.intentions.currentIntention.option.id
         let options = []
 
-        const predictOptionsPaths = () => {
+        const predictOptionsPaths = () => { // To calculate future path based on current intention final position
             const futurePosition = this.agent.intentions.currentIntention.option.finalPosition
             let updated = 0
             for (let option of options){
-                if (updated < this.agent.lookAhead){
+                if (updated < this.agent.lookAhead){ // Calculate the future path only for the first lookAhead options.
 
-                    // Update utility and search path for non-PDDL movement
-                    let utility = null;
-    
-                    if (option.id === 'bfs_delivery') {
-                        utility = this.utilityCalcolator.deliveryUtility(futurePosition);
-                        option.finalPosition = utility.search.finalPosition
-                    } else if (option.id.startsWith('bfs_pickup-')) {
-                        utility = this.utilityCalcolator.pickUpUtility(option.parcel, futurePosition);
-                    }
-    
-                    option.startPosition = futurePosition
-                    option.bfs = utility.search;                
-                    updated++
+                   option.update(futurePosition)
                 }
             }
         }
 
-        if (this.agent.parcels.carriedParcels() > 0 && currentOptionId !== 'pddl_delivery'){
+        // If the agent is carrying some parcel, evaluate a delivery option
+        if (this.agent.parcels.carriedParcels() > 0 && currentOptionId !== 'bfs_delivery'){
             let utility = this.utilityCalcolator.deliveryUtility(this.agent.currentPosition)
-            options.push(new BfsOption('bfs_delivery', utility.search.startPosition, utility.search.finalPosition, utility.value, utility.search, this.agent.parcels.getOneOfMyParcels())) 
+            if (utility.value > 0)
+                options.push(new BfsOption('bfs_delivery', 
+                    utility.search.startPosition, 
+                    utility.search.finalPosition, 
+                    utility.value, 
+                    utility.search, 
+                    this.agent.parcels.getOneOfMyParcels(),
+                    this.agent)) 
         }
 
+        // For each parcel that can be take, elaborate a plan.
         for(let [_, parcel] of this.agent.parcels.getParcels()){
             const id = `bfs_pickup-${parcel.id}`
             if ( parcel.isFree() && currentOptionId !== id){
                 let utility = this.utilityCalcolator.pickUpUtility(parcel, this.agent.currentPosition)
                 if (utility.value > 1) 
-                    options.push(new BfsOption(id, utility.search.startPosition, utility.search.finalPosition, utility.value, utility.search, parcel))
+                    options.push(new BfsOption(id, utility.search.startPosition, utility.search.finalPosition, utility.value, utility.search, parcel, this.agent))
             }
         }
 
-        if (options.length > 1)
-            predictOptionsPaths()
-
         if (options.length > 0) {
+
+            if (options.length > 1)
+                predictOptionsPaths()
+
+            // Pushing option into intentions
             options.sort( (opt1, opt2) => opt2.utility - opt1.utility )
             this.agent.intentions.push( options )
         }
@@ -102,46 +104,28 @@ export class Options {
 
     /**
      * Updates the options based on the current state of the agent and environment.
+     * Specific for PDDL configuration.
      */
     async updateOptionsForPddl(){
 
         let options = []
         const currentOption = this.agent.intentions.currentIntention.option
 
+        // Elaborate future options
         const predictOptionsPaths = async () => {
             const futurePosition = this.agent.intentions.currentIntention.option.finalPosition
             let updated = 0
 
             for (let option of options){
                 if (updated < this.agent.lookAhead){
-                    await option.updatePlan(futurePosition)
+                    option.updatePlan(futurePosition)
                     updated++
                 }
             }
         
         }
 
-        // Elaborate multiple pickup PDDL plan
-        let parcelsToTake = this.agent.parcels.getFreeParcels()
-        if (parcelsToTake.length > 0){
-            //const search = this.utilityCalcolator.pddlUtilityWithAll(parcelsToTake)
-            
-            for (const parcel of parcelsToTake){
-                const utility = this.utilityCalcolator.simplifiedPickUpUtility(this.agent.currentPosition, parcel)
-                if (currentOption.id !== `pddl_pickup-${parcel.id}` && utility > 0.5){
-                    const option = new PddlOption(
-                        `pddl_pickup-${parcel.id}`,
-                        utility,
-                        this.agent.currentPosition,
-                        parcel.position,
-                        this.agent,
-                        parcel
-                    )
-                    options.push(option)
-                }
-            }
-        }
-
+        // Elaborate delivery option
         if (this.agent.parcels.carriedParcels() > 0 && currentOption.id !== 'pddl_delivery'){
             const parcel = this.agent.parcels.getOneOfMyParcels()
             let search = this.agent.environment.getEstimatedNearestDeliveryTile(this.agent.currentPosition)
@@ -149,6 +133,23 @@ export class Options {
             if (utility > 0){
                 const deliveryOption = new PddlOption('pddl_delivery', utility, this.agent.currentPosition, search.position, this.agent, parcel)
                 options.push(deliveryOption)
+            }
+        }
+
+        // Elaborate pick up options
+        let parcelsToTake = this.agent.parcels.getFreeParcels()
+        for (const parcel of parcelsToTake){
+            const utility = this.utilityCalcolator.simplifiedPickUpUtility(this.agent.currentPosition, parcel)
+            if (currentOption.id !== `pddl_pickup-${parcel.id}` && utility > 0.5){
+                const option = new PddlOption(
+                    `pddl_pickup-${parcel.id}`,
+                    utility,
+                    this.agent.currentPosition,
+                    parcel.position,
+                    this.agent,
+                    parcel
+                )
+                options.push(option)
             }
         }
 

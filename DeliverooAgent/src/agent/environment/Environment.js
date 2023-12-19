@@ -85,14 +85,14 @@ export class Environment {
 
     //this.agent.log('[ENVIRONMENT] Random position:', position);
     return position;
-  }W
+  }
 
   /**
    * Generates a key for caching based on start and end positions.
    * 
    * @param {Position} startPosition - The starting position.
    * @param {Position} endPosition - The ending position, can be null for delivery.
-   * @returns {string} A unique key for the given positions.
+   * @returns {String} A unique key for the given positions.
    */
   positionKey(startPosition, endPosition) {
     return endPosition === null
@@ -137,7 +137,7 @@ export class Environment {
     if (this.cache.has(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
         this.agent.cacheHit += 1
         this.cache.get(cacheKey).uses++
-        if(this.cache.get(cacheKey).uses >= 2)
+        if(this.cache.get(cacheKey).uses >= 0)
           this.cache.delete(cacheKey)
         else
           return this.cache.get(cacheKey);

@@ -12,7 +12,7 @@ export class Player {
      */
     constructor(agent, player) {
         this.agent = agent;
-        this.id = player.id[0] == 'p' ? player.id : 'p' + player.id;
+        this.id = player.id[0] == 'a' ? player.id : 'a' + player.id;
         this.name = player.name;
         this.currentPosition = new Position(player.x, player.y);
         this.lastPosition = new Position(player.x, player.y);
@@ -20,7 +20,8 @@ export class Player {
         this.score = player.score;
         this.positionHistory = new Map();
         this.positionHistory.set(Date.now(), this.currentPosition);
-        console.log('[AGENT][NEW_PLAYER] ', this.name, ' entered in tile', this.currentPosition.toString());
+        this.disappearedTimer = null
+        console.log('[AGENT][NEW_PLAYER] ', this.name, ' entered in tile', this.currentPosition.toString(), '.');
     }
 
     /**
@@ -35,6 +36,10 @@ export class Player {
 
         if (this.lost) {
             positionalUpdates = true;
+        }
+
+        if (this.disappearedTimer){
+            this.disappearedTimer = null
         }
 
         this.lost = false;

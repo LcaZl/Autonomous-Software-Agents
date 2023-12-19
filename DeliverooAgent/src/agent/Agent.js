@@ -5,27 +5,20 @@ import { AgentPercepts } from "./Memory/Percepts.js";
 import { ParcelsManager } from "./Environment/Parcels/ParcelsManager.js";
 import { PlayersManager } from "./Environment/players/PlayersManager.js";
 import { Position } from '../utils/Position.js';
-import { Planner } from "./memory/Reasoning/planner.js"
+import { Planner } from "./memory/reasoning/planning/Planner.js"
 import { Beliefs } from "./memory/Reasoning/Beliefs.js"
 import EventEmitter from "events";
-import { Options } from "./memory/reasoning/Options.js";
-import { Intentions } from "./memory/reasoning/Intentions.js";
+import { Options } from "./memory/reasoning/options/Options.js";
+import { Intentions } from "./memory/reasoning/intentions/Intentions.js";
 import { AgentInterface } from "./AgentInterface.js";
-import { Intention } from "./memory/Reasoning/Intention.js";
-import { ProblemGenerator } from "./memory/Reasoning/ProblemGenerator.js";
-import { goToOption } from "./memory/reasoning/Option.js";
-import { Communication, TeamManager } from "./memory/communication.js";
+import { Intention } from "./memory/reasoning/intentions/Intention.js";
+import { ProblemGenerator } from "./memory/reasoning/planning/ProblemGenerator.js";
+import { goToOption } from "./memory/reasoning/options/Option.js";
+import { Communication, TeamManager } from "./memory/Communication.js";
 /**
- * @class
  * 
  * Class that contains all components needed by the agent. 
- * This class manage different aspect of the agent:
- * - Environment initialization and update.
- * - Agent Sensing initialization
- * - Brain object, which manage the belief set and the planning aspects.
- * - Parcels and enemy agents sensing
- * - Agent own sensing
- * - Foundamentals parameters for the agent (e.g. the number of carried parcels, the score, the position, ...)
+ * @class
  */
 export class Agent extends AgentInterface{
 
@@ -39,24 +32,28 @@ export class Agent extends AgentInterface{
     constructor(host, token, name, duration, moveType, fastPick, lookAhead, changingRisk, adjMovementCostWindow, multiagent, teamNames, teamSize) {
         super()
 
+        // Configuration
         this.duration = duration ? duration * 1000 : Infinity;
         this.moveType = moveType
         this.fastPick = fastPick
         this.lookAhead = lookAhead
         this.changingRisk = changingRisk
         this.adjMovementCostWindow = adjMovementCostWindow
-
-        // Multiagent configuration
-        this.multiagent = multiagent
-        this.teamNames = teamNames
-        this.teamScore = 0
-        this.teamSize = teamSize
-
+        this.nextTile = null
         // Path info
         this.lastPosition = null
         this.currentPosition = null
         this.lastDirection = null
 
+        // Multiagent configuration
+        if (multiagent){
+            this.multiagent = multiagent
+            this.teamNames = teamNames
+            this.teamScore = 0
+            this.teamSize = teamSize
+        }
+
+        // Connection
         this.connected = false 
         this.client = new DeliverooApi(host, token) // Class to establish a connection to the target server
 
@@ -69,14 +66,13 @@ export class Agent extends AgentInterface{
      * Initialize the agent.
      * 
      * @async
-     * @return {Promise<boolean>} - The promise to be fulfilled with a boolean, true if initialization was successful, false otherwise.
      */
     async start() {
 
-        // Ensuring connection and first sensing
+        // Ensuring connection and first sensing before procede
         while (!this.percepts.firstSense || !this.connected) { await new Promise(resolve => setTimeout(resolve, 5)) }
 
-        // Basic information
+        // Basic agent and environment information
         this.agentID = this.client.id
         this.name = this.client.name
         this.active = true
@@ -89,7 +85,7 @@ export class Agent extends AgentInterface{
 
         this.environment = new Environment(this)
 
-        // Timer for agent operation duration
+        // Timer for agent duration, id specified
         if (this.duration != Infinity){
             setTimeout(() => {
                 this.finalMetrics()
@@ -97,13 +93,14 @@ export class Agent extends AgentInterface{
             }, this.duration);
 
             // To update the options when the time is expiring.
-            // If the agent is carring parcels, when this timer expires the best option will be the delivery.
+            // If the agent is carring parcels, when this timer expires the best option will be the delivery, if appropriate.
             setTimeout(() =>{
                 this.eventManager.emit('update_options')
+                console.log('[AGENT] Time is almost ended.')
             }, this.duration - (this.MOVEMENT_DURATION * this.environment.mapHeight))
         }
 
-        // Initialize agent components and load PDDL domain
+        // Initialize agent components
         this.parcels = new ParcelsManager(this)
         this.players = new PlayersManager(this)
         this.beliefs = new Beliefs(this)
@@ -111,17 +108,20 @@ export class Agent extends AgentInterface{
         this.options = new Options(this)
         this.problemGenerator = new ProblemGenerator(this)
         this.intentions = new Intentions(this)
-        this.teamManager = new TeamManager(this)
-        this.communication = new Communication(this)
-        
         await this.planner.loadDomain()
-        
-        if (this.multiagent)
-            while (!this.teamManager.sincronized) { await new Promise(resolve => setTimeout(resolve, 5)) }
 
-        console.log(this.teamManager.master)
-        console.log(this.teamManager.team)
-        process.exit(0)
+        // Multiagente components initialization
+        if (this.multiagent){
+            this.teamManager = new TeamManager(this)
+            this.communication = new Communication(this)
+            this.communication.activate()
+
+            while (!this.teamManager.sincronized) { await new Promise(resolve => setTimeout(resolve, 5)) }
+    
+            console.log(this.teamManager.master)
+            console.log(this.teamManager.team)
+        }
+
         // Activate the managment of the events
         this.parcels.activate()
         this.players.activate()
@@ -129,18 +129,18 @@ export class Agent extends AgentInterface{
         this.options.activate()
 
         this.info()
-        this.log('[INIT] Initialization Ended Succesfully.\n\n')
+        console.log('[INIT] Initialization Ended Succesfully.\n\n')
 
-        // Start effectively the agent
+        // Start the agent
         await this.intentions.loop()
     }
 
     /**
-     * Perform a move with the agent. This function manage the move of the agent. 
-     * The function take the direction and perform the movement, then update the agent internal beliefs.
+     * This function manage the move of the agent. 
+     * The function take the direction and perform the movement, then update the agent internal state.
+     * 
      * @async
      * @param {string} direction - The direction for the agent to move.
-     * @return {Promise<boolean>} - The promise to be fulfilled with a boolean, true if the move was successful, false otherwise.
     */
     async move(direction) {
 
@@ -161,6 +161,7 @@ export class Agent extends AgentInterface{
             //console.log('[MOVE',this.movementAttempts,'] Moved:', moveResult, '- Fail - Position', this.currentPosition)
         }
 
+        // Check of actual tile and the nearby ones
         await this.actualTileCheck()
         //this.status()
 
@@ -179,10 +180,9 @@ export class Agent extends AgentInterface{
         if (pickedUpParcels && pickedUpParcels.length > 0) {
 
             this.parcelsPickedUp += pickedUpParcels.length
-            console.log('[AGENT] Picked up', pickedUpParcels.length,'parcel(s):')
+            console.log('[AGENT] Picked up', pickedUpParcels.length, 'parcel.')
             
-            this.eventManager.emit('picked_up_parcels', pickedUpParcels)     
-            this.communication.pickedUpParcels(pickedUpParcels)       
+            this.eventManager.emit('picked_up_parcels', pickedUpParcels)  
         }
     }
 
@@ -200,10 +200,9 @@ export class Agent extends AgentInterface{
             const reward = this.parcels.getMyParcelsReward()
             this.parcelsDelivered += deliveredParcels.length
             this.score += reward
-            console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Score: ',this.score - this.initialScore,' - Delivered', deliveredParcels.length ,'parcel(s) - Reward: ', this.parcels.getMyParcelsReward())
+            console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Score: ',this.score - this.initialScore,' - Delivered', deliveredParcels.length ,'parcel(s) - Reward: ', this.parcels.getMyParcelsReward(), '.')
 
             this.eventManager.emit('delivered_parcels', deliveredParcels)
-            this.communication.deliveredParcels(deliveredParcels, reward)
         }
     }
 
@@ -212,18 +211,22 @@ export class Agent extends AgentInterface{
      */
     async actualTileCheck() {
 
+        // If i'm on a delivery with parcels, deliver them.
         const OnDelivery = this.environment.onDeliveryTile()
         if (OnDelivery && this.parcels.carriedParcels() > 0)
             await this.deliver()
-        else if (this.parcels.getParcels().size > 0){
+        else if (this.parcels.getParcels().size > 0){ 
             for(let parcel of this.parcels.getParcels().values()){
-                if (this.intentions.currentIntention.option.id !== parcel.id && parcel.position.isEqual(this.currentPosition)){
+
+                if (this.intentions.currentIntention.option.parcelId !== parcel.id && 
+                    parcel.position.isEqual(this.currentPosition)){
                     await this.pickup()
                     break;
                 }
             }
         }
         
+        // If fast pick is enabled, check the nearby tiles for parcels and take them.
         const currentOption = this.intentions.currentIntention.option
         if (this.fastPick && currentOption.id != 'patrolling'){
             const directions = [
@@ -235,19 +238,22 @@ export class Agent extends AgentInterface{
 
             for (const parcel of this.parcels.getFreeParcels().values()) {
 
-
-                if (parcel && parcel.id != currentOption.parcelId){
+                if (parcel && parcel.id != currentOption.parcelId){ // If the parcel is not the current intention target
 
                     const direction = directions.find(dir => parcel.position.isEqual(dir.pos));
                     
                     if (direction) {
+                        await this.client.move( direction.name )
+                        await this.pickup()
+                        if (this.moveType == 'PDDL')
+                            this.options.updateOptionsForPddl()
 
-                        this.intentions.intention_queue.push(
-                            new goToOption('go_to', this.currentPosition, direction.pos, Infinity, [direction.name, direction.opposite]), 
-                            Infinity
-                        );
-                        this.intentions.stopCurrent();
-                        this.eventManager.emit('update_options')
+                        //this.intentions.intention_queue.push(
+                          //  new goToOption('go_to', this.currentPosition, direction.pos, Infinity, [direction.name, direction.opposite]), 
+                            //Infinity
+                        //);
+                        //this.intentions.stopCurrent(); // Stop queue to execute this intention
+                        //this.eventManager.emit('update_options')
                     }
                 }
             }

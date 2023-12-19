@@ -9,8 +9,6 @@ import { Agent } from "../../agent.js";
 export class Beliefs extends Beliefset {
 
   /**
-   * Constructs a new instance of the Beliefs class.
-   * 
   * @param {Agent} agent - The agent that this Beliefs object is associated with
   */
   constructor(agent) {
@@ -21,6 +19,9 @@ export class Beliefs extends Beliefset {
     console.log('[INIT] Agent beliefs initialized.')
   }
 
+  /**
+   * Activate the managment of the notification
+   */
   activate(){
     this.agent.eventManager.on('update_parcels_beliefs', () => this.updateParcels())
     this.agent.eventManager.on('update_players_beliefs', () => this.updatePlayers())
@@ -73,7 +74,7 @@ export class Beliefs extends Beliefset {
   }
 
   /**
-   * Updates the agent's beliefs about parcels.
+   * Updates beliefs about parcels.
   */
   updateParcels() {
     //this.agent.log('[BELIEFSET] Parcels information updated.')
@@ -123,7 +124,7 @@ export class Beliefs extends Beliefset {
    * Initializes the map in the belief set. 
    * This function is used to generate the PDDL constraint that depend on the map.
    * It consider the type and available movement for each tile of the map.
-   * ti doesn't consider the presence of other players.
+   * Here is not considered the presence of other players.
   */
   initMap() {
     let map = this.agent.environment.fullMap

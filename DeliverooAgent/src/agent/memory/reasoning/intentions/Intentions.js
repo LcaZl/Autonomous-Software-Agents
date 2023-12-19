@@ -1,7 +1,7 @@
-import { PriorityQueue } from "../../../utils/PriorityQueue.js";
-import { Agent } from "../../agent.js";
+import { PriorityQueue } from "../../../../utils/PriorityQueue.js";
+import { Agent } from "../../../agent.js";
 import { Intention } from "./Intention.js";
-import { Option } from "./Option.js";
+import { Option } from "../options/Option.js";
 
 /**
  * Manages the intentions of an agent, handling the decision-making process.
@@ -16,8 +16,7 @@ export class Intentions {
         this.agent = agent;
         this.intention_queue = new PriorityQueue();
         this.currentIntention = null;
-        console.log('[INIT] Intentions initialized.');
-
+        this.pushing = false
         this.agent.eventManager.on('deleted_parcel', async (id) => {
 
             let realId = null
@@ -31,10 +30,12 @@ export class Intentions {
             if (this.intention_queue.has(realId))
                 this.intention_queue.removeById(realId)
         })
+
+        console.log('[INIT] Intentions initialized.');
     }
 
     /**
-     * Stops the current intention if it exists.
+     * Stops the current intention if exists.
      */
     stopCurrent() {
         if (this.currentIntention) {
@@ -43,11 +44,12 @@ export class Intentions {
     }
 
     /**
-         * Adds a new option to the intentions queue or updates it if it already exists.
-         * 
-         * @param {Option} option - The option to be added or updated.
-         */
+     * Adds a new option to the intentions queue or manage it if it already exists.
+     * 
+     * @param {Option} option - The option to be added or updated.
+    */
     async push(options) {
+        this.pushing = true
         //console.log('\n\n|--Curr- ',this.currentIntention.option.utility,' -', this.currentIntention.option.id)
         //this.agent.showIntentions(this.intention_queue.valuesWithPriority())
         
@@ -73,6 +75,7 @@ export class Intentions {
         }
         if (newBest)
             this.stopCurrent()
+        this.pushing = false
     }
 
     /**
@@ -80,8 +83,6 @@ export class Intentions {
      * Listens for events that might impact current intentions.
      */
     async loop ( ) {
-        this.loopEnabled = true
-
 
         this.agent.eventManager.on('picked_up_parcels', async (ids) => {
 
@@ -99,49 +100,50 @@ export class Intentions {
             }
         })
 
-        while ( this.loopEnabled ) {
-            //this.agent.showIntentions(this.intention_queue.valuesWithPriority())
-            //console.log('[INTENTIONS_REVISION] Start revision loop.')
-
-            // Consumes intention_queue if not empty
-            if ( this.intention_queue.size() == 0 ) {
-                let rndPosition = this.agent.environment.getRandomPosition()
-                let idle = new Option('patrolling', this.agent.currentPosition, rndPosition, 0);
-                this.intention_queue.push( idle );
-            }
-            else {
-                //console.log( '[INTENTIONS] Intentions queue:');
-                let option = this.intention_queue.pop();
-
-                const intention = this.currentIntention = new Intention( this, option, this.agent );
-
-                if ( option.id.startsWith('bfs_pickup-') || option.id.startsWith('pddl_pickup-')){
-
-                    if ( !this.agent.parcels.isValidPickUp(option.parcel.id) ) 
-                        continue;
+        while ( true ) {
+            if ( !this.pushing ){
+                // If empty intentions queue -> patrolling
+                if ( this.intention_queue.size() == 0 ) {
+                    let rndPosition = this.agent.environment.getRandomPosition()
+                    console.log()
+                    let idle = new Option('patrolling', this.agent.currentPosition, rndPosition, 0);
+                    this.intention_queue.push( idle );
                 }
+                else { // Consumes intention_queue if not empty
+                    //console.log( '[INTENTIONS] Intentions queue:');
+                    let option = this.intention_queue.pop();
 
-                if (option.id === 'bfs_delivery' || option.id === 'pddl_delivery')
-                    if (this.agent.parcels.carriedParcels() === 0){
-                        console.log( '[INTENTIONS_REVISION] Delivery option', option.id, ' no more valid.' );
-                        continue;
+                    const intention = this.currentIntention = new Intention( this, option, this.agent );
+
+                    if ( option.id.startsWith('bfs_pickup-') || option.id.startsWith('pddl_pickup-')){
+
+                        if ( !this.agent.parcels.isValidPickUp(option.parcel.id) ) 
+                            continue;
                     }
 
-                // Start achieving intention
-                //console.log('[INTENTIONS] Started : ', this.currentIntention.option.id)
-                await intention.achieve().catch( error => {
+                    if (option.id === 'bfs_delivery' || option.id === 'pddl_delivery')
+                        if (this.agent.parcels.carriedParcels() === 0){
+                            console.log( '[INTENTIONS_REVISION] Delivery option', option.id, ' no more valid.' );
+                            continue;
+                        }
 
-                    if ( !intention.stopped ){
-                        console.log( '[INTENTIONS_REVISION] Error with intention', intention.option.id, '- Error:', error )
-                        process.exit(0)
-                    }
-                });
-                //console.log('[INTENTIONS] Ended   : ', this.currentIntention.option.id)
+                    // Start achieving intention
+                    //console.log('[INTENTIONS] Started : ', this.currentIntention.option.id, this.intention_queue.size())
+                    this.agent.eventManager.emit('new_intention', intention.option) // For the communication
+                    await intention.achieve().catch( error => {
 
+                        if ( !intention.stopped ){
+                            console.log( '[INTENTIONS_REVISION] Error with intention', intention.option.id, '- Error:', error )
+                            process.exit(0)
+                        }
+                    });
+                    //console.log('[INTENTIONS] Ended   : ', this.currentIntention.option.id)
+
+                }
+                
+                //console.log('[INTENTIONS_REVISION] End revision loop.')
+                await new Promise( res => setImmediate( res ) );
             }
-            
-            //console.log('[INTENTIONS_REVISION] End revision loop.')
-            await new Promise( res => setImmediate( res ) );
         }
     }
 }

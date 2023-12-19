@@ -1,130 +1,161 @@
-import { Agent } from "../../Agent.js";
 
-export class Option{
-    
-        /**
-     * Constructs a new instance of the Option class.
-     * 
-     * @param {string} id - The identifier of the option.
-     * @param {Position} position - The position associated with this option.
-     * @param {number} utility - The utility value of the option.
-     * @param {boolean} search - Contains information of the first search.
-     * @param {Parcel} parcel - The parcel associated with this option, if any.
-     */
-        constructor(id, startPosition, finalPosition, utility) {
-            this.id = id
-            this.startPosition = startPosition
-            this.finalPosition = finalPosition
-            this.utility = utility;
-        }
-}
 
-export class goToOption extends Option{
-
-    constructor(id, startPosition, finalPosition, utility, actions){
-        super(id, startPosition, finalPosition, utility)
-        this.actions = actions
-    }
-}
-
-export class BfsOption extends Option{
-    /**
-     * Constructs a new instance of the Option class.
-     * 
-     * @param {string} id - The identifier of the option.
-     * @param {Position} position - The position associated with this option.
-     * @param {number} utility - The utility value of the option.
-     * @param {boolean} search - Contains information of the first search.
-     * @param {Parcel} parcel - The parcel associated with this option, if any.
-     */
-    constructor(id, startPosition, finalPosition, utility, search, parcel) {
-        super(id, startPosition, finalPosition, utility)
-        this.bfs = search
-        this.parcel = null
-        this.parcelId = null
-        if (id !== 'bfs_patrolling'){
-            this.parcel = parcel
-            this.parcelId = parcel.id
-        }
-
-    }
-
-    toString() {
-        return `[ID: ${this.id}, Utility: ${this.utility}, S_POS: ${this.startPosition}, F_POS: ${this.finalPosition}, Parcel_id: ${this.parcel ? this.parcel.id : ''}, Search: ${this.search ? this.search.firstPosition : ''}]`;
-    }
-}
-
-export class PddlOption extends Option{
-
-    /**
-     * 
-     * @param {*} id 
-     * @param {*} startPosition 
-     * @param {*} finalPosition 
-     * @param {*} utility 
-     * @param {Agent} agent 
-     * @param {*} parcel 
-     */
-    constructor(id, utility, startPosition, finalPosition, agent, parcel){
-        super(id, startPosition, finalPosition, utility)
-        this.agent = agent
-        this.parcel = null
-        this.parcelId = null
-
-        if (this.id === 'pddl_delivery' || this.id.startsWith('pddl_pickup-')){
-            this.parcel = parcel
-            this.parcelId = parcel.id
-        }
-
-        this.plan = null
-        this.updatePlan(this.agent.currentPosition)
-    }
-
-    async updatePlan(startPosition){
-        //console.log('updating single plan for ', this.id)
-
-        this.startPosition = startPosition
-
-        if (this.id === 'pddl_patrolling')
-            this.plan = await this.agent.planner.getPlanFromTo(this.startPosition, this.finalPosition)
-        
-        else if (this.id === 'pddl_delivery')
-            this.plan = await this.agent.planner.getDeliveryPlan(this.startPosition, this.parcelId)
-
-        else if (this.id.startsWith('pddl_pickup-'))
-            this.plan = await this.agent.planner.getPickupPlan(this.startPosition, this.parcel)
-
-        else throw ['Option_id_not_valid', this.id]
-
-        if (this.plan != null){
-            this.finalPosition = this.plan.finalPosition
-            //this.updateUtility()
-        }
-    }
-
-    updateUtility(){
-
-        let distance = (this.plan.steps.length - 1)
-        let reward = this.agent.parcels.getMyParcelsReward()
-
-        if (this.id.startsWith('pddl_pickup-')){
-            distance = (this.plan.steps.length - 1) + this.parcel.pathToDelivery.length
-            reward = this.parcel.reward
-        }   
-
-        let cost = distance * this.agent.options.utilityCalcolator.movementPenality
-        if (this.startPosition.isEqual(this.agent.currentPosition))
-            cost += this.startPosition.distanceTo(this.agent.currentPosition)
-        
-        this.utility = reward - cost
-    }
-
-    toString() {
-        return `[ID: ${this.id}, Utility: ${this.utility}, S_POS: ${this.startPosition}, F_POS: ${this.finalPosition}, Parcel_ids: ${this.parcelId}`
-    }
-
-}
 /**
+ *             //id = this.generateCacheId(type, startPosition, parcels)
+        //console.log(' - id:',id)
+        //if (this.cache.has(id)){
+            //console.log('PLAN FOUND in cache:')
+            //console.log(this.cache.get(id))
+            //return this.cache.get(id)
+        //}
+ * 
+    savePlan(plan){
+        const totalStartPosition = this.exractTilePositionFromPDDL(plan[0].args[1])
+        let singleStartPosition = totalStartPosition
+        
+        let steps = []
+        let totalPositions = new Set().add(totalStartPosition)
+        let singlePositions = new Set().add(singleStartPosition)
+        let actions = []
+        let finalPosition = null
+        let subPlans = []
+        let previousParcels = []
+        let startIndex = 0
+        let key = null
+        let reward = 0
+
+        const addCachePlan = (step, finalPosition) => {
+            const key = `${totalStartPosition.x}_${totalStartPosition.y}-${finalPosition.x}_${finalPosition.y}` 
+            actions.push(step.action.split('_').at(1))
+            totalPositions.add(finalPosition)
+            singlePositions.add(finalPosition)
+
+            const subPlan = {
+                id: key,
+                steps : steps, 
+                startPosition : totalStartPosition,
+                finalPosition : finalPosition, 
+                positions : [...totalPositions],
+                actions : actions,
+                parcelIds : [],
+                previousParcels : [],
+                length : actions.length,
+                reward : reward
+            }
+
+            this.cache.set(key, subPlan)
+        }
+
+        for (let [index, step] of plan.entries()){
+            
+            steps.push(step)
+            finalPosition = this.exractTilePositionFromPDDL(step.args[2])
+
+            if (step.action.startsWith('move')) 
+                addCachePlan(step, finalPosition)
+
+
+            else if (step.action === 'pickup' || step.action === 'deliver'){
+                actions.push(step.action)
+                if(step.action === 'pickup'){
+                    key = `pickup-${step.args[1]}`
+                    reward += this.agent.parcels.getParcels().get(step.args[1]).reward
+                }
+                else
+                    key = `${singleStartPosition.x}_${singleStartPosition.y}-delivery`
+
+                const subPlan = {
+                    id: key,
+                    steps : steps.slice(startIndex), 
+                    startPosition : singleStartPosition,
+                    finalPosition : finalPosition, 
+                    positions : [...singlePositions],
+                    actions : actions.slice(startIndex),
+                    parcelId : step.args[1],
+                    previousParcels : previousParcels,
+                    length : actions.slice(startIndex).length,
+                    reward : reward
+                }
+
+                if (step.action === 'deliver')
+                    this.cache.set(subPlan.id, subPlan)
+
+                console.log('Sub plan ',subPlan.id)
+                console.log(' - length', subPlan.length)
+                console.log(' - startPosition', subPlan.startPosition)
+                console.log(' - finalPosition', subPlan.finalPosition)
+                console.log(' - positions', subPlan.positions.values().toString())
+                console.log(' - actions', subPlan.actions.toString())
+                console.log(' - reward', subPlan.reward)
+                console.log(' - id', subPlan.parcelId)
+                subPlans.push(subPlan)
+                singleStartPosition = finalPosition
+                singlePositions = new Set().add(finalPosition)
+                previousParcels = previousParcels.concat([step.args[1]])
+                startIndex = index + 1
+            }
+
+            else{
+                console.log('Action not recognized. ', step)
+                process.exit(0)
+            }
+
+            //console.log(' - subPlans:')
+            //for (let t of wrappedPlan.steps)
+              //  console.log(t)
+
+
+        }
+
+        //console.log('\nPlan splitted:\n')
+        //for (let el of subPlans){
+          //  console.log(el)
+        //}
+
+        let wrappedPlan = {
+            id: key,
+            steps : steps, 
+            startPosition : totalStartPosition,
+            finalPosition : finalPosition, 
+            positions : [...totalPositions],
+            actions : actions,
+            parcelIds : previousParcels,
+            previousParcels : previousParcels,
+            length : actions.length,
+            reward : reward
+        }
+
+        return {total:wrappedPlan, subPlans:subPlans}
+    }
+ */
+
+ 
+/**
+ * 
+ * 
+    multipleGoto(parcels) {
+        let goal = `and `;
+        let lastPosition = null
+
+        for (let parcel of parcels) {
+            goal += `(carries ${this.agent.agentID} ${parcel.id}) `
+            lastPosition = parcel.position;
+        }
+
+        goal += ` (at ${this.agent.agentID} t${lastPosition.x}_${lastPosition.y})`;        
+    
+        var problem = new PddlProblem(
+            `${this.agent.currentPosition.x}_${this.agent.currentPosition.y}-${lastPosition.x}_${lastPosition.y}`,
+            this.agent.beliefs.getObjectsWithType(),
+            this.agent.beliefs.toPddlString(),
+            goal
+        );
+
+        return problem;
+    }
+ */
+
+ /**
  * 
  * 
 export class MultiplePddlOption{

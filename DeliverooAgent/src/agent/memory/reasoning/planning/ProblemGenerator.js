@@ -1,6 +1,6 @@
 import { PddlProblem } from "@unitn-asa/pddl-client";
-import { Agent } from "../../agent.js";
-import { Parcel } from "../../Environment/Parcels/Parcel.js";
+import { Agent } from "../../../agent.js";
+import { Parcel } from "../../../Environment/Parcels/Parcel.js";
 
 /**
  * This class generate PDDL problems upon request by taking the actual info inside the belief set.
@@ -23,10 +23,10 @@ export class ProblemGenerator{
      * @param {Object} endTile 
      * @returns {String}
      */
-    go(from, to) {
+    go(to) {
 
         var problem = new PddlProblem(
-            `go_from_to-${from.x}_${from.y}-${to.x}_${to.y}`,
+            `go_to-${to.x}_${to.y}`,
             this.agent.beliefs.getObjectsWithType(),
             this.agent.beliefs.toPddlString(),
             `at ${this.agent.agentID} t${to.x}_${to.y}`
@@ -34,6 +34,15 @@ export class ProblemGenerator{
         return problem.toPddlString()
     }
 
+    /**
+     * Generate a pickup PDDL problem setting the start position to the specified one.
+     * As the agent is imagining to be there.
+     * Returns the problem to pickup the specified parcel.
+     * 
+     * @param {Position} from 
+     * @param {String} parcelId 
+     * @returns 
+     */
     pickupFrom(from, parcelId){
         const goal = `carries ${this.agent.agentID} ${parcelId}`
 
@@ -58,6 +67,15 @@ export class ProblemGenerator{
         return problem.toPddlString()
     }
 
+    /**
+     * Generates a PDDL delivery problem from the spicified position.
+     * The problem has as a goal to not carry a parcel, to achive this goal, accordingly to the domain, the plan generated will have
+     * a path to the nearest delivery tile, where the agent can drop the parcel.
+     * 
+     * @param {Position} from 
+     * @param {String} parcelId 
+     * @returns 
+     */
     deliverFrom(from, parcelId){
         const goal = `not (carries ${this.agent.agentID} ${parcelId})`
 
@@ -83,28 +101,3 @@ export class ProblemGenerator{
         return problem.toPddlString()
     }
 }
-
-/**
- * 
- * 
-    multipleGoto(parcels) {
-        let goal = `and `;
-        let lastPosition = null
-
-        for (let parcel of parcels) {
-            goal += `(carries ${this.agent.agentID} ${parcel.id}) `
-            lastPosition = parcel.position;
-        }
-
-        goal += ` (at ${this.agent.agentID} t${lastPosition.x}_${lastPosition.y})`;        
-    
-        var problem = new PddlProblem(
-            `${this.agent.currentPosition.x}_${this.agent.currentPosition.y}-${lastPosition.x}_${lastPosition.y}`,
-            this.agent.beliefs.getObjectsWithType(),
-            this.agent.beliefs.toPddlString(),
-            goal
-        );
-
-        return problem;
-    }
- */

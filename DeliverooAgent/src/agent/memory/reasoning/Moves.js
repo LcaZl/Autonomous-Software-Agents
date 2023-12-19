@@ -1,8 +1,8 @@
 import { PddlExecutor } from "@unitn-asa/pddl-client";
 import { Agent } from "../../agent.js";
-import { Intention } from "./Intention.js";
+import { Intention } from "./intentions/Intention.js";
 import { BfsExecutor } from "../../../utils/BfsExecutor.js";
-import { BfsOption, PddlOption } from "./Option.js";
+import { BfsOption, PddlOption } from "./options/Option.js";
 export class Move {
 
     // This is used to stop the plan
@@ -28,7 +28,6 @@ export class Move {
     get stopped () { return this.#stopped; }
 
     stop () {
-        this.log( '[ACTUAL PLAN] Stopped.' );
         this.#stopped = true;
 
         for ( const i of this.#sub_intentions ) {
@@ -81,7 +80,7 @@ export class Patrolling extends Move {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
         let patrolling = null 
         if (this.agent.moveType === 'BFS')
-            patrolling = new BfsOption('bfs_patrolling', option.startPosition, option.finalPosition, 0, null)
+            patrolling = new BfsOption('bfs_patrolling', option.startPosition, option.finalPosition, 0, null, null, this.agent)
         else if (this.agent.moveType === 'PDDL')
             patrolling = new PddlOption('pddl_patrolling', 0, option.startPosition, option.finalPosition, this.agent, null)
         
@@ -98,11 +97,11 @@ export class BlindMove extends Move {
     }
 
     async execute ( option ) {
-        const status_go = await this.agent.client.move( option.actions[0] )
-        if (!status_go) throw ['movement_fail']
+        await this.agent.client.move( option.actions[0] )
+
         await this.agent.pickup()
-        if ( this.agent.moveType === 'PDDL')
-            await this.agent.client.move( option.actions[1] )
+        if (this.agent.moveType == 'PDDL')
+            this.agent.eventManager.emit('update_options')
         this.agent.fastPickMoves++
         return true
     }
@@ -115,29 +114,14 @@ export class BreadthFirstSearchMove extends Move {
 
     async execute ( option ) {
         
-        const setBfsPath = () => {
-            this.positions = this.plan.path.positions
-            this.actions = this.plan.path.actions
-        }
 
         const updatePlan = () => {
 
-            if (option.id == 'bfs_delivery'){
-                this.plan = this.agent.environment.getNearestDeliveryTile(this.agent.currentPosition);
-                if ( this.plan.length == 0 ) { throw ['target_not_reachable'] }
-                setBfsPath()
-            }
-            else{
-                let position = null
-                if (option.id === 'bfs_patrolling')
-                    position = this.agent.environment.getRandomPosition()
-                else if (option.id.startsWith('bfs_pickup-'))
-                    position = option.finalPosition
-
-                this.plan = this.agent.environment.getShortestPath(this.agent.currentPosition, position);
-                if ( this.plan.length == 0 ) { throw ['target_not_reachable'] }
-                setBfsPath()
-            }
+            option.update(this.agent.currentPosition)
+            this.plan = option.search
+            if ( this.plan.length == 0 ) { throw ['target_not_reachable'] }
+            this.positions = option.search.path.positions
+            this.actions = option.search.path.actions
         }        
 
         const movementHandle = async (direction, index) => {
@@ -146,13 +130,15 @@ export class BreadthFirstSearchMove extends Move {
                 const freePath = this.isPathFree(index)
                 if (!freePath){
                     this.agent.eventManager.emit('update_options')
+                    updatePlan()
                     throw ['path_not_free']
                 }
             }
 
             const status = await this.agent.move(direction);
             if (!status)  throw ['movement_fail']
-            if ( this.stopped ) throw ['stopped']
+            if(index === (this.actions.length - 2) )
+                this.agent.eventManager.emit('update_options')
         }
 
         const bfsExecutor = new BfsExecutor(
@@ -164,21 +150,30 @@ export class BreadthFirstSearchMove extends Move {
 
         if (option.id !== 'bfs_patrolling' && 
         option.startPosition.isEqual(this.agent.currentPosition) && 
-        option.bfs.length != 0){
+        option.search.length != 0){
             
-            this.plan = option.bfs
-            setBfsPath()
+            this.positions = option.search.path.positions
+            this.actions = option.search.path.actions
             this.agent.lookAheadHits++
             //console.log('hit for ', option.id)
         }
         else
             updatePlan()
 
-        this.agent.client.socket.emit( "path", this.positions);
-        await bfsExecutor.exec( this.actions ).catch((error) =>{
-            throw error
-        })
-        
+        let pathError = false
+        do{
+            if ( this.stopped ) throw ['stopped']
+            pathError = false
+            this.agent.client.socket.emit( "path", this.positions);
+            await bfsExecutor.exec( this.actions ).catch((error) =>{
+                if (error[0] !== 'path_not_free')
+                    throw error
+                else
+                    pathError = true
+            })
+        }
+        while(pathError)
+
         if (option.id.startsWith('bfs_pickup-'))
             this.agent.pickup()
         if (option.id === 'bfs_delivery' )
@@ -209,15 +204,16 @@ export class PddlMove extends Move {
             
             const freePath = this.isPathFree(idx)
             if (!freePath) {
-                await updatePlan()
+                this.agent.eventManager.emit('update_players_beliefs')
                 this.agent.eventManager.emit('update_options')
+                await updatePlan()
                 throw ['path_not_free']
             }
-            //if (idx > (this.plan.length - 2))
-              //  this.agent.eventManager.emit('update_options')
 
             const status = await this.agent.move(direction);
             if (!status)  throw ['movement_fail']
+            if(idx === (this.plan.length - 2) )
+                this.agent.eventManager.emit('update_options')
         }
 
         const pddlExecutor = new PddlExecutor(
@@ -229,21 +225,30 @@ export class PddlMove extends Move {
             {name: 'pickup', executor: (idx) =>  this.agent.pickup()}
         );
 
-        if (option.plan !== null && option.startPosition.isEqual(this.agent.currentPosition) && this.isPathFree(option.plan.steps)){
+        if (option.plan !== null && option.startPosition.isEqual(this.agent.currentPosition)){
             this.plan = option.plan.steps
             this.positions = option.plan.positions
             this.agent.lookAheadHits++
-            console.log('hit')
         }
         else 
             await updatePlan()
 
-        this.agent.client.socket.emit( "path", this.positions);
 
-        await pddlExecutor.exec( this.plan ).catch(async (error) =>{
-            if (error[0] != 'path_not_free')
-                throw error
-        })
+        let pathError = false
+        do{
+            pathError = false
+            this.agent.client.socket.emit( "path", this.positions);
+
+            await pddlExecutor.exec( this.plan ).catch(async (error) =>{
+                if (error[0] !== 'path_not_free')
+                    throw error
+                else
+                    pathError = true
+            })
+
+        }
+        while(pathError)
+        
         return true
     }
 }

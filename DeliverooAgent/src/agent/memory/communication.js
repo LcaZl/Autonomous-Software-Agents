@@ -19,8 +19,10 @@ export class Communication{
                 reply : reply
             }
             console.log('Received message:\n', packet)
-
-            this.messaggeDispatcher(packet)
+            if (this.teamManager.sincronized)
+                this.messaggeDispatcher(packet)
+            else
+                this.sincornizationProcedure(packet)
         });
 
         // Send sinchronization message to everyone
@@ -30,8 +32,40 @@ export class Communication{
         this.agent.client.shout( msg );
     }
 
+    activate(){
+        //this.agent.eventManager.on('update_parcels_beliefs', () => this.updateParcels())
+        //this.agent.eventManager.on('update_players_beliefs', () => this.updatePlayers())
+        //this.agent.eventManager.on('deleted_parcel', (id) => this.deleteParcel(id))
+        //this.agent.eventManager.on('movement', () => this.updateMyPosition())
+        this.agent.eventManager.on('picked_up_parcels', (pickedUpParcels) => this.pickedUpParcels(pickedUpParcels)  )
+        this.agent.eventManager.on('delivered_parcels', (deliveredParcels) => this.deliveredParcels(deliveredParcels)  )
+        this.agent.eventManager.on('new_intention', (option) => this.myNewIntention(option) )
+        /**
+         * Master:
+         * Comunica cosa fa e richiede info allo slave
+         * Lo slave comunica la sua intenzione al master per l'approvazione
+         * Il master manda l'approvazione o meno
+         * 
+         * Slave:
+         * Se l'intenzione fallisce comunica la prossima al master
+         * IL master registra l'intenzione e la approva o meno
+         * 
+         * Il master sostanzialmente non deve richiedere conferma per le sue azioni. Semplicemente valida quelle degli slave
+         *  Cosi:
+         * MAster e slave:
+         * - Comunica parcel e player visti
+         * - Comunica propria posizione
+         * 
+         * Master:
+         * - Validazione intenzioni slave
+         * 
+         * Slave:
+         * - Richiesta approvazione intenzione al master
+         */
+    
+    }
 
-    async messaggeDispatcher(packet){
+    async sincornizationProcedure(packet){
 
         switch(packet.message.type){
             case 'sincro_0':
@@ -58,7 +92,7 @@ export class Communication{
                         const msg = {
                             type : 'master_set',
                         }
-                        await this.teamBroadcastMessage(msg)
+                        this.teamBroadcastMessage(msg)
                     }
                 }
                 break;
@@ -77,6 +111,14 @@ export class Communication{
             case 'master_set':
                 this.teamManager.setMaster(packet.id)
                 break;
+            default:
+                console.log('Packet not recognized. Message:\n', packet)
+                break;
+            }
+    }
+    async messaggeDispatcher(packet){
+
+        switch(packet.message.type){
             case 'pickup':
                 this.agent.parcels.deleteParcel(packet.message.id)
                 //this.agent.eventManager.emit('picked_up_parcels_by', pickedUpParcels)     
@@ -85,10 +127,14 @@ export class Communication{
                 for (const pId of packet.message.ids){
                     this.agent.parcels.deleteParcel(pId)
                 }
-                this.agent.teamScore += packet.message.reward
                 break;
-            case 'intention_changed':
-                
+            case 'new_intention':
+                if (packet.message.parcelId === null){ // Teammate is delivering
+
+                }
+                else{ // Teammate is going to pick up something
+
+                }
                 break;
             default:
                 console.log('Packet not recognized. Message:\n', packet)
@@ -97,14 +143,22 @@ export class Communication{
     
     }
 
-    myNewIntention(id){}
+    myNewIntention(option){
+        if (!option.id.endsWith('patrolling')){
+            const message = {
+                type : 'new_intention',
+                parcelId : option.parcel != null ? option.parcel.id : null,
+                position : option.position
+            }
+            this.teamBroadcastMessage(message)
+        }
+    }
 
-    deliveredParcels(parcels, reward){
+    deliveredParcels(parcels){
         
         const message = {
             type : 'delivered',
             ids : parcels.map(p => p.id),
-            reward : reward
         }
         this.teamBroadcastMessage(message)
     }
@@ -124,10 +178,15 @@ export class Communication{
     }
 
     async teamBroadcastMessage(msg){
+        msg.currentPosition = this.agent.currentPosition
         for (const teammateId of this.teamManager.teamIds()){
             console.log('Sending this message to ',teammateId,';\n', msg)
             await this.agent.client.say(teammateId, msg)
         }
+    }
+
+    updateTeamPositions(){
+
     }
 }
 
@@ -171,6 +230,7 @@ export class TeamManager{
 
         this.team.set(id, teamMember)
     }
+
 
     
 }

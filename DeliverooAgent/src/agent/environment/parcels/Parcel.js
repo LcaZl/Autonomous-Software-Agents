@@ -55,7 +55,7 @@ export class Parcel {
     /**
      * Checks if the parcel is carried by the current agent.
      * 
-     * @returns {boolean} True if the parcel is carried by the agent, false otherwise.
+     * @returns {Boolean} True if the parcel is carried by the agent, false otherwise.
      */
     isMine() {
         return this.carriedBy === this.agent.agentID;

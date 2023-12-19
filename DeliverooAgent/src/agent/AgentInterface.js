@@ -2,6 +2,13 @@ import readline from 'readline';
 import { Agent } from './agent.js';
 
 /**
+ * This class manage the output for an agent. 
+ * There are methods for:
+ * - print the initial status of the agent when initialized
+ * - print the final status when finalized
+ * - print the status of the agent at any moment;
+ * - print parcels, intentions, option and player;
+ * - print the map;
  * @class
  */
 export class AgentInterface{
@@ -25,10 +32,6 @@ export class AgentInterface{
 
   }
 
-  log(message){
-    if (this.consoleActivated)
-      console.log(message)
-  }
   /**
    * Prints the map of the environment.
    * @param {Environment} environment - The environment object.
@@ -45,7 +48,9 @@ export class AgentInterface{
     }
   }
 
-  // Console agent info
+  /**
+   * Print the initialization info
+   */
   info() {
       console.log('[INIT] Agent info:\n')
       console.log(' - ID: ', this.agentID)
@@ -55,6 +60,7 @@ export class AgentInterface{
       console.log(' - Server Deliveroo Connected: ', this.client.id != null)
       console.log(' - Token: ', this.client.token)
       console.log(' - Environment Configuration:')
+      console.log(' - PARCEL_DECADING_INTERVAL:', this.PARCEL_DECADING_INTERVAL)
       for (const key in this.client.config) {
         if (this.client.config.hasOwnProperty(key)) {
           const value = this.client.config[key];
@@ -64,9 +70,11 @@ export class AgentInterface{
       console.log(' - Environment Map (\'-\': Inactive cells, 1: Active spawner cells, 2: active delivery cells)\n')
       this.printMap(this.environment.fullMap)
       console.log('\n - Delivery Tiles',this.environment.deliveryTiles)
-      console.log(' - PARCEL_DECADING_INTERVAL:', this.PARCEL_DECADING_INTERVAL)
   }
 
+  /**
+   * Print info at any time
+   */
   status() {
     if(this.consoleActivated){
       console.log('|------------------------------------|')
@@ -84,9 +92,12 @@ export class AgentInterface{
       console.log('|------------------------------------|')
       console.log('|                 END                |')
       console.log('|------------------------------------|')
+    }
   }
-}
 
+  /**
+   * Print final metrics
+   */
   finalMetrics() {
     this.finishAt = new Date().getTime()
     let diff = this.finishAt - this.startedAt;
@@ -101,14 +112,18 @@ export class AgentInterface{
     console.log(' - Pick up performed:', this.pickUpActions)
     console.log(' - Delivery performed:', this.deliveryActions)
     console.log(' - Delivered parcels:', this.parcelsDelivered)
-    console.log(' - Exploration map:\n')
-    this.printMap(this.environment.exploredTiles)
+
     console.log(' - Search call', this.environment.searchCalls)
     console.log(' - Cache hits', this.cacheHit)
     console.log(' - Look ahead hits:', this.lookAheadHits)
     console.log(' - Fast pick moves:', this.fastPickMoves)
     console.log(' - Online solver calls:', this.onlineSolverCalls)
-    console.log(' - Team score: ', this.teamScore + this.score)
+    if (this.multiagent){
+      console.log(' - Team score: ', this.teamScore + this.score)
+    }
+    console.log(' - Exploration map:\n')
+    this.printMap(this.environment.exploredTiles)
+    
     //console.log(' - Chached BFS paths (',this.environment.cache.size,'):\n', this.environment.cache)
   }
 
@@ -134,62 +149,60 @@ export class AgentInterface{
    * @param {Array} options 
    */
   showOptions(options){
-      console.log('|- Last pushed options: ', options ? options.length : 0)
-      if (options && options.length > 0){
-        let i = 1
-        for (let opt of options){
-          console.log('|-- ',i,'-', opt.toString())
-          i++
-        }
+    console.log('|- Last pushed options: ', options ? options.length : 0)
+    if (options && options.length > 0){
+      let i = 1
+      for (let opt of options){
+        console.log('|-- ',i,'-', opt.toString())
+        i++
       }
+    }
   }
 
   /**
    * @param {Intentions} intentions 
    */
   showIntentions(intentions){
-      console.log('|- Intentions: ', intentions.length)
-      if (intentions.length > 0){
-        let i = 1
+    console.log('|- Intentions: ', intentions.length)
+    if (intentions.length > 0){
+      let i = 1
 
-        for (let o of intentions) {
-          console.log('|--',i, '- ',o.priority,' -', o.data.toString())
-          i++
-        }
+      for (let o of intentions) {
+        console.log('|--',i, '- ',o.priority,' -', o.data.toString())
+        i++
       }
-    
+    }
   }
-
 
   /**  
    * @param {Array<Player>} players - The players object to be displayed.
   */
   showPlayers(players) {
-      console.log('|- Player encountered: ', players.size)
-      if(players.size > 0){
-        let i = 1
-        for (let p of players) {
-          let str = p.toString()
-          console.log('|--',i, '-', p.toString())
-          i++
-        }
+    console.log('|- Player encountered: ', players.size)
+    if(players.size > 0){
+      let i = 1
+      for (let p of players) {
+        let str = p.toString()
+        console.log('|--',i, '-', p.toString())
+        i++
       }
+    }
   }
 
 
   /**
    * @param {Beliefs}
   */
- showBeliefs(beliefs){
-      let count = 1
-      let string = ''
-      for (let v of beliefs.entries){
-        if (count % 11 == 0){
-          console.log(string)
-          string = ''
-        }
-        string += '\t['+v+']'
-        count++
+  showBeliefs(beliefs){
+    let count = 1
+    let string = ''
+    for (let v of beliefs.entries){
+      if (count % 11 == 0){
+        console.log(string)
+        string = ''
       }
+      string += '\t['+v+']'
+      count++
     }
+  }
 }

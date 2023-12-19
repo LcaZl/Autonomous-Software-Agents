@@ -6,8 +6,6 @@ export class Intention {
     #stopped = false; // Flag to control the stopping of the intention
 
     /**
-     * Constructs a new instance of the Intention class.
-     * 
      * @param {Object} parent - The parent object that created this intention.
      * @param {Object} option - The option associated with this intention.
      * @param {Agent} agent - The agent executing this intention.
@@ -20,6 +18,7 @@ export class Intention {
 
     get stopped() { return this.#stopped; }
     get nextPosition() { return this.#current_plan.nextPosition}
+    
     /**
      * Stops the execution of the current plan and sets the intention as stopped.
      */
@@ -28,19 +27,6 @@ export class Intention {
         if (this.#current_plan) {
             this.#current_plan.stop();
 
-        }
-    }
-
-    /**
-     * Logs messages using either the parent's log method or the agent's log method.
-     * 
-     * @param {...any} args - The arguments to log.
-     */
-    log(...args) {
-        if (this.#parent && this.#parent.log) {
-            this.#parent.log(...args);
-        } else {
-            //this.agent.log(...args);
         }
     }
 
@@ -85,11 +71,6 @@ export class Intention {
                         case 'movement_fail':
                             this.stop()
                             throw ['movement_fail',this.option.toString()];
-                        case 'alignment_fail':
-                            this.stop()
-                            throw ['alignment_fail',this.option.toString()]
-                        case 'last_checkpoint_error':
-                            throw ['last_checkpoint_error']
                         default:
                             throw error
                     }
