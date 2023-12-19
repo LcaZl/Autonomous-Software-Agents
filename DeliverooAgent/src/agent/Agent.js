@@ -46,12 +46,10 @@ export class Agent extends AgentInterface{
         this.lastDirection = null
 
         // Multiagent configuration
-        if (multiagent){
-            this.multiagent = multiagent
-            this.teamNames = teamNames
-            this.teamScore = 0
-            this.teamSize = teamSize
-        }
+        this.multiagent = multiagent
+        this.teamNames = teamNames
+        this.teamScore = 0
+        this.teamSize = teamSize
 
         // Connection
         this.connected = false 
@@ -122,6 +120,8 @@ export class Agent extends AgentInterface{
             console.log(this.teamManager.team)
         }
 
+        //this.communication.activate()
+
         // Activate the managment of the events
         this.parcels.activate()
         this.players.activate()
@@ -162,7 +162,6 @@ export class Agent extends AgentInterface{
         }
 
         // Check of actual tile and the nearby ones
-        await this.actualTileCheck()
         //this.status()
 
         return moveResult != false
@@ -209,7 +208,7 @@ export class Agent extends AgentInterface{
     /**
      * Check the tile around the agent and the actual one.
      */
-    async actualTileCheck() {
+    async actualTileCheck(nextPosition) {
 
         // If i'm on a delivery with parcels, deliver them.
         const OnDelivery = this.environment.onDeliveryTile()
@@ -245,15 +244,8 @@ export class Agent extends AgentInterface{
                     if (direction) {
                         await this.client.move( direction.name )
                         await this.pickup()
-                        if (this.moveType == 'PDDL')
-                            this.options.updateOptionsForPddl()
-
-                        //this.intentions.intention_queue.push(
-                          //  new goToOption('go_to', this.currentPosition, direction.pos, Infinity, [direction.name, direction.opposite]), 
-                            //Infinity
-                        //);
-                        //this.intentions.stopCurrent(); // Stop queue to execute this intention
-                        //this.eventManager.emit('update_options')
+                        if (!nextPosition.isEqual(direction.pos))
+                            await this.client.move( direction.opposite )
                     }
                 }
             }

@@ -18,7 +18,7 @@ const changingRisk = 0.6 // current_option_utility < (new_option_utility * 0.8)
 const adjustMovementCostWindow = 4000 // (ms)
 
 // MULTI AGENT CONFIGURATION --------------------------------------------------------------------
-const multiagent = false // Enable the multiagent functionalities
+const multiagent = true // Enable the multiagent functionalities
 const teamSize = 2 // Size of the team
 let currentConfigurationIndex = 0
 let teamNames = new Set()
@@ -34,9 +34,10 @@ if (multiagent){
             teamNames.add(configuration.username)
     }
 }
-
+console.log(teamNames)
 // Initialize agent
 const {host, token, name} = configurations[currentConfigurationIndex];
+console.log(configurations[currentConfigurationIndex])
 const agent = new Agent(
     host, 
     token, 

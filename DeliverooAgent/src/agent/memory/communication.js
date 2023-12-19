@@ -38,8 +38,8 @@ export class Communication{
         //this.agent.eventManager.on('deleted_parcel', (id) => this.deleteParcel(id))
         //this.agent.eventManager.on('movement', () => this.updateMyPosition())
         this.agent.eventManager.on('picked_up_parcels', (pickedUpParcels) => this.pickedUpParcels(pickedUpParcels)  )
-        this.agent.eventManager.on('delivered_parcels', (deliveredParcels) => this.deliveredParcels(deliveredParcels)  )
-        this.agent.eventManager.on('new_intention', (option) => this.myNewIntention(option) )
+        //this.agent.eventManager.on('delivered_parcels', (deliveredParcels) => this.deliveredParcels(deliveredParcels)  )
+        //this.agent.eventManager.on('new_intention', (option) => this.myNewIntention(option) )
         /**
          * Master:
          * Comunica cosa fa e richiede info allo slave
@@ -66,11 +66,12 @@ export class Communication{
     }
 
     async sincornizationProcedure(packet){
-
         switch(packet.message.type){
             case 'sincro_0':
                 // if thhe message cames from a known name and the team is not already sinchronized
-                if (!this.teamManager.sincronized && this.agent.teamNames.has(packet.name)){
+                if (this.teamManager.teamNames.has(packet.name)){
+                    console.log('in sicnto')
+
                     const msg = {
                         type : 'sincro_1',
                         position : this.agent.currentPosition, // Potentially i'm sending the position to an enemy 
@@ -97,7 +98,7 @@ export class Communication{
                 }
                 break;
             case 'sincro_1':
-                if (!this.teamManager.sincronized && this.agent.teamNames.has(packet.name)){
+                if (this.agent.teamNames.has(packet.name)){
                     this.teamManager.addMember(packet.name, packet.id, packet.message.position)
                     const msg = {
                         type : 'sincro_2',
@@ -121,7 +122,7 @@ export class Communication{
         switch(packet.message.type){
             case 'pickup':
                 this.agent.parcels.deleteParcel(packet.message.id)
-                //this.agent.eventManager.emit('picked_up_parcels_by', pickedUpParcels)     
+                this.agent.eventManager.emit('update_options')     
                 break;
             case 'delivered':
                 for (const pId of packet.message.ids){
@@ -174,7 +175,7 @@ export class Communication{
     }
 
     currentIntentionChanged(option){
-
+        return;z
     }
 
     async teamBroadcastMessage(msg){

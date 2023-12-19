@@ -62,14 +62,3 @@ console.log('domain:\n', domain)
 const plan = await tester.getPlan()
 console.log('plan:\n', plan)
 
-let a = [1,2,3]
-let b = [1,2,3]
-console.log(a == b)
-let equal = true
-for (const el of a){
-    if (!b.has(el)){
-        equal = false
-        break;
-    }
-}
-console.log(equal)

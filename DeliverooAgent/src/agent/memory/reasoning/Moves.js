@@ -126,6 +126,8 @@ export class BreadthFirstSearchMove extends Move {
 
         const movementHandle = async (direction, index) => {
             if ( this.stopped ) throw ['stopped']
+            await this.agent.actualTileCheck(this.positions[index])
+
             if (this.agent.players.playerInView){
                 const freePath = this.isPathFree(index)
                 if (!freePath){
@@ -178,6 +180,7 @@ export class BreadthFirstSearchMove extends Move {
             this.agent.pickup()
         if (option.id === 'bfs_delivery' )
             this.agent.deliver()
+        await this.agent.actualTileCheck(this.positions[this.positions.length - 1])
         return true
     }
 }
@@ -199,10 +202,11 @@ export class PddlMove extends Move {
             this.positions = option.plan.positions
         }
 
-        const movementHandle = async (direction, idx) => {
+        const movementHandle = async (direction, index) => {
             if ( this.stopped ) throw ['stopped']
-            
-            const freePath = this.isPathFree(idx)
+            await this.agent.actualTileCheck(this.positions[index])
+
+            const freePath = this.isPathFree(index)
             if (!freePath) {
                 this.agent.eventManager.emit('update_players_beliefs')
                 this.agent.eventManager.emit('update_options')
@@ -212,7 +216,7 @@ export class PddlMove extends Move {
 
             const status = await this.agent.move(direction);
             if (!status)  throw ['movement_fail']
-            if(idx === (this.plan.length - 2) )
+            if(index === (this.plan.length - 2) )
                 this.agent.eventManager.emit('update_options')
         }
 
@@ -248,7 +252,8 @@ export class PddlMove extends Move {
 
         }
         while(pathError)
-        
+        await this.agent.actualTileCheck(this.positions[this.positions.length - 1])
+
         return true
     }
 }

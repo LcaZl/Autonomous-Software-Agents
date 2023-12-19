@@ -69,7 +69,7 @@ export class Beliefs extends Beliefset {
       }
       else {
         this.removeObject(`${player.id}`)
-      }
+       }
     }
   }
 

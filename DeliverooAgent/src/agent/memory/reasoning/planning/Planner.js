@@ -93,7 +93,6 @@ export class Planner {
         const cacheId = `${this.agent.currentPosition.x}_${this.agent.currentPosition.y}-${to.x}_${to.y}`
         const cachedPlan = this.checkCache(cacheId, null, null)
         if (cachedPlan != null) {
-            this.cache.delete(cacheId)
             return cachedPlan
         }
 
@@ -102,6 +101,8 @@ export class Planner {
 
         if (!plan) {
             console.log('Plan not found for go from', this.agent.currentPosition, ' to ', to)
+            //console.log(problem)
+            //process.exit(0)
             return null
         }
 
@@ -126,7 +127,6 @@ export class Planner {
         const cacheId = `${startPosition.x}_${startPosition.y}-delivery`
         const cachedPlan = this.checkCache(cacheId, 'deliver', parcelId)
         if (cachedPlan != null) {
-            this.cache.delete(cacheId)
             return cachedPlan
         }
 
@@ -158,7 +158,6 @@ export class Planner {
         const cacheId = `${from.x}_${from.y}-${parcel.position.x}_${parcel.position.y}`
         const cachedPlan = this.checkCache(cacheId, 'pickup', parcel.id)
         if (cachedPlan != null) {
-            this.cache.delete(cacheId)
             return cachedPlan
         }
 
