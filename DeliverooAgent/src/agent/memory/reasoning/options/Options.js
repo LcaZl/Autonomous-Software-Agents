@@ -69,7 +69,7 @@ export class Options {
         }
 
         // If the agent is carrying some parcel, evaluate a delivery option
-        if (this.agent.parcels.carriedParcels() > 0 && currentOptionId !== 'bfs_delivery'){
+        if (this.agent.parcels.carriedParcels() > 0){
             let utility = this.utilityCalcolator.deliveryUtility(this.agent.currentPosition)
             if (utility.value > 0)
                 options.push(new BfsOption('bfs_delivery', 

@@ -3,7 +3,7 @@ import { configurations } from './config.js'
 
 // SINGLE AGENT CONFIGURATION --------------------------------------------------------------------
 const duration  = 300 // (s) Duration of the agent, if not Infinity the value will be used by the agent.
-const moveType = 'PDDL' // BFS or PDDL.
+const moveType = 'BFS' // BFS or PDDL.
 
 // Number of option to calculate the path from the end of the current, based on actual utility order.
 const lookAhead = 1 // For both PDDL and BFS.
@@ -18,7 +18,7 @@ const changingRisk = 0.6 // current_option_utility < (new_option_utility * 0.8)
 const adjustMovementCostWindow = 4000 // (ms)
 
 // MULTI AGENT CONFIGURATION --------------------------------------------------------------------
-const multiagent = true // Enable the multiagent functionalities
+const multiagent = false // Enable the multiagent functionalities
 const teamSize = 2 // Size of the team
 let currentConfigurationIndex = 0
 let teamNames = new Set()

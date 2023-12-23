@@ -70,6 +70,7 @@ export class Planner {
             this.agent.onlineSolverCalls++
             if (!plan || plan.length == 0){
                 return null
+                
             }
             return plan
         }
