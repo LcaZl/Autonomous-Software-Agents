@@ -3,7 +3,7 @@ import { configurations } from './config.js'
 
 // SINGLE AGENT CONFIGURATION --------------------------------------------------------------------
 const duration  = 300 // (s) Duration of the agent, if not Infinity the value will be used by the agent.
-const moveType = 'BFS' // BFS or PDDL.
+const moveType = 'PDDL' // BFS or PDDL.
 
 // Number of option to calculate the path from the end of the current, based on actual utility order.
 const lookAhead = 1 // For both PDDL and BFS.

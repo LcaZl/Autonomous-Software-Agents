@@ -79,6 +79,7 @@ export class Communication{
 
                     // Requesting confirmation
                     const reply = await this.agent.client.ask(packet.id, msg)
+
                     console.log('in reply:', reply)
                     if (reply.type === 'sincro_2'){
                         // Confirmed, add team member
@@ -89,6 +90,7 @@ export class Communication{
                     console.log(this.sincroRequest, this.agent.teamSize)
                     
                     if (this.sincroRequest === (this.agent.teamSize - 1) ){
+                        
                         this.teamManager.setMaster(this.agent.agentID)
                         const msg = {
                             type : 'master_set',
@@ -175,7 +177,7 @@ export class Communication{
     }
 
     currentIntentionChanged(option){
-        return;z
+        return;
     }
 
     async teamBroadcastMessage(msg){

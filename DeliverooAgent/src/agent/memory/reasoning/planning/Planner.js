@@ -66,6 +66,7 @@ export class Planner {
     async requestPlan(problem){
         try{
             let plan = null
+            console.log(problem)
             plan = await onlineSolver( this.domain, problem );
             this.agent.onlineSolverCalls++
             if (!plan || plan.length == 0){
