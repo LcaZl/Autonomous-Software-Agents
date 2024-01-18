@@ -1,6 +1,10 @@
 import { Agent } from './src/agent/Agent.js'
 import { configurations } from './config.js'
 
+// ------------------------------------------------------- Parameters --------------------------------------------------------
+// Server address
+const host: "http://localhost:8080" // or https://deliveroojs.onrender.com"
+
 // SINGLE AGENT CONFIGURATION --------------------------------------------------------------------
 const duration  = 300 // (s) Duration of the agent, if not Infinity the value will be used by the agent.
 const moveType = 'BFS' // BFS or PDDL.
@@ -17,9 +21,13 @@ const changingRisk = 0.5 // current_option_utility < (new_option_utility * 0.8)
 // Time window to adjust the movemnt penality, used to calcul,ate the utility of each option.
 const adjustMovementCostWindow = 5000 // (ms)
 
-// MULTI AGENT CONFIGURATION --------------------------------------------------------------------
+// // ----------------------------------------------- Multi-agent parameters ----------------------------------------------------
+
 const multiagent = false // Enable the multiagent functionalities
 const teamSize = 2 // Size of the team
+
+// ------------------------------------------------------- End Parameters -------------------------------------------------------
+
 let currentConfigurationIndex = 0
 let teamNames = new Set()
 
@@ -34,11 +42,13 @@ if (multiagent){
             teamNames.add(configuration.username)
     }
 }
-console.log(teamNames)
+
 // Initialize agent
-const {host, token, name} = configurations[currentConfigurationIndex];
+
+const {token, name} = configurations[currentConfigurationIndex];
 console.log(configurations[currentConfigurationIndex])
 const agent = new Agent(
+    
     host, 
     token, 
     name, 
