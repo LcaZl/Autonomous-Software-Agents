@@ -3,7 +3,7 @@ export const configurations = [
 
     {
         host: "http://localhost:8080", // https://deliveroojs.onrender.com"
-        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImY1MzI3ZjJmZWE3IiwibmFtZSI6IkhhcnZlc3RfQSIsImlhdCI6MTcwMjk5ODA0NH0.FRvBnZ9mkY4l95IswjJvVB7jCPxiiZftySXNeSQXmUE',
+        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImU5YjYwMzBlNTM1IiwibmFtZSI6IkhhcnZlc3RfMSIsImlhdCI6MTcwNDk5Mjc4OX0.P151qhNBNFBW35wWTTDlWaKWKp2vXXUP0AnXw9vbHWE',
         username: 'Harvest_A'
     },
 
