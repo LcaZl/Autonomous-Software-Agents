@@ -3,7 +3,7 @@ import { configurations } from './config.js'
 
 // ------------------------------------------------------- Parameters --------------------------------------------------------
 // Server address
-const host: "http://localhost:8080" // or https://deliveroojs.onrender.com"
+const host = "http://localhost:8080" // or https://deliveroojs.onrender.com"
 
 // SINGLE AGENT CONFIGURATION --------------------------------------------------------------------
 const duration  = 300 // (s) Duration of the agent, if not Infinity the value will be used by the agent.
@@ -48,7 +48,7 @@ if (multiagent){
 const {token, name} = configurations[currentConfigurationIndex];
 console.log(configurations[currentConfigurationIndex])
 const agent = new Agent(
-    
+
     host, 
     token, 
     name, 
