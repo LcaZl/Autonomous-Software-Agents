@@ -1,9 +1,0 @@
-Duration: 300 s
-Configuration: BFS
-Look ahead: 1
-Fast pick: True
-Changing risk: 0.5
-Adjustment movement cost windows: 4000 ms
-
-CHALLENGE_21
-
