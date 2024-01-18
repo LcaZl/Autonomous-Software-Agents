@@ -48,7 +48,7 @@ export class Planner {
 
     async loadDomain() {
         try{
-            this.domain = await this.readFile('agent/memory/pddl/domain.pddl')
+            this.domain = await this.readFile('./src/agent/memory/pddl/domain.pddl')
             console.log('[INIT] Planner Domain loaded')//,this.domain)
         }
         catch(exception){

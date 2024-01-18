@@ -154,7 +154,7 @@ export class AgentInterface{
       };
 
       const jsonData = JSON.stringify(performanceData, null, 2);
-      const filePath = 'agentPerformance.json';
+      const filePath = './agentPerformance.json';
 
       try {
           // Leggere il contenuto corrente del file

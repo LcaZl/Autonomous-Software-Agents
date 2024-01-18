@@ -1,4 +1,4 @@
-import { Agent } from './src/agent/agent.js'
+import { Agent } from './src/agent/Agent.js'
 import { configurations } from './config.js'
 
 // SINGLE AGENT CONFIGURATION --------------------------------------------------------------------
