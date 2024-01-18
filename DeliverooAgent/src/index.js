@@ -9,13 +9,13 @@ const moveType = 'BFS' // BFS or PDDL.
 const lookAhead = 1 // For both PDDL and BFS.
 
 // Do a fast movement to an adiacent tile to take a parcel.
-const fastPick = true //  For both PDDL and BFS.
+const fastPick = false //  For both PDDL and BFS.
 
 // Percentage penality in new option utility, if the actual is stopped for the new one.
-const changingRisk = 0.6 // current_option_utility < (new_option_utility * 0.8)
+const changingRisk = 0.5 // current_option_utility < (new_option_utility * 0.8)
 
 // Time window to adjust the movemnt penality, used to calcul,ate the utility of each option.
-const adjustMovementCostWindow = 4000 // (ms)
+const adjustMovementCostWindow = 5000 // (ms)
 
 // MULTI AGENT CONFIGURATION --------------------------------------------------------------------
 const multiagent = false // Enable the multiagent functionalities

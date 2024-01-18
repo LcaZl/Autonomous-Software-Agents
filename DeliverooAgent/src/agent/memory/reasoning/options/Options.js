@@ -40,11 +40,7 @@ export class Options {
         this.agent.eventManager.on('update_options', () => notification())
         this.agent.eventManager.on('picked_up_parcels', () => notification());
         this.agent.eventManager.on('delivered_parcels', () => notification());
-        this.agent.eventManager.on('movement', () => 
-        {
-            if (this.agent.movementAttempts & 2 == 0)
-                notification()}
-        );
+        this.agent.eventManager.on('movement', () => notification());
 
     }
 

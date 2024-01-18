@@ -179,7 +179,7 @@ export class Agent extends AgentInterface{
         if (pickedUpParcels && pickedUpParcels.length > 0) {
 
             this.parcelsPickedUp += pickedUpParcels.length
-            console.log('[AGENT] Picked up', pickedUpParcels.length, 'parcel.')
+            console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Picked up', pickedUpParcels.length, 'parcel')
             
             this.eventManager.emit('picked_up_parcels', pickedUpParcels)  
         }
@@ -199,7 +199,7 @@ export class Agent extends AgentInterface{
             const reward = this.parcels.getMyParcelsReward()
             this.parcelsDelivered += deliveredParcels.length
             this.score += reward
-            console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Score: ',this.score - this.initialScore,' - Delivered', deliveredParcels.length ,'parcel(s) - Reward: ', this.parcels.getMyParcelsReward(), '.')
+            console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Delivered', deliveredParcels.length ,'parcel(s) for ', this.parcels.getMyParcelsReward(), 'points - Total score: ', this.score - this.initialScore)
 
             this.eventManager.emit('delivered_parcels', deliveredParcels)
         }

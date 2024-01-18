@@ -1,6 +1,6 @@
 import readline from 'readline';
 import { Agent } from './agent.js';
-
+import fs from 'fs';
 /**
  * This class manage the output for an agent. 
  * There are methods for:
@@ -121,10 +121,58 @@ export class AgentInterface{
     if (this.multiagent){
       console.log(' - Team score: ', this.teamScore + this.score)
     }
-    console.log(' - Exploration map:\n')
-    this.printMap(this.environment.exploredTiles)
-    
+    this.saveFinalMetrics()
     //console.log(' - Chached BFS paths (',this.environment.cache.size,'):\n', this.environment.cache)
+  }
+
+
+  saveFinalMetrics() {
+      this.finishAt = new Date().getTime();
+      let diff = this.finishAt - this.startedAt;
+
+      // Creazione di un oggetto con le metriche
+      const performanceData = {
+          map: this.client.config.MAP_FILE,
+          agentName: this.name,
+          agentID: this.agentID,
+          activityTime: `${Math.floor(diff / 60000).toString().padStart(2, '0')}:${((diff % 60000) / 1000).toFixed(0).padStart(2, '0')} (${diff} ms)`,
+          averageTimePerMove: diff / this.movementAttempts,
+          initialScore: this.initialScore,
+          finalScore: this.score,
+          effectiveScore: this.score - this.initialScore,
+          effectiveMovement: this.effectiveMovement,
+          failedMovements: this.failMovement,
+          pickUpActions: this.pickUpActions,
+          deliveryActions: this.deliveryActions,
+          parcelsDelivered: this.parcelsDelivered,
+          searchCalls: this.environment.searchCalls,
+          cacheHits: this.cacheHit,
+          lookAheadHits: this.lookAheadHits,
+          fastPickMoves: this.fastPickMoves,
+          onlineSolverCalls: this.onlineSolverCalls,
+          teamScore: this.multiagent ? this.teamScore + this.score : undefined
+      };
+
+      const jsonData = JSON.stringify(performanceData, null, 2);
+      const filePath = 'agentPerformance.json';
+
+      try {
+          // Leggere il contenuto corrente del file
+          let fileContent = fs.readFileSync(filePath, 'utf8');
+
+          // Verifica se il file è vuoto e prepara il contenuto
+          if (fileContent.trim() === '') {
+              fileContent = '[' + jsonData; // Inizia un nuovo array
+          } else {
+              fileContent = fileContent.trim().slice(0, -1) + ',' + jsonData; // Rimuovi la parentesi quadra finale e aggiungi il nuovo oggetto
+          }
+
+          // Scrivere i dati aggiornati nel file
+          fs.writeFileSync(filePath, fileContent + ']\n'); // Chiude l'array
+      } catch (error) {
+          // Gestisce errori di lettura/scrittura, ad es. se il file non esiste lo crea
+          fs.writeFileSync(filePath, '[' + jsonData + ']\n');
+      }
   }
 
     /**

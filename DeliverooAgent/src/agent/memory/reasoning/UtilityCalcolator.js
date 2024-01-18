@@ -9,11 +9,11 @@ export class UtilityCalcolator{
     constructor(agent){
         this.agent = agent
 
-        this.movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 0 : (this.agent.MOVEMENT_DURATION * 3) / this.agent.PARCEL_DECADING_INTERVAL;
+        this.movementPenality = this.agent.PARCEL_DECADING_INTERVAL === Infinity ? 1 : (this.agent.MOVEMENT_DURATION * 3) / this.agent.PARCEL_DECADING_INTERVAL;
         this.previousTime = this.agent.startedAt
         this.previousMovAttempts = 0
 
-        if (this.movementPenality !== 0){
+        if (this.agent.PARCEL_DECADING_INTERVAL !== Infinity){
             this.updateMovementFactor = setInterval(() => {
 
                 const now = new Date().getTime()
@@ -40,10 +40,17 @@ export class UtilityCalcolator{
         let search = this.agent.environment.getShortestPath(agentPosition, p.position)
         if (search.length === 0) return {value:0, search:search}
         const pickupDistance = search.length
-        const pickupCost = pickupDistance * this.movementPenality;
+        let pickupCost = pickupDistance * this.movementPenality;
+
+        if (this.agent.PARCEL_DECADING_INTERVAL === Infinity) { 
+            pickupCost = pickupDistance
+        }
 
         const deliveryDistance = p.pathToDelivery.length 
-        const deliveryCost = deliveryDistance * this.movementPenality;
+        let deliveryCost = deliveryDistance * this.movementPenality;
+        if (this.agent.PARCEL_DECADING_INTERVAL === Infinity) { 
+            deliveryCost = 0
+        }
 
         const cost = pickupCost + deliveryCost;
 
@@ -58,8 +65,8 @@ export class UtilityCalcolator{
         const elapsedTime = new Date().getTime() - this.agent.startedAt;
         const deliveryDistance = search.length;
         const deliveryCost = deliveryDistance * this.movementPenality;
-
-        if ((this.agent.duration - elapsedTime) < (deliveryCost * 2)) { 
+        //console.log(this.agent.duration, elapsedTime, (this.agent.duration - elapsedTime), (deliveryCost * this.agent.MOVEMENT_DURATION),deliveryDistance, this.movementPenality)
+        if ((this.agent.duration - elapsedTime) < (deliveryCost * this.agent.MOVEMENT_DURATION * 2)) { 
             return {value:Infinity, search:search} }
         
         const carriedParcels = this.agent.parcels.carriedParcels()

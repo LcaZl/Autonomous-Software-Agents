@@ -21,7 +21,7 @@ export class Player {
         this.positionHistory = new Map();
         this.positionHistory.set(Date.now(), this.currentPosition);
         this.disappearedTimer = null
-        console.log('[AGENT][NEW_PLAYER] ', this.name, ' entered in tile', this.currentPosition.toString(), '.');
+        console.log('[AGENT][NEW_PLAYER]', this.name, ' entered in tile', this.currentPosition.toString());
     }
 
     /**

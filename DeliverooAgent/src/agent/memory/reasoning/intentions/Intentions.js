@@ -84,20 +84,18 @@ export class Intentions {
      */
     async loop ( ) {
 
-        this.agent.eventManager.on('picked_up_parcels', async (ids) => {
+        this.agent.eventManager.on('deleted_parcel', async (id) => {
 
-            for (const id of ids){
-                let realId = null
-                if (this.agent.moveType === 'BFS')
-                    realId = `bfs_pickup-${id}`
-                else
-                    realId = `pddl_pickup-${id}`
+            let realId = null
+            if (this.agent.moveType === 'BFS')
+                realId = `bfs_pickup-${id}`
+            else
+                realId = `pddl_pickup-${id}`
 
-                if (this.currentIntention.option.id === realId)
-                    this.stopCurrent()
-                if (this.intention_queue.has(realId))
-                    this.intention_queue.removeById(realId)
-            }
+            if (this.currentIntention.option.id === realId)
+                this.stopCurrent()
+            if (this.intention_queue.has(realId))
+                this.intention_queue.removeById(realId)
         })
 
         while ( true ) {
@@ -105,7 +103,6 @@ export class Intentions {
                 // If empty intentions queue -> patrolling
                 if ( this.intention_queue.size() == 0 ) {
                     let rndPosition = this.agent.environment.getRandomPosition()
-                    console.log()
                     let idle = new Option('patrolling', this.agent.currentPosition, rndPosition, 0);
                     this.intention_queue.push( idle );
                 }
