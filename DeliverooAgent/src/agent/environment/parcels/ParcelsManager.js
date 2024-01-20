@@ -1,4 +1,4 @@
-import { Position } from '../../../utils/Position.js';
+import { Position } from '../../utils/Position.js';
 import { Parcel } from './Parcel.js';
 
 /**

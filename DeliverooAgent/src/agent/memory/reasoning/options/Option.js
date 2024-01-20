@@ -1,4 +1,4 @@
-import { Position } from "../../../../utils/Position.js";
+import { Position } from "../../../utils/Position.js";
 import { Agent } from "../../../Agent.js";
 import { Parcel } from "../../../Environment/Parcels/Parcel.js";
 

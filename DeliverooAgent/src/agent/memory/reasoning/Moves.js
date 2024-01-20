@@ -1,7 +1,7 @@
 import { PddlExecutor } from "@unitn-asa/pddl-client";
 import { Agent } from "../../agent.js";
 import { Intention } from "./intentions/Intention.js";
-import { BfsExecutor } from "../../../utils/BfsExecutor.js";
+import { BfsExecutor } from "../../utils/BfsExecutor.js";
 import { BfsOption, PddlOption } from "./options/Option.js";
 export class Move {
 
@@ -126,7 +126,6 @@ export class BreadthFirstSearchMove extends Move {
 
         const movementHandle = async (direction, index) => {
             if ( this.stopped ) throw ['stopped']
-            await this.agent.actualTileCheck(this.positions[index])
 
             if (this.agent.players.playerInView){
                 const freePath = this.isPathFree(index)
@@ -136,11 +135,10 @@ export class BreadthFirstSearchMove extends Move {
                     throw ['path_not_free']
                 }
             }
+            await this.agent.actualTileCheck(this.positions[index])
 
             const status = await this.agent.move(direction);
             if (!status)  throw ['movement_fail']
-            if(index === (this.actions.length - 2) )
-                this.agent.eventManager.emit('update_options')
         }
 
         const bfsExecutor = new BfsExecutor(
@@ -153,11 +151,9 @@ export class BreadthFirstSearchMove extends Move {
         if (option.id !== 'bfs_patrolling' && 
         option.startPosition.isEqual(this.agent.currentPosition) && 
         option.search.length != 0){
-            
+        
             this.positions = option.search.path.positions
             this.actions = option.search.path.actions
-            this.agent.lookAheadHits++
-            //console.log('hit for ', option.id)
         }
         else
             updatePlan()
@@ -177,10 +173,9 @@ export class BreadthFirstSearchMove extends Move {
         while(pathError)
 
         if (option.id.startsWith('bfs_pickup-'))
-            this.agent.pickup()
+            await this.agent.pickup()
         if (option.id === 'bfs_delivery' )
-            this.agent.deliver()
-        await this.agent.actualTileCheck(this.positions[this.positions.length - 1])
+            await this.agent.deliver()
         return true
     }
 }
@@ -204,7 +199,6 @@ export class PddlMove extends Move {
 
         const movementHandle = async (direction, index) => {
             if ( this.stopped ) throw ['stopped']
-            await this.agent.actualTileCheck(this.positions[index])
 
             const freePath = this.isPathFree(index)
             if (!freePath) {
@@ -213,11 +207,10 @@ export class PddlMove extends Move {
                 await updatePlan()
                 throw ['path_not_free']
             }
-
+            await this.agent.actualTileCheck(this.positions[index])
             const status = await this.agent.move(direction);
             if (!status)  throw ['movement_fail']
-            if(index === (this.plan.length - 2) )
-                this.agent.eventManager.emit('update_options')
+
         }
 
         const pddlExecutor = new PddlExecutor(
@@ -252,7 +245,6 @@ export class PddlMove extends Move {
 
         }
         while(pathError)
-        await this.agent.actualTileCheck(this.positions[this.positions.length - 1])
 
         return true
     }

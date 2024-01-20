@@ -3,7 +3,7 @@ import { Agent } from '../../../agent.js';
 import { BlindMove, BreadthFirstSearchMove, Patrolling, PddlMove } from '../Moves.js';
 import fs from 'fs'
 import { onlineSolver } from "@unitn-asa/pddl-client";
-import { Position } from '../../../../utils/Position.js';
+import { Position } from '../../../utils/Position.js';
 import { ProblemGenerator } from './ProblemGenerator.js';
 import { Parcel } from '../../../Environment/Parcels/Parcel.js';
 

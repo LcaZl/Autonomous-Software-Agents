@@ -1,4 +1,4 @@
-import { Position } from "../../../utils/Position.js";
+import { Position } from "../../utils/Position.js";
 
 /**
  * Represents a player in the game, managing information and tracking movement.

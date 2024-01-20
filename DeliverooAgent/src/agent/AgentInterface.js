@@ -133,6 +133,11 @@ export class AgentInterface{
       // Creazione di un oggetto con le metriche
       const performanceData = {
           map: this.client.config.MAP_FILE,
+          moveType : this.moveType,
+          fastPick : this.fastPick,
+          lookAHead : this.lookAhead,
+          changingRisk : this.changingRisk,
+          adjMovementCostWindow : this.adjMovementCostWindow,
           agentName: this.name,
           agentID: this.agentID,
           activityTime: `${Math.floor(diff / 60000).toString().padStart(2, '0')}:${((diff % 60000) / 1000).toFixed(0).padStart(2, '0')} (${diff} ms)`,
@@ -154,7 +159,7 @@ export class AgentInterface{
       };
 
       const jsonData = JSON.stringify(performanceData, null, 2);
-      const filePath = './agentPerformance.json';
+      const filePath = `./agentPerformance_${this.client.config.MAP_FILE}.json`;
 
       try {
           // Leggere il contenuto corrente del file

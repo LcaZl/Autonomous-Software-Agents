@@ -4,7 +4,7 @@ import { Environment } from "./Environment/environment.js";
 import { AgentPercepts } from "./Memory/Percepts.js";
 import { ParcelsManager } from "./Environment/Parcels/ParcelsManager.js";
 import { PlayersManager } from "./Environment/players/PlayersManager.js";
-import { Position } from '../utils/Position.js';
+import { Position } from './utils/Position.js';
 import { Planner } from "./memory/reasoning/planning/Planner.js"
 import { Beliefs } from "./memory/Reasoning/Beliefs.js"
 import EventEmitter from "events";
@@ -66,73 +66,74 @@ export class Agent extends AgentInterface{
      * @async
      */
     async start() {
+        return new Promise(async (resolve) => {
+            // Ensuring connection and first sensing before procede
+            while (!this.percepts.firstSense || !this.connected) { await new Promise(resolve => setTimeout(resolve, 5)) }
 
-        // Ensuring connection and first sensing before procede
-        while (!this.percepts.firstSense || !this.connected) { await new Promise(resolve => setTimeout(resolve, 5)) }
+            // Basic agent and environment information
+            this.agentID = this.client.id
+            this.name = this.client.name
+            this.active = true
+            this.MAX_PARCELS = this.client.config.PARCELS_MAX == 'infinite' ? 100000 : this.client.config.PARCELS_MAX - 1
+            this.MOVEMENT_DURATION = this.client.config.MOVEMENT_DURATION
+            this.PARCEL_DECADING_INTERVAL = this.client.config.PARCEL_DECADING_INTERVAL == '1s' ? 1000 : Infinity
+            this.RANDOM_AGENT_SPEED = parseInt(this.client.config.RANDOM_AGENT_SPEED)
+            this.RANDOMLY_MOVING_AGENTS = this.client.config.RANDOMLY_MOVING_AGENTS
+            this.AGENTS_OBSERVATION_DISTANCE = this.client.config.AGENTS_OBSERVATION_DISTANCE
 
-        // Basic agent and environment information
-        this.agentID = this.client.id
-        this.name = this.client.name
-        this.active = true
-        this.MAX_PARCELS = this.client.config.PARCELS_MAX == 'infinite' ? 100000 : this.client.config.PARCELS_MAX - 1
-        this.MOVEMENT_DURATION = this.client.config.MOVEMENT_DURATION
-        this.PARCEL_DECADING_INTERVAL = this.client.config.PARCEL_DECADING_INTERVAL == '1s' ? 1000 : Infinity
-        this.RANDOM_AGENT_SPEED = parseInt(this.client.config.RANDOM_AGENT_SPEED)
-        this.RANDOMLY_MOVING_AGENTS = this.client.config.RANDOMLY_MOVING_AGENTS
-        this.AGENTS_OBSERVATION_DISTANCE = this.client.config.AGENTS_OBSERVATION_DISTANCE
+            this.environment = new Environment(this)
 
-        this.environment = new Environment(this)
+            // Timer for agent duration, id specified
+            if (this.duration != Infinity){
+                setTimeout(() => {
+                    this.finalMetrics()
+                    resolve(); 
+                }, this.duration);
 
-        // Timer for agent duration, id specified
-        if (this.duration != Infinity){
-            setTimeout(() => {
-                this.finalMetrics()
-                process.exit() 
-            }, this.duration);
+                // To update the options when the time is expiring.
+                // If the agent is carring parcels, when this timer expires the best option will be the delivery, if appropriate.
+                setTimeout(() =>{
+                    this.eventManager.emit('update_options')
+                    console.log('[AGENT] Time is almost ended.')
+                }, this.duration - (this.MOVEMENT_DURATION * this.environment.mapHeight))
+            }
 
-            // To update the options when the time is expiring.
-            // If the agent is carring parcels, when this timer expires the best option will be the delivery, if appropriate.
-            setTimeout(() =>{
-                this.eventManager.emit('update_options')
-                console.log('[AGENT] Time is almost ended.')
-            }, this.duration - (this.MOVEMENT_DURATION * this.environment.mapHeight))
-        }
+            // Initialize agent components
+            this.parcels = new ParcelsManager(this)
+            this.players = new PlayersManager(this)
+            this.beliefs = new Beliefs(this)
+            this.planner = new Planner(this)
+            this.options = new Options(this)
+            this.problemGenerator = new ProblemGenerator(this)
+            this.intentions = new Intentions(this)
+            await this.planner.loadDomain()
 
-        // Initialize agent components
-        this.parcels = new ParcelsManager(this)
-        this.players = new PlayersManager(this)
-        this.beliefs = new Beliefs(this)
-        this.planner = new Planner(this)
-        this.options = new Options(this)
-        this.problemGenerator = new ProblemGenerator(this)
-        this.intentions = new Intentions(this)
-        await this.planner.loadDomain()
+            // Multiagente components initialization
+            if (this.multiagent){
+                this.teamManager = new TeamManager(this)
+                this.communication = new Communication(this)
+                this.communication.activate()
 
-        // Multiagente components initialization
-        if (this.multiagent){
-            this.teamManager = new TeamManager(this)
-            this.communication = new Communication(this)
-            this.communication.activate()
+                while (!this.teamManager.sincronized) { await new Promise(resolve => setTimeout(resolve, 5)) }
+        
+                console.log(this.teamManager.master)
+                console.log(this.teamManager.team)
+            }
 
-            while (!this.teamManager.sincronized) { await new Promise(resolve => setTimeout(resolve, 5)) }
-    
-            console.log(this.teamManager.master)
-            console.log(this.teamManager.team)
-        }
+            //this.communication.activate()
 
-        //this.communication.activate()
+            // Activate the managment of the events
+            this.parcels.activate()
+            this.players.activate()
+            this.beliefs.activate()
+            this.options.activate()
 
-        // Activate the managment of the events
-        this.parcels.activate()
-        this.players.activate()
-        this.beliefs.activate()
-        this.options.activate()
+            this.info()
+            console.log('[INIT] Initialization Ended Succesfully.\n\n')
 
-        this.info()
-        console.log('[INIT] Initialization Ended Succesfully.\n\n')
-
-        // Start the agent
-        await this.intentions.loop()
+            // Start the agent
+            await this.intentions.loop()
+        });
     }
 
     /**
@@ -163,7 +164,6 @@ export class Agent extends AgentInterface{
 
         // Check of actual tile and the nearby ones
         //this.status()
-
         return moveResult != false
     }
 
@@ -177,7 +177,7 @@ export class Agent extends AgentInterface{
         let pickedUpParcels = await this.client.pickup()
 
         if (pickedUpParcels && pickedUpParcels.length > 0) {
-
+        
             this.parcelsPickedUp += pickedUpParcels.length
             console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Picked up', pickedUpParcels.length, 'parcel')
             

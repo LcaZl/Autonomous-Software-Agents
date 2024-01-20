@@ -1,4 +1,4 @@
-import { PriorityQueue } from "../../../../utils/PriorityQueue.js";
+import { PriorityQueue } from "../../../utils/PriorityQueue.js";
 import { Agent } from "../../../agent.js";
 import { Intention } from "./Intention.js";
 import { Option } from "../options/Option.js";
@@ -49,16 +49,10 @@ export class Intentions {
      * @param {Option} option - The option to be added or updated.
     */
     async push(options) {
-        this.pushing = true
-        //console.log('\n\n|--Curr- ',this.currentIntention.option.utility,' -', this.currentIntention.option.id)
-        //this.agent.showIntentions(this.intention_queue.valuesWithPriority())
-        
-        let newBest = false
+
         for (let option of options){
-            //console.log('IN -> ', option.toString() )
 
             if (this.intention_queue.has(option.id)) {
-                //console.log('[INTENTIONS]Same in Queue -> ', this.intention_queue.getById(option.id).toString())                
                 this.intention_queue.removeById(option.id);
             }
             
@@ -66,16 +60,13 @@ export class Intentions {
                 this.intention_queue.push(option, option.utility);
 
                 if (this.currentIntention.option.id === 'patrolling' || 
-                this.currentIntention.option.utility < (option.utility * this.agent.changingRisk)) {
+                this.currentIntention.option.utility < (option.utility * this.agent.changingRisk) ||
+                (option.id.endsWith('delivery') && option.utility > this.currentIntention.option.utility)) {
                     
-                    //console.log('[INTENTIONS] Cause stop -> ', option.toString() )
-                    newBest = true
+                    this.stopCurrent()
                 }
             }
         }
-        if (newBest)
-            this.stopCurrent()
-        this.pushing = false
     }
 
     /**
@@ -99,48 +90,45 @@ export class Intentions {
         })
 
         while ( true ) {
-            if ( !this.pushing ){
-                // If empty intentions queue -> patrolling
-                if ( this.intention_queue.size() == 0 ) {
-                    let rndPosition = this.agent.environment.getRandomPosition()
-                    let idle = new Option('patrolling', this.agent.currentPosition, rndPosition, 0);
-                    this.intention_queue.push( idle );
+            // If empty intentions queue -> patrolling
+            if ( this.intention_queue.size() == 0 ) {
+                let rndPosition = this.agent.environment.getRandomPosition()
+                let idle = new Option('patrolling', this.agent.currentPosition, rndPosition, 0);
+                this.intention_queue.push( idle );
+            }
+            else { // Consumes intention_queue if not empty
+                //console.log( '[INTENTIONS] Intentions queue:');
+                let option = this.intention_queue.pop();
+                const intention = this.currentIntention = new Intention( this, option, this.agent );
+
+                if ( option.id.startsWith('bfs_pickup-') || option.id.startsWith('pddl_pickup-')){
+
+                    if ( !this.agent.parcels.isValidPickUp(option.parcel.id) ) 
+                        continue;
                 }
-                else { // Consumes intention_queue if not empty
-                    //console.log( '[INTENTIONS] Intentions queue:');
-                    let option = this.intention_queue.pop();
 
-                    const intention = this.currentIntention = new Intention( this, option, this.agent );
-
-                    if ( option.id.startsWith('bfs_pickup-') || option.id.startsWith('pddl_pickup-')){
-
-                        if ( !this.agent.parcels.isValidPickUp(option.parcel.id) ) 
-                            continue;
+                if (option.id === 'bfs_delivery' || option.id === 'pddl_delivery')
+                    if (this.agent.parcels.carriedParcels() === 0){
+                        console.log( '[INTENTIONS_REVISION] Delivery option', option.id, ' no more valid.' );
+                        continue;
                     }
 
-                    if (option.id === 'bfs_delivery' || option.id === 'pddl_delivery')
-                        if (this.agent.parcels.carriedParcels() === 0){
-                            console.log( '[INTENTIONS_REVISION] Delivery option', option.id, ' no more valid.' );
-                            continue;
-                        }
+                // Start achieving intention
+                //console.log('[INTENTIONS] Started : ', this.currentIntention.option.id, this.intention_queue.size())
+                this.agent.eventManager.emit('new_intention', intention.option) // For the communication
+                await intention.achieve().catch( error => {
 
-                    // Start achieving intention
-                    //console.log('[INTENTIONS] Started : ', this.currentIntention.option.id, this.intention_queue.size())
-                    this.agent.eventManager.emit('new_intention', intention.option) // For the communication
-                    await intention.achieve().catch( error => {
+                    if ( !intention.stopped ){
+                        console.log( '[INTENTIONS_REVISION] Error with intention', intention.option.id, '- Error:', error )
+                        process.exit(0)
+                    }
+                });
+                //console.log('[INTENTIONS] Ended   : ', this.currentIntention.option.id)
 
-                        if ( !intention.stopped ){
-                            console.log( '[INTENTIONS_REVISION] Error with intention', intention.option.id, '- Error:', error )
-                            process.exit(0)
-                        }
-                    });
-                    //console.log('[INTENTIONS] Ended   : ', this.currentIntention.option.id)
-
-                }
-                
-                //console.log('[INTENTIONS_REVISION] End revision loop.')
-                await new Promise( res => setImmediate( res ) );
             }
+            
+            //console.log('[INTENTIONS_REVISION] End revision loop.')
+            await new Promise( res => setImmediate( res ) );
         }
     }
 }

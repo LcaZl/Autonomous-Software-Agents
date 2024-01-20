@@ -1,5 +1,3 @@
-import { PriorityQueue } from "../../../../utils/PriorityQueue.js";
-import { Parcel } from "../../../Environment/Parcels/Parcel.js";
 import { BfsOption, PddlOption} from "./Option.js";
 import { ProblemGenerator } from "../planning/ProblemGenerator.js";
 import { UtilityCalcolator } from "../UtilityCalcolator.js";
@@ -53,22 +51,11 @@ export class Options {
         const currentOptionId = this.agent.intentions.currentIntention.option.id
         let options = []
 
-        const predictOptionsPaths = () => { // To calculate future path based on current intention final position
-            const futurePosition = this.agent.intentions.currentIntention.option.finalPosition
-            let updated = 0
-            for (let option of options){
-                if (updated < this.agent.lookAhead){ // Calculate the future path only for the first lookAhead options.
-
-                   option.update(futurePosition)
-                }
-            }
-        }
-
         // If the agent is carrying some parcel, evaluate a delivery option
         if (this.agent.parcels.carriedParcels() > 0){
             let utility = this.utilityCalcolator.deliveryUtility(this.agent.currentPosition)
             if (utility.value > 0)
-                options.push(new BfsOption('bfs_delivery', 
+            options.push(new BfsOption('bfs_delivery', 
                     utility.search.startPosition, 
                     utility.search.finalPosition, 
                     utility.value, 
@@ -88,9 +75,6 @@ export class Options {
         }
 
         if (options.length > 0) {
-
-            if (options.length > 1)
-                predictOptionsPaths()
 
             // Pushing option into intentions
             options.sort( (opt1, opt2) => opt2.utility - opt1.utility )

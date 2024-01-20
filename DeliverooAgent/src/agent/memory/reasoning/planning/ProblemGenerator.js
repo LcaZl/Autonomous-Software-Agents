@@ -1,6 +1,5 @@
 import { PddlProblem } from "@unitn-asa/pddl-client";
 import { Agent } from "../../../agent.js";
-import { Parcel } from "../../../Environment/Parcels/Parcel.js";
 
 /**
  * This class generate PDDL problems upon request by taking the actual info inside the belief set.
