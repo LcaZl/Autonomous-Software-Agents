@@ -1,6 +1,6 @@
 import { PddlProblem } from '@unitn-asa/pddl-client';
 import { Agent } from '../../../agent.js';
-import { BlindMove, BreadthFirstSearchMove, Patrolling, PddlMove } from '../Moves.js';
+import { BreadthFirstSearchMove, Patrolling, PddlMove } from '../Moves.js';
 import fs from 'fs'
 import { onlineSolver } from "@unitn-asa/pddl-client";
 import { Position } from '../../../utils/Position.js';
@@ -22,7 +22,6 @@ export class Planner {
         this.agent = agent
         this.library = []
         this.library.push( Patrolling )
-        this.library.push( BlindMove )
 
         this.regex = /(\d+)/g
         this.positionMap = new Map()

@@ -80,7 +80,8 @@ export class PlayersManager {
         });
 
         if (updates){
-            this.agent.eventManager.emit('update_players_beliefs')
+            if (this.agent.moveType == 'PDDL')
+                this.agent.eventManager.emit('update_players_beliefs')
             this.agent.eventManager.emit('update_options')
         }
         else{

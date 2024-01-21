@@ -66,7 +66,6 @@ export class Agent extends AgentInterface{
      * @async
      */
     async start() {
-        return new Promise(async (resolve) => {
             // Ensuring connection and first sensing before procede
             while (!this.percepts.firstSense || !this.connected) { await new Promise(resolve => setTimeout(resolve, 5)) }
 
@@ -87,7 +86,7 @@ export class Agent extends AgentInterface{
             if (this.duration != Infinity){
                 setTimeout(() => {
                     this.finalMetrics()
-                    resolve(); 
+                    process.exit(0); 
                 }, this.duration);
 
                 // To update the options when the time is expiring.
@@ -101,10 +100,12 @@ export class Agent extends AgentInterface{
             // Initialize agent components
             this.parcels = new ParcelsManager(this)
             this.players = new PlayersManager(this)
-            this.beliefs = new Beliefs(this)
+            if (this.moveType == 'PDDL')
+                this.beliefs = new Beliefs(this)
+                this.problemGenerator = new ProblemGenerator(this)
+
             this.planner = new Planner(this)
             this.options = new Options(this)
-            this.problemGenerator = new ProblemGenerator(this)
             this.intentions = new Intentions(this)
             await this.planner.loadDomain()
 
@@ -125,7 +126,8 @@ export class Agent extends AgentInterface{
             // Activate the managment of the events
             this.parcels.activate()
             this.players.activate()
-            this.beliefs.activate()
+            if (this.moveType == 'PDDL')
+                this.beliefs.activate()
             this.options.activate()
 
             this.info()
@@ -133,7 +135,6 @@ export class Agent extends AgentInterface{
 
             // Start the agent
             await this.intentions.loop()
-        });
     }
 
     /**

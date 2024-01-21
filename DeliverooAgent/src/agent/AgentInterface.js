@@ -122,7 +122,6 @@ export class AgentInterface{
       console.log(' - Team score: ', this.teamScore + this.score)
     }
     this.saveFinalMetrics()
-    //console.log(' - Chached BFS paths (',this.environment.cache.size,'):\n', this.environment.cache)
   }
 
 

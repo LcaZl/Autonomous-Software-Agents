@@ -90,23 +90,6 @@ export class Patrolling extends Move {
     }
 }
 
-export class BlindMove extends Move {
-
-    static isApplicableTo ( option ) {
-        return option.id == 'go_to';
-    }
-
-    async execute ( option ) {
-        await this.agent.client.move( option.actions[0] )
-
-        await this.agent.pickup()
-        if (this.agent.moveType == 'PDDL')
-            this.agent.eventManager.emit('update_options')
-        this.agent.fastPickMoves++
-        return true
-    }
-}
-
 export class BreadthFirstSearchMove extends Move {
 
     static isApplicableTo ( option ) { 
@@ -202,7 +185,7 @@ export class PddlMove extends Move {
 
             const freePath = this.isPathFree(index)
             if (!freePath) {
-                this.agent.eventManager.emit('update_players_beliefs')
+                //this.agent.eventManager.emit('update_players_beliefs')
                 this.agent.eventManager.emit('update_options')
                 await updatePlan()
                 throw ['path_not_free']
@@ -249,147 +232,3 @@ export class PddlMove extends Move {
         return true
     }
 }
-
-
-
-
-/**
- * 
- * 
- * 
-export class PddlMultipleMove extends Move {
-    
-    static isApplicableTo ( option ) {
-        return option.id.startsWith('pddl_pickup-')
-    }
-
-    async execute ( option ) {
-
-        console.log('OPTION CHECKPOINTS:\n', option.checkpoints)
-        let subOption = option.getSubOption()
-        while(subOption !== null){
-            console.log('Checkpoint option:', subOption.toString(), '[',this.agent.currentPosition,']',)
-            let error = false
-
-            await this.subIntention( subOption ).catch( error => {
-                console.log('Failed checkpoin, next one.', error)
-                if ( this.stopped ) throw ['stopped']
-                error = true
-            })
-
-            subOption = option.getSubOption()
-            if (error && subOption === null) throw ['last_checkpoint_error']
-            if ( this.stopped ) throw ['stopped']
-        }
-        return true
-    }
-}
- * 
-export class PddlBatchMove extends Move {
-    
-    static isApplicableTo ( option ) {
-        return option.id.startsWith('pddl_batch-');
-    }
-
-    async execute ( option ) {
-
-        let problem = null
-        let target = null
-
-        const updatePlan = async () => {
-
-            ////console.log(option.targetOptions.length)
-            let goals = option.parcels.length
-            for (let i = 0; i < goals; i++){
-                problem = this.agent.problemGenerator.goToMultipleOption(option.parcels)
-                this.plan = await this.agent.planner.getPlan( problem );
-                if ( this.plan != null && this.plan.length > 0 ) {
-                    break;
-                };
-                option.parcels.pop()   
-            }
-            if ( this.plan == null || this.plan.length === 0 ) throw ['target_not_reachable']
-
-            let res = this.getPddlPathPositions(plan)
-            positions = res[0]
-            actions = res[1]
-            target = positions[positions.length - 1];
-        }
-
-        const movementHandle = async (direction) => {
-
-                if ( this.stopped ) throw ['stopped']
-                const status = await this.agent.move(direction);
-                if (!status)  throw ['movement_fail']
-                const freePath = this.isPathFree(positions)
-                if (!freePath) {
-                    this.agent.eventManager.emit('update_options')
-                    await updatePlan()
-                }
-        }
-
-        const pddlExecutor = new PddlExecutor(
-            {name: 'move_right', executor:  () => movementHandle('right')},
-            {name: 'move_left', executor: () => movementHandle('left')},
-            {name: 'move_up', executor: () => movementHandle('up')},
-            {name: 'move_down', executor: () =>  movementHandle('down')},
-            {name: 'deliver', executor: () => this.agent.deliver()},
-            {name: 'pickup', executor: () =>  this.agent.pickup()}
-        );
-
-        if (option.plan != null && option.positions[0].isEqual(this.agent.currentPosition))
-            plan = option.plan
-        else
-            await updatePlan()
-        do{
-            this.agent.client.socket.emit( "path", positions);
-            if ( this.stopped ) throw ['stopped']
-
-            await pddlExecutor.exec( plan ).catch((error) =>{
-                if (error[0] !== 'path_not_free')
-                    throw error
-            })
-
-        }while(!this.agent.currentPosition.isEqual(target))
-        return true
-    }
-}
-
- * This function wrap the chosen method between BFS and PDDL. 
- * By setting the first parameter of Option object is possible to define if the
- * will use the bfs or the pddl to get the paths. 
- * 
- 
-export class GoPickUp extends Plan {
-
-    static isApplicableTo ( option ) {
-        return option.id.startsWith('go_pick_up-');
-    }
-    async execute ( option ) {
-        if ( this.stopped ) throw ['stopped'];
-        if (this.agent.moveType === 'PDDL')
-            await this.subIntention( new Option('pddl_move',  option.position, option.utility, option.firstSearch, option.parcel)) // -- HERE
-        else // BFS
-            await this.subIntention( new Option('go_to_bfs', option.position, option.utility, option.firstSearch, option.parcel)) // -- HERE
-        await this.agent.pickup()
-        return true
-    }
-}
-
-export class GoDeliver extends Plan {
-
-    static isApplicableTo ( option ) {
-        return option.id == 'bfs_delivery' || option.id == 'pddl_delivery';
-    }
-    async execute ( option ) {
-        if ( this.stopped ) throw ['stopped'];
-        if (this.agent.moveType === 'PDDL')
-            await this.subIntention(new Option('pddl_move', option.position, option.utility, option.firstSearch, null));
-        else
-            await this.subIntention(new Option('go_to_bfs_delivery', null, option.utility, option.firstSearch, null));
-        //console.log('Ora dovrei conseganre')
-        await this.agent.deliver()
-        return true;
-    }
-}
- */

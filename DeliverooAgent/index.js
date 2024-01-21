@@ -6,17 +6,17 @@ import { configurations } from './config.js'
 const host = "http://localhost:8080" // or https://deliveroojs.onrender.com"
 
 // SINGLE AGENT CONFIGURATION --------------------------------------------------------------------
-const duration  = 50 // (s) Duration of the agent, if not Infinity the value will be used by the agent.
+const duration  = 300 // (s) Duration of the agent, if not Infinity the value will be used by the agent.
 const moveType = 'BFS' // BFS or PDDL.
 
 // Number of option to calculate the path from the end of the current, based on actual utility order.
-const lookAhead = 10 // ONLY for PDDL.
+const lookAhead = 0 // ONLY for PDDL.
 
 // Do a fast movement to an adiacent tile to take a parcel.
 const fastPick = true //  For both PDDL and BFS.
 
 // Percentage penality in new option utility, if the actual is stopped for the new one.
-const changingRisk = 0.5 // current_option_utility < (new_option_utility * 0.8)
+const changingRisk = 0.75 // current_option_utility < (new_option_utility * 0.8)
 
 // Time window to adjust the movemnt penality, used to calcul,ate the utility of each option.
 const adjustMovementCostWindow = 5000 // (ms)

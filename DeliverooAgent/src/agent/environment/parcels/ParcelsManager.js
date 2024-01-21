@@ -155,7 +155,8 @@ export class ParcelsManager {
                 this.myParcels.add(p.id);
             }
         }
-        this.agent.eventManager.emit('update_parcels_beliefs');
+        if (this.agent.moveType == 'PDDL')
+            this.agent.eventManager.emit('update_parcels_beliefs');
     }
     
     /**
