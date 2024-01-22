@@ -16,7 +16,7 @@ const lookAhead = 0 // ONLY for PDDL.
 const fastPick = true //  For both PDDL and BFS.
 
 // Percentage penality in new option utility, if the actual is stopped for the new one.
-const changingRisk = 0.75 // current_option_utility < (new_option_utility * 0.8)
+const changingRisk = 0.5 // current_option_utility < (new_option_utility * 0.8)
 
 // Time window to adjust the movemnt penality, used to calcul,ate the utility of each option.
 const adjustMovementCostWindow = 5000 // (ms)

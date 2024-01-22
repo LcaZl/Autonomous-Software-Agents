@@ -69,6 +69,15 @@ export class Intentions {
         }
     }
 
+    updateQueue(){
+        let queue = new PriorityQueue()
+        for (let el of this.intention_queue.valuesWithPriority()){
+            if (el.data.id != 'patrolling')
+                el.data.update(this.agent.currentPosition)
+            queue.push(el.data, el.data.utility)
+        }
+        this.intention_queue = queue
+    }
     /**
      * Continuously processes the intention queue, executing intentions.
      * Listens for events that might impact current intentions.
@@ -92,12 +101,13 @@ export class Intentions {
         while ( true ) {
             // If empty intentions queue -> patrolling
             if ( this.intention_queue.size() == 0 ) {
-                let rndPosition = this.agent.environment.getRandomPosition()
-                let idle = new Option('patrolling', this.agent.currentPosition, rndPosition, 0);
+                //let rndPosition = this.agent.environment.getRandomPosition()
+                let idle = new Option('patrolling', this.agent);
                 this.intention_queue.push( idle );
             }
             else { // Consumes intention_queue if not empty
                 //console.log( '[INTENTIONS] Intentions queue:');
+                this.updateQueue()
                 let option = this.intention_queue.pop();
                 const intention = this.currentIntention = new Intention( this, option, this.agent );
 

@@ -76,7 +76,6 @@ export class AgentInterface{
    * Print info at any time
    */
   status() {
-    if(this.consoleActivated){
       console.log('|------------------------------------|')
       console.log('|            Agent status            |')
       console.log('|------------------------------------|')
@@ -86,13 +85,12 @@ export class AgentInterface{
       console.log('|- Parcels Carried:', this.parcels.carriedParcels())
       this.showParcels(this.parcels)
       this.showPlayers(this.players.getPlayers())
-      this.showOptions(this.options.getOptions())
+      //this.showOptions(this.options.getOptions())
       console.log('|- Current intention:', this.intentions.currentIntention.option.toString())
       this.showIntentions(this.intentions.intention_queue.valuesWithPriority())
       console.log('|------------------------------------|')
       console.log('|                 END                |')
       console.log('|------------------------------------|')
-    }
   }
 
   /**

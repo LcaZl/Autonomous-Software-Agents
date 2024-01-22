@@ -11,28 +11,11 @@ export class Option{
      * @param {Boolean} search - Contains information of the first search.
      * @param {Parcel} parcel - The parcel associated with this option, if any.
      */
-        constructor(id, startPosition, finalPosition, utility) {
+        constructor(id, agent) {
             this.id = id
-            this.startPosition = startPosition
-            this.finalPosition = finalPosition
-            this.utility = utility;
+            this.startPosition = agent.currentPosition
+            this.agent = agent
         }
-}
-
-export class goToOption extends Option{
-
-    /**
-     * 
-     * @param {String} id 
-     * @param {Position} startPosition 
-     * @param {Position} finalPosition 
-     * @param {Number} utility 
-     * @param {Array} actions 
-     */
-    constructor(id, startPosition, finalPosition, utility, actions){
-        super(id, startPosition, finalPosition, utility)
-        this.actions = actions
-    }
 }
 
 /**
@@ -46,17 +29,19 @@ export class BfsOption extends Option{
      * @param {Number} utility - The utility value of the option.
      * @param {Boolean} search - Contains information of the first search.
      * @param {Parcel} parcel - The parcel associated with this option, if any.
+     * @param {Agent} agent
      */
-    constructor(id, startPosition, finalPosition, utility, search, parcel, agent) {
-        super(id, startPosition, finalPosition, utility)
-        this.agent = agent
-        this.search = search
+    constructor(id, parcel, agent) {
+        super(id, agent)
+
         this.parcel = null
         this.parcelId = null
-        if (id !== 'bfs_patrolling'){
+        if (this.id !== 'bfs_patrolling'){
             this.parcel = parcel
             this.parcelId = parcel.id
         }
+
+        this.update(agent.currentPosition)
     }
 
     /**
@@ -66,15 +51,27 @@ export class BfsOption extends Option{
 
         this.startPosition = startPosition
 
+        let result = null
         if (this.id === 'bfs_delivery'){
-            this.search = this.agent.environment.getNearestDeliveryTile(startPosition);
+            //this.search = this.agent.environment.getNearestDeliveryTile(startPosition);
+            result = this.agent.options.utilityCalcolator.deliveryUtility(this.startPosition)
+            this.search = result.search
+            this.utility = result.value
             this.finalPosition = this.search.finalPosition
+
         }
         else{
             if (this.id === 'bfs_patrolling'){
                 this.finalPosition = this.agent.environment.getRandomPosition()
+                this.search = this.agent.environment.getShortestPath(startPosition, this.finalPosition);
+                this.utility = 0.1
             }
-            this.search = this.agent.environment.getShortestPath(startPosition, this.finalPosition);
+            else if (this.id.startsWith('bfs_pickup')){
+                result = this.agent.options.utilityCalcolator.pickUpUtility(this.startPosition, this.parcel)
+                this.search = result.search
+                this.utility = result.value
+                this.finalPosition = this.search.finalPosition
+            }
         }
     }
     
@@ -96,18 +93,20 @@ export class PddlOption extends Option{
      * @param {Agent} agent 
      * @param {Parcel} parcel 
      */
-    constructor(id, utility, startPosition, finalPosition, agent, parcel){
-        super(id, startPosition, finalPosition, utility)
+    constructor(id, parcel, agent){
+        super(id, agent)
         this.parcel = null
         this.parcelId = null
-        this.agent = agent
-        if (this.id === 'pddl_delivery' || this.id.startsWith('pddl_pickup-')){
+
+        if (this.id !== 'pddl_patrolling'){
             this.parcel = parcel
             this.parcelId = parcel.id
         }
 
         this.plan = null
-        this.updatePlan(this.agent.currentPosition)
+        this.finalPosition = null
+        this.startPosition = null
+        this.utility = null
     }
 
     /**
@@ -115,7 +114,7 @@ export class PddlOption extends Option{
      * 
      * @param {Position} startPosition 
      */
-    async updatePlan(startPosition){
+    async update(startPosition){
         //console.log('updating single plan for ', this.id)
 
         this.startPosition = startPosition
@@ -123,18 +122,26 @@ export class PddlOption extends Option{
         if (this.id === 'pddl_patrolling'){
             this.finalPosition = this.agent.environment.getRandomPosition()
             this.plan = await this.agent.planner.getPlanFromTo(this.finalPosition)
+            this.utility = 0.1
         }
-        else if (this.id === 'pddl_delivery')
+        else if (this.id === 'pddl_delivery'){
             this.plan = await this.agent.planner.getDeliveryPlan(this.startPosition, this.parcelId)
-
-        else if (this.id.startsWith('pddl_pickup-'))
+            if (this.plan != null){
+                this.finalPosition = this.plan.finalPosition
+                this.utility = this.agent.options.utilityCalcolator.simplifiedDeliveryUtility(this.plan.startPosition, this.plan.finalPosition)
+            }
+        }
+        else if (this.id.startsWith('pddl_pickup-')){
             this.plan = await this.agent.planner.getPickupPlan(this.startPosition, this.parcel)
-
+            if (this.plan != null){
+                this.finalPosition = this.plan.finalPosition
+                this.utility = this.agent.options.utilityCalcolator.simplifiedPickUpUtility(this.startPosition, this.parcel)
+            }
+        }
         else throw ['Option_id_not_valid', this.id]
 
-        if (this.plan != null){
-            this.finalPosition = this.plan.finalPosition
-            //this.updateUtility()
+        if (this.plan == null){
+            this.utility = 0
         }
     }
 

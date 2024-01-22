@@ -13,7 +13,6 @@ import { Intentions } from "./memory/reasoning/intentions/Intentions.js";
 import { AgentInterface } from "./AgentInterface.js";
 import { Intention } from "./memory/reasoning/intentions/Intention.js";
 import { ProblemGenerator } from "./memory/reasoning/planning/ProblemGenerator.js";
-import { goToOption } from "./memory/reasoning/options/Option.js";
 import { Communication, TeamManager } from "./memory/Communication.js";
 /**
  * 
@@ -103,11 +102,11 @@ export class Agent extends AgentInterface{
             if (this.moveType == 'PDDL')
                 this.beliefs = new Beliefs(this)
                 this.problemGenerator = new ProblemGenerator(this)
+                this.planner = new Planner(this)
+                await this.planner.loadDomain()
 
-            this.planner = new Planner(this)
             this.options = new Options(this)
             this.intentions = new Intentions(this)
-            await this.planner.loadDomain()
 
             // Multiagente components initialization
             if (this.multiagent){

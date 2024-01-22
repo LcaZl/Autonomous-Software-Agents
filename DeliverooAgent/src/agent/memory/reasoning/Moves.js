@@ -80,9 +80,9 @@ export class Patrolling extends Move {
         if ( this.stopped ) throw ['stopped']; // if stopped then quit
         let patrolling = null 
         if (this.agent.moveType === 'BFS')
-            patrolling = new BfsOption('bfs_patrolling', option.startPosition, option.finalPosition, 0, null, null, this.agent)
+            patrolling = new BfsOption('bfs_patrolling', null, this.agent)
         else if (this.agent.moveType === 'PDDL')
-            patrolling = new PddlOption('pddl_patrolling', 0, option.startPosition, option.finalPosition, this.agent, null)
+            patrolling = new PddlOption('pddl_patrolling', null, this.agent)
         
         await this.subIntention( patrolling )
 
@@ -131,7 +131,7 @@ export class BreadthFirstSearchMove extends Move {
             {name: 'down', executor: (idx) =>  movementHandle('down', idx)},
         );
 
-        if (option.id !== 'bfs_patrolling' && 
+        if (
         option.startPosition.isEqual(this.agent.currentPosition) && 
         option.search.length != 0){
         
@@ -174,7 +174,7 @@ export class PddlMove extends Move {
 
         const updatePlan = async () => {
 
-            await option.updatePlan(this.agent.currentPosition)
+            await option.update(this.agent.currentPosition)
             if ( option.plan === null || option.plan.length === 0 ) throw ['target_not_reachable'];
             this.plan = option.plan.steps
             this.positions = option.plan.positions
@@ -204,7 +204,7 @@ export class PddlMove extends Move {
             {name: 'deliver', executor: (idx) => this.agent.deliver()},
             {name: 'pickup', executor: (idx) =>  this.agent.pickup()}
         );
-
+        console.log(option.plan)
         if (option.plan !== null && option.startPosition.isEqual(this.agent.currentPosition)){
             this.plan = option.plan.steps
             this.positions = option.plan.positions

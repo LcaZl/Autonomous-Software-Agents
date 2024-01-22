@@ -167,7 +167,6 @@ export class ParcelsManager {
      */
     handleParcelsSensing(sensedParcels) {
         let updates = false;
-        let newParcel = false;
 
         for (const p of sensedParcels) {
             if (p.x % 1 === 0 && p.y % 1 === 0) {
@@ -178,10 +177,9 @@ export class ParcelsManager {
                         wrapP = new Parcel(p, this.agent);
                         this.parcels.set(p.id, wrapP);
                         updates = true;
-                        newParcel = true;
                     } else {
                         wrapP = this.parcels.get(p.id);
-                        updates = wrapP.update(p) || updates;
+                        wrapP.update(p)
                     }
 
                     if (wrapP.isMine() && !this.myParcels.has(wrapP.id)) {
@@ -194,13 +192,8 @@ export class ParcelsManager {
 
         if (updates) {
             this.agent.eventManager.emit('update_parcels_beliefs');
-        }
-
-        if (newParcel) {
             this.agent.eventManager.emit('update_options');
         }
-
-        return updates;
     }
 
 }
