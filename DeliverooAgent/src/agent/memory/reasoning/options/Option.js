@@ -145,23 +145,6 @@ export class PddlOption extends Option{
         }
     }
 
-    updateUtility(){
-
-        let distance = (this.plan.steps.length - 1)
-        let reward = this.agent.parcels.getMyParcelsReward()
-
-        if (this.id.startsWith('pddl_pickup-')){
-            distance = (this.plan.steps.length - 1) + this.parcel.pathToDelivery.length
-            reward = this.parcel.reward
-        }   
-
-        let cost = distance * this.agent.options.utilityCalcolator.movementPenality
-        if (this.startPosition.isEqual(this.agent.currentPosition))
-            cost += this.startPosition.distanceTo(this.agent.currentPosition)
-        
-        this.utility = reward - cost
-    }
-
     toString() {
         return `[ID: ${this.id}, Utility: ${this.utility}, S_POS: ${this.startPosition}, F_POS: ${this.finalPosition}, Parcel_ids: ${this.parcelId}`
     }
