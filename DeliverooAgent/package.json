@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@unitn-asa/deliveroo-js-client": "^0.0.34",
-    "@unitn-asa/pddl-client": "^0.0.34",
+    "@unitn-asa/pddl-client": "^0.0.36",
     "loadash": "^1.0.0",
     "lodash": "^4.17.21",
     "node-fetch": "^3.3.0",

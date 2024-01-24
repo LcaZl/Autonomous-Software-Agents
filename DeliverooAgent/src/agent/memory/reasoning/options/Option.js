@@ -6,10 +6,7 @@ export class Option{
     
     /**
      * @param {String} id - The identifier of the option.
-     * @param {Position} position - The position associated with this option.
-     * @param {Number} utility - The utility value of the option.
-     * @param {Boolean} search - Contains information of the first search.
-     * @param {Parcel} parcel - The parcel associated with this option, if any.
+     * @param {Agent} agent - Agent instance
      */
         constructor(id, agent) {
             this.id = id
@@ -25,11 +22,8 @@ export class BfsOption extends Option{
 
     /**
      * @param {String} id - The identifier of the option.
-     * @param {Position} position - The position associated with this option.
-     * @param {Number} utility - The utility value of the option.
-     * @param {Boolean} search - Contains information of the first search.
      * @param {Parcel} parcel - The parcel associated with this option, if any.
-     * @param {Agent} agent
+     * @param {Agent} agent - Agent instance
      */
     constructor(id, parcel, agent) {
         super(id, agent)
@@ -46,6 +40,8 @@ export class BfsOption extends Option{
 
     /**
      * Update the option plan
+     * 
+     * @param {Position} startPosition 
      */
     update(startPosition){
 
@@ -87,11 +83,8 @@ export class PddlOption extends Option{
 
     /**
      * @param {String} id 
-     * @param {Position} startPosition 
-     * @param {Position} finalPosition 
-     * @param {Number} utility 
-     * @param {Agent} agent 
      * @param {Parcel} parcel 
+     * @param {Agent} agent 
      */
     constructor(id, parcel, agent){
         super(id, agent)

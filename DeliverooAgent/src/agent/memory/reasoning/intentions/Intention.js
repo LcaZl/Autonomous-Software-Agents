@@ -57,23 +57,8 @@ export class Intention {
 
                 } catch ( error ) {
 
-                    //console.log('[INTENTION', this.option.id, '] Plan', planClass.name, 'Failed - Status:', error[0]);
-
-                    switch(error[0]){
-                        case 'target_not_reachable':
-                            this.stop()
-                            throw ['target_not_reachable',this.option.toString()];
-                        case 'path_not_free':
-                            this.stop()
-                            throw ['path_not_free',this.option.toString()];
-                        case 'stopped':
-                            throw ['stopped',this.option.toString()]
-                        case 'movement_fail':
-                            this.stop()
-                            throw ['movement_fail',this.option.toString()];
-                        default:
-                            throw error
-                    }
+                        this.stop()
+                        throw ['stopped',this.option.toString()]
                 }
             }
         }

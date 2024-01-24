@@ -88,7 +88,7 @@
     )
 
     (:action deliver
-        :parameters (?me - agent ?p - parcel ?t - tile)
+        :parameters (?me - agent ?t - tile)
         :precondition (and
             (me ?me)
             (deliveryTile ?t)

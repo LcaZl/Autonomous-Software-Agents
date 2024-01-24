@@ -2,7 +2,7 @@
 import { PddlProblem } from '@unitn-asa/pddl-client';
 import fs from 'fs'
 import { PddlAction, PddlExecutor, onlineSolver } from "@unitn-asa/pddl-client";
-
+import { performance } from 'perf_hooks';
 class PDDL_tester{
 
     constructor(){
@@ -31,8 +31,15 @@ class PDDL_tester{
     }
     async getPlan(){
         let plan = null
-        try{
-            plan = await onlineSolver( this.domain, this.problem );
+        try {
+            const start = performance.now();
+            
+            plan = await onlineSolver(this.domain, this.problem);
+        
+            const end = performance.now();
+            const timeTaken = end - start; // Tempo impiegato in millisecondi
+        
+            console.log(`Tempo impiegato: ${timeTaken} millisecondi`);
         }
         catch (error){
             console.log(error)

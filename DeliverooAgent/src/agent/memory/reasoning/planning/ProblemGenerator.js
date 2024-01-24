@@ -30,7 +30,7 @@ export class ProblemGenerator{
             this.agent.beliefs.toPddlString(),
             `at ${this.agent.agentID} t${to.x}_${to.y}`
         )
-        return problem.toPddlString()
+        return problem
     }
 
     /**
@@ -45,11 +45,6 @@ export class ProblemGenerator{
     pickupFrom(from, parcelId){
         const goal = `carries ${this.agent.agentID} ${parcelId}`
 
-        this.agent.beliefs.removeObject(`${this.agent.agentID}`)
-        this.agent.beliefs.addObject(`${this.agent.agentID}`)
-        this.agent.beliefs.declare(`me ${this.agent.agentID}`)
-        this.agent.beliefs.declare(`at ${this.agent.agentID} t${from.x}_${from.y}`)   
-
         var problem = new PddlProblem(
             `pickup_from-${from.x}_${from.y}`,
             this.agent.beliefs.getObjectsWithType(),
@@ -57,13 +52,7 @@ export class ProblemGenerator{
             goal
         );
 
-        this.agent.beliefs.removeObject(`${this.agent.agentID}`)
-        this.agent.beliefs.addObject(`${this.agent.agentID}`)
-        this.agent.beliefs.declare(`me ${this.agent.agentID}`)
-        this.agent.beliefs.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)   
-        this.agent.beliefs.removeFact(`carries ${this.agent.agentID} ${parcelId}`)
-
-        return problem.toPddlString()
+        return problem
     }
 
     /**
@@ -78,12 +67,6 @@ export class ProblemGenerator{
     deliverFrom(from, parcelId){
         const goal = `not (carries ${this.agent.agentID} ${parcelId})`
 
-        this.agent.beliefs.removeObject(`${this.agent.agentID}`)
-        this.agent.beliefs.addObject(`${this.agent.agentID}`)
-        this.agent.beliefs.declare(`me ${this.agent.agentID}`)
-        this.agent.beliefs.declare(`at ${this.agent.agentID} t${from.x}_${from.y}`)   
-        this.agent.beliefs.declare(`carries ${this.agent.agentID} ${parcelId}`)
-
         var problem = new PddlProblem(
             `deliver_from-${from.x}_${from.y}`,
             this.agent.beliefs.getObjectsWithType(),
@@ -91,12 +74,6 @@ export class ProblemGenerator{
             goal
         );
 
-        this.agent.beliefs.removeObject(`${this.agent.agentID}`)
-        this.agent.beliefs.addObject(`${this.agent.agentID}`)
-        this.agent.beliefs.declare(`me ${this.agent.agentID}`)
-        this.agent.beliefs.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)   
-        this.agent.beliefs.removeFact(`carries ${this.agent.agentID} ${parcelId}`)
-
-        return problem.toPddlString()
+        return problem
     }
 }

@@ -6,6 +6,7 @@ import { onlineSolver } from "@unitn-asa/pddl-client";
 import { Position } from '../../../utils/Position.js';
 import { ProblemGenerator } from './ProblemGenerator.js';
 import { Parcel } from '../../../Environment/Parcels/Parcel.js';
+import { performance } from 'perf_hooks';
 
 /**
  * Classe used to manage the selection of the next action of the agent
@@ -65,7 +66,13 @@ export class Planner {
     async requestPlan(problem){
         try{
             let plan = null
-            plan = await onlineSolver( this.domain, problem );
+            console.log('Requested plan for problem:', problem.name)
+            const start = performance.now();
+            plan = await onlineSolver( this.domain, problem.toPddlString() );
+            const end = performance.now();
+            const timeTaken = end - start;
+            console.log('Retrieved plan for problem:', problem.name, ' in', timeTaken)
+
             this.agent.onlineSolverCalls++
             if (!plan || plan.length == 0){
                 return null
@@ -78,7 +85,6 @@ export class Planner {
             process.exit(0)
         }
     }
-
 
     /**
      * Get a plan from agent current position to a specified location.
