@@ -1,0 +1,1 @@
+- shared beliefset in communication is incosistent, i'll fix it.
