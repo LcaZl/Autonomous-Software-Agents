@@ -184,7 +184,6 @@ export class ParcelsManager {
                     if (wrapP.isMine() && !this.myParcels.has(wrapP.id)) {
                         this.myParcels.add(wrapP.id);
                     }
-                    updates = true
                 }
             }
         }

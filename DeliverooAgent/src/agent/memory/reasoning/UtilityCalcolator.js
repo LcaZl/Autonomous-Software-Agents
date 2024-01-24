@@ -80,9 +80,9 @@ export class UtilityCalcolator{
             return utility
         }
         else{
-            const pickupDistance = this.agent.environment.distanceTo(startPosition, parcel.position)
+            const pickupDistance = startPosition.distanceTo(parcel.position)
             const utility = 1 + (1.0 / pickupDistance)
-            return {value:utility, search:search}
+            return utility
         }
     }
 

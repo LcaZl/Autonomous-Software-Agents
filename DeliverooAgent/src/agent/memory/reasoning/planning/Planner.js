@@ -68,6 +68,7 @@ export class Planner {
             let plan = null
             console.log('Requested plan for problem:', problem.name)
             const start = performance.now();
+            console.log(problem.toPddlString())
             plan = await onlineSolver( this.domain, problem.toPddlString() );
             const end = performance.now();
             const timeTaken = end - start;

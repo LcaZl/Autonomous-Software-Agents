@@ -68,7 +68,7 @@ export class Beliefs extends Beliefset {
         this.declare(`at ${player.id} t${player.getCurrentPosition().x}_${player.getCurrentPosition().y}`);
       }
       else {
-        this.removeObject(`${player.id}`)
+        this.removeFact(`at ${player.id} t${player.getCurrentPosition().x}_${player.getCurrentPosition().y}`)
        }
     }
   }

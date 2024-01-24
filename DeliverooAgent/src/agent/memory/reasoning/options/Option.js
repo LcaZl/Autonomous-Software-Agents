@@ -98,7 +98,7 @@ export class PddlOption extends Option{
             this.parcel = parcel
             this.parcelId = parcel.id
             if (this.id === 'pddl_delivery'){
-                search = this.agent.environment.getEstimatedNearestDeliveryTile(this.startPosition)
+                const search = this.agent.environment.getEstimatedNearestDeliveryTile(this.startPosition)
                 this.utility = this.agent.options.utilityCalcolator.simplifiedDeliveryUtility(this.startPosition, search.position, search.distance)
             }
             else{
@@ -108,13 +108,10 @@ export class PddlOption extends Option{
         else
             this.utility = 0.1
 
-        this.updates = 0
-        try{
-            this.update(this.agent.currentPosition)
-        }
-        catch{
-            
-        }
+        this.updated = this.update(this.agent.currentPosition).catch((error) => {
+                console.log(error)
+                process.exit(0)
+        })
     }
 
     /**
@@ -133,20 +130,26 @@ export class PddlOption extends Option{
             this.utility = 0.1
         }
         else if (this.id === 'pddl_delivery'){
-            this.plan = await this.agent.planner.getDeliveryPlan(this.startPosition, this.parcelId)
+            this.plan = await this.agent.planner.getDeliveryPlan(this.startPosition, this.parcelId).catch((error) => {
+                console.log(error)
+                process.exit(0)
+            })
             if (this.plan != null){
                 this.finalPosition = this.plan.finalPosition
                 this.utility = this.agent.options.utilityCalcolator.simplifiedDeliveryUtility(this.plan.startPosition, this.plan.finalPosition, this.plan.length)
             }
         }
         else if (this.id.startsWith('pddl_pickup-')){
-            this.plan = await this.agent.planner.getPickupPlan(this.startPosition, this.parcel)
+            this.plan = await this.agent.planner.getPickupPlan(this.startPosition, this.parcel).catch((error) => {
+                console.log(error)
+                process.exit(0)
+            })
             if (this.plan != null){
                 this.finalPosition = this.plan.finalPosition
                 this.utility = this.agent.options.utilityCalcolator.simplifiedPickUpUtility(this.startPosition, this.parcel, this.plan.length)
             }
         }
-        else throw ['Option_id_not_valid', this.id]
+        else throw ['Option_id_not_valid', 'a']
 
         if (this.plan == null){
             this.utility = 0

@@ -211,7 +211,7 @@ export class PddlMove extends Move {
             {name: 'move_down', executor: (idx) =>  movementHandle('down', idx)},
             {name: 'deliver', executor: (idx) => this.agent.deliver()},
             {name: 'pickup', executor: (idx) =>  this.agent.pickup()}
-        );
+        )
 
         if (option.plan !== null && option.startPosition.isEqual(this.agent.currentPosition)){
             this.plan = option.plan.steps
