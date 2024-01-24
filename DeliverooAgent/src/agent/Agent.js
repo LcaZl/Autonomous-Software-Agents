@@ -222,6 +222,7 @@ export class Agent extends AgentInterface{
                     await this.pickup()
                     break;
                 }
+                
             }
         }
         
@@ -246,11 +247,12 @@ export class Agent extends AgentInterface{
                         await this.pickup()
                         if (!nextPosition.isEqual(direction.pos))
                             await this.client.move( direction.opposite )
+                        this.eventManager.emit('update_options')
                     }
                 }
             }
         }
-      }
+    }
 }
 
 

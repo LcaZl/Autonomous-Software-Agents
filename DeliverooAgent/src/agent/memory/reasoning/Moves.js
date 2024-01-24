@@ -113,12 +113,11 @@ export class BreadthFirstSearchMove extends Move {
             if (this.agent.players.playerInView){
                 const freePath = this.isPathFree(index)
                 if (!freePath){
-                    this.agent.eventManager.emit('update_options')
-                    updatePlan()
                     throw ['path_not_free']
                 }
             }
             await this.agent.actualTileCheck(this.positions[index])
+
 
             const status = await this.agent.move(direction);
             if (!status)  throw ['movement_fail']
@@ -142,16 +141,25 @@ export class BreadthFirstSearchMove extends Move {
             updatePlan()
 
         let pathError = false
+        let movementFailures = 0
         do{
             if ( this.stopped ) throw ['stopped']
             pathError = false
             this.agent.client.socket.emit( "path", this.positions);
             await bfsExecutor.exec( this.actions ).catch((error) =>{
-                if (error[0] !== 'path_not_free')
-                    throw error
-                else
+                if (error[0] === 'path_not_free' || error[0] === 'movement_fail')
+                    //this.agent.eventManager.emit('update_options')
+                    updatePlan()
                     pathError = true
+                    if (error[0] === 'movement_fail'){
+                        movementFailures += 1
+                        if (movementFailures = 3)
+                            throw error
+                    }
+                else
+                    throw error
             })
+            
         }
         while(pathError)
 
@@ -204,7 +212,7 @@ export class PddlMove extends Move {
             {name: 'deliver', executor: (idx) => this.agent.deliver()},
             {name: 'pickup', executor: (idx) =>  this.agent.pickup()}
         );
-        console.log(option.plan)
+
         if (option.plan !== null && option.startPosition.isEqual(this.agent.currentPosition)){
             this.plan = option.plan.steps
             this.positions = option.plan.positions
@@ -219,15 +227,13 @@ export class PddlMove extends Move {
             pathError = false
             this.agent.client.socket.emit( "path", this.positions);
 
-            await pddlExecutor.exec( this.plan ).catch(async (error) =>{
+            await pddlExecutor.exec( this.plan ).catch((error) =>{
                 if (error[0] !== 'path_not_free')
                     throw error
                 else
                     pathError = true
             })
-
-        }
-        while(pathError)
+        }while(pathError)
 
         return true
     }

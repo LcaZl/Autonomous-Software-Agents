@@ -176,7 +176,6 @@ export class ParcelsManager {
                     if (!this.parcels.has(p.id)) {
                         wrapP = new Parcel(p, this.agent);
                         this.parcels.set(p.id, wrapP);
-                        updates = true;
                     } else {
                         wrapP = this.parcels.get(p.id);
                         wrapP.update(p)
@@ -184,8 +183,8 @@ export class ParcelsManager {
 
                     if (wrapP.isMine() && !this.myParcels.has(wrapP.id)) {
                         this.myParcels.add(wrapP.id);
-                        updates = true;
                     }
+                    updates = true
                 }
             }
         }

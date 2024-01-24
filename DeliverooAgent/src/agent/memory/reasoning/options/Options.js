@@ -64,7 +64,7 @@ export class Options {
             if ( parcel.isFree() && currentOptionId !== id){
                 //let utility = this.utilityCalcolator.pickUpUtility(this.agent.currentPosition, parcel)
                 const option = new BfsOption(id, parcel, this.agent)
-                if (option.utility > 1)
+                if (option.utility > 0)
                     options.push(option)
             }
         }
@@ -97,14 +97,13 @@ export class Options {
                     updated++
                 }
             }
-        
         }
 
         // Elaborate delivery option
         if (this.agent.parcels.carriedParcels() > 0 && currentOption.id !== 'pddl_delivery'){
             const parcel = this.agent.parcels.getOneOfMyParcels()
             const deliveryOption = new PddlOption('pddl_delivery', parcel, this.agent)
-            await deliveryOption.update(this.agent.currentPosition)
+            //await deliveryOption.update(this.agent.currentPosition)
             if (deliveryOption.utility > 0)
                 options.push(deliveryOption)
         }
@@ -114,7 +113,7 @@ export class Options {
         for (const parcel of parcelsToTake){
             if (currentOption.id !== `pddl_pickup-${parcel.id}`){
                 const option = new PddlOption(`pddl_pickup-${parcel.id}`, parcel, this.agent)
-                await option.update(this.agent.currentPosition)
+                //await option.update(this.agent.currentPosition)
                 if (option.utility > 0)
                     options.push(option)
             }

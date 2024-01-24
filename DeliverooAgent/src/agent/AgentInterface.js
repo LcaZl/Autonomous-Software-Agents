@@ -87,7 +87,7 @@ export class AgentInterface{
       this.showPlayers(this.players.getPlayers())
       //this.showOptions(this.options.getOptions())
       console.log('|- Current intention:', this.intentions.currentIntention.option.toString())
-      this.showIntentions(this.intentions.intention_queue.valuesWithPriority())
+      this.showIntentions(this.intentions.intention_queue.values())
       console.log('|------------------------------------|')
       console.log('|                 END                |')
       console.log('|------------------------------------|')
@@ -218,7 +218,7 @@ export class AgentInterface{
       let i = 1
 
       for (let o of intentions) {
-        console.log('|--',i, '- ',o.priority,' -', o.data.toString())
+        console.log('|--', o.toString())
         i++
       }
     }

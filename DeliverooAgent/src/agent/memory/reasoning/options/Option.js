@@ -90,16 +90,31 @@ export class PddlOption extends Option{
         super(id, agent)
         this.parcel = null
         this.parcelId = null
+        this.plan = null
+        this.finalPosition = null
+        this.startPosition = agent.currentPosition
 
         if (this.id !== 'pddl_patrolling'){
             this.parcel = parcel
             this.parcelId = parcel.id
+            if (this.id === 'pddl_delivery'){
+                search = this.agent.environment.getEstimatedNearestDeliveryTile(this.startPosition)
+                this.utility = this.agent.options.utilityCalcolator.simplifiedDeliveryUtility(this.startPosition, search.position, search.distance)
+            }
+            else{
+                this.utility = this.agent.options.utilityCalcolator.simplifiedPickUpUtility(this.startPosition, this.parcel)
+            }
         }
+        else
+            this.utility = 0.1
 
-        this.plan = null
-        this.finalPosition = null
-        this.startPosition = null
-        this.utility = null
+        this.updates = 0
+        try{
+            this.update(this.agent.currentPosition)
+        }
+        catch{
+            
+        }
     }
 
     /**
@@ -121,14 +136,14 @@ export class PddlOption extends Option{
             this.plan = await this.agent.planner.getDeliveryPlan(this.startPosition, this.parcelId)
             if (this.plan != null){
                 this.finalPosition = this.plan.finalPosition
-                this.utility = this.agent.options.utilityCalcolator.simplifiedDeliveryUtility(this.plan.startPosition, this.plan.finalPosition)
+                this.utility = this.agent.options.utilityCalcolator.simplifiedDeliveryUtility(this.plan.startPosition, this.plan.finalPosition, this.plan.length)
             }
         }
         else if (this.id.startsWith('pddl_pickup-')){
             this.plan = await this.agent.planner.getPickupPlan(this.startPosition, this.parcel)
             if (this.plan != null){
                 this.finalPosition = this.plan.finalPosition
-                this.utility = this.agent.options.utilityCalcolator.simplifiedPickUpUtility(this.startPosition, this.parcel)
+                this.utility = this.agent.options.utilityCalcolator.simplifiedPickUpUtility(this.startPosition, this.parcel, this.plan.length)
             }
         }
         else throw ['Option_id_not_valid', this.id]
@@ -136,6 +151,8 @@ export class PddlOption extends Option{
         if (this.plan == null){
             this.utility = 0
         }
+
+        this.updates += 1
     }
 
     toString() {

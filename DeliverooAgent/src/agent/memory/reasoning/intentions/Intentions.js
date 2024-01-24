@@ -51,7 +51,6 @@ export class Intentions {
     async push(options) {
 
         for (let option of options){
-
             if (this.intention_queue.has(option.id)) {
                 this.intention_queue.removeById(option.id);
             }
