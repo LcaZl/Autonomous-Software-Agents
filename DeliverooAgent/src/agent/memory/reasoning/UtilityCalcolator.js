@@ -43,6 +43,10 @@ export class UtilityCalcolator{
             const cost = pickupCost + deliveryCost;
 
             const utility = ((actualReward) + parcel.reward) - (cost * (carriedParcels + 1))
+            //console.log(`actualReward: ${actualReward}, carriedParcels: ${carriedParcels}, 
+            //pickupDistance: ${pickupDistance}, pickupCost: ${pickupCost},
+            //deliveryDistance: ${deliveryDistance}, deliveryCost: ${deliveryCost},
+            //totalCost: ${cost}, utility: ${utility}`);
             return {value:utility, search:search}
         }
         else{
@@ -59,32 +63,40 @@ export class UtilityCalcolator{
      * @param {Position} endPosition 
      */
     simplifiedPickUpUtility(startPosition, parcel, pickupDistance = null){
+    
         if (this.agent.PARCEL_DECADING_INTERVAL !== Infinity){
-
             const endPosition = parcel.position
             const actualReward = this.agent.parcels.getMyParcelsReward()
             const carriedParcels = this.agent.parcels.carriedParcels()
-
+    
+    
             if (pickupDistance === null)
                 pickupDistance = startPosition.distanceTo(endPosition)
-
+    
             const pickupCost = pickupDistance * this.movementPenality
-            
+    
+    
             const deliverySearch = this.agent.environment.getEstimatedNearestDeliveryTile(parcel.position)
             const deliveryCost = deliverySearch.distance * this.movementPenality;  
-
+    
+    
             const cost = pickupCost + deliveryCost;
-
+    
             const utility = (actualReward + parcel.reward) - cost * (carriedParcels + 1)
-
+    
+    
             return utility
         }
         else{
+    
             const pickupDistance = startPosition.distanceTo(parcel.position)
             const utility = 1 + (1.0 / pickupDistance)
+    
+    
             return utility
         }
     }
+    
 
     deliveryUtility(startPosition) {
         let search = this.agent.environment.getNearestDeliveryTile(startPosition)

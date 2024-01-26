@@ -12,10 +12,9 @@ export class ParcelsManager {
      */
     constructor(agent) {
         this.agent = agent;
-        this.parcels = new Map();
-        this.myParcels = new Set();
-        this.deletedParcels = new Set();
-        this.parcelsTimerStarted = false;
+        this.parcels = new Map(); // All available parcels
+        this.myParcels = new Set(); // Parcel that the agent is carring
+        this.deletedParcels = new Set(); // Parcel no more available or not reachable 
         console.log('[INIT] Parcels Manager Initialized.');
     }
 
@@ -86,7 +85,7 @@ export class ParcelsManager {
     getFreeParcels(){
         let freeParcels = []
         this.parcels.forEach(p => {
-            if (p.isFree())
+            if (p.isFree() && p.isAccessible())
                 freeParcels.push(p)
         })
         return freeParcels
@@ -167,29 +166,49 @@ export class ParcelsManager {
      */
     handleParcelsSensing(sensedParcels) {
         let updates = false;
+    
+        // A set to track the IDs of sensed parcels for this iteration
+        let sensedIds = new Set();
 
         for (const p of sensedParcels) {
             if (p.x % 1 === 0 && p.y % 1 === 0) {
-                if ((p.carriedBy === null || p.carriedBy === this.agent.agentID) && !this.deletedParcels.has(p.id)) {
-                    let wrapP;
+                sensedIds.add(p.id);
+                let wrapP;
 
-                    if (!this.parcels.has(p.id)) {
-                        wrapP = new Parcel(p, this.agent);
-                        this.parcels.set(p.id, wrapP);
-                    } else {
-                        wrapP = this.parcels.get(p.id);
-                        wrapP.update(p)
+                // Check if the parcel is already known
+                if (this.parcels.has(p.id)) {
+                    wrapP = this.parcels.get(p.id);
+    
+                    // Check if there's a significant change (reward, carrier, or position)
+                    if (wrapP.carriedBy !== p.carriedBy || !wrapP.position.isEqual(new Position(p.x,p.y))) {
+                        wrapP.update(p);
+                        updates = true;
+                        if (!wrapP.isAccessible())
+                            this.parcels.delete(wrapP.id)
                     }
-
-                    if (wrapP.isMine() && !this.myParcels.has(wrapP.id)) {
-                        this.myParcels.add(wrapP.id);
+    
+                } else {
+                    // New parcel detected -> Create new instance
+                    wrapP = new Parcel(p, this.agent);
+                    if (wrapP.isAccessible()){
+                        this.parcels.set(wrapP.id, wrapP);
+                        updates = true;
                     }
                 }
+    
+                if (wrapP.isMine() && !this.myParcels.has(wrapP.id)) {
+                    this.myParcels.add(wrapP.id);
+                } else if (!wrapP.isMine() && this.myParcels.has(wrapP.id)) {
+                    this.myParcels.delete(wrapP.id);
+                }
+
             }
         }
-
-        if (updates) {
+    
+        // Send update notification if there are significant changes
+        if (this.agent.moveType == 'PDDL')
             this.agent.eventManager.emit('update_parcels_beliefs');
+        if (updates) {
             this.agent.eventManager.emit('update_options');
         }
     }

@@ -99,6 +99,7 @@ export class Agent extends AgentInterface{
             // Initialize agent components
             this.parcels = new ParcelsManager(this)
             this.players = new PlayersManager(this)
+
             if (this.moveType == 'PDDL')
                 this.beliefs = new Beliefs(this)
                 this.problemGenerator = new ProblemGenerator(this)
@@ -125,7 +126,7 @@ export class Agent extends AgentInterface{
             // Activate the managment of the events
             this.parcels.activate()
             this.players.activate()
-            if (this.moveType == 'PDDL')
+            if (this.moveType === 'PDDL')
                 this.beliefs.activate()
             this.options.activate()
 
@@ -148,7 +149,7 @@ export class Agent extends AgentInterface{
         this.lastDirection = direction
         this.movementAttempts += 1 // Increase number of movement attempts
         let moveResult = await this.client.move(direction) // false if move fail, new position otherwise
-        
+
         if (moveResult != false) {
 
             this.effectiveMovement += 1
@@ -161,9 +162,9 @@ export class Agent extends AgentInterface{
             this.failMovement += 1
             //console.log('[MOVE',this.movementAttempts,'] Moved:', moveResult, '- Fail - Position', this.currentPosition)
         }
+        //this.status()
 
         // Check of actual tile and the nearby ones
-        //this.status()
         return moveResult != false
     }
 
@@ -177,7 +178,7 @@ export class Agent extends AgentInterface{
         let pickedUpParcels = await this.client.pickup()
 
         if (pickedUpParcels && pickedUpParcels.length > 0) {
-        
+
             this.parcelsPickedUp += pickedUpParcels.length
             console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Picked up', pickedUpParcels.length, 'parcel')
             
@@ -245,9 +246,11 @@ export class Agent extends AgentInterface{
                     if (direction) {
                         await this.client.move( direction.name )
                         await this.pickup()
-                        if (!nextPosition.isEqual(direction.pos))
+                        if (!nextPosition.isEqual(direction.pos)){
                             await this.client.move( direction.opposite )
-                        this.eventManager.emit('update_options')
+                            return false
+                        }
+                        return true
                     }
                 }
             }

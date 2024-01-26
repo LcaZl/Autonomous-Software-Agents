@@ -66,24 +66,17 @@ export class Planner {
     async requestPlan(problem){
         try{
             let plan = null
-            console.log('Requested plan for problem:', problem.name)
-            const start = performance.now();
-            console.log(problem.toPddlString())
+            //console.log(this.agent.beliefs.toPddlString())
             plan = await onlineSolver( this.domain, problem.toPddlString() );
-            const end = performance.now();
-            const timeTaken = end - start;
-            console.log('Retrieved plan for problem:', problem.name, ' in', timeTaken)
-
             this.agent.onlineSolverCalls++
             if (!plan || plan.length == 0){
                 return null
-                
             }
             return plan
         }
         catch (error){
             console.log('Error while requesting plan. Error:\n', error)
-            process.exit(0)
+            return null
         }
     }
 
@@ -95,21 +88,19 @@ export class Planner {
      * @param {Position} to 
      * @returns 
      */
-    async getPlanFromTo(to){
+    async getPlanFromTo(from, to){
 
-        const cacheId = `${this.agent.currentPosition.x}_${this.agent.currentPosition.y}-${to.x}_${to.y}`
+        const cacheId = `${from.x}_${from.y}-${to.x}_${to.y}`
         const cachedPlan = this.checkCache(cacheId, null, null)
         if (cachedPlan != null) {
             return cachedPlan
         }
 
-        const problem = this.problemGenerator.go(to)
+        const problem = this.problemGenerator.go(from, to)
         const plan = await this.requestPlan(problem)
 
         if (!plan) {
             console.log('Plan not found for go from', this.agent.currentPosition, ' to ', to)
-            //console.log(problem)
-            //process.exit(0)
             return null
         }
 
@@ -131,11 +122,11 @@ export class Planner {
      */
     async getDeliveryPlan(startPosition, parcelId){
 
-        const cacheId = `${startPosition.x}_${startPosition.y}-delivery`
-        const cachedPlan = this.checkCache(cacheId, 'deliver', parcelId)
-        if (cachedPlan != null) {
-            return cachedPlan
-        }
+        //const cacheId = `${startPosition.x}_${startPosition.y}-delivery`
+        //const cachedPlan = this.checkCache(cacheId, 'deliver', parcelId)
+        //if (cachedPlan != null) {
+         //   return cachedPlan
+        //}
 
         const problem = this.agent.problemGenerator.deliverFrom(startPosition, parcelId)
         const plan = await this.requestPlan(problem)
@@ -162,11 +153,11 @@ export class Planner {
      */
     async getPickupPlan( from, parcel){
 
-        const cacheId = `${from.x}_${from.y}-${parcel.position.x}_${parcel.position.y}`
-        const cachedPlan = this.checkCache(cacheId, 'pickup', parcel.id)
-        if (cachedPlan != null) {
-            return cachedPlan
-        }
+        //const cacheId = `${from.x}_${from.y}-${parcel.position.x}_${parcel.position.y}`
+        //const cachedPlan = this.checkCache(cacheId, 'pickup', parcel.id)
+        //if (cachedPlan != null) {
+            //return cachedPlan
+        //}
 
         let problem = null
         problem = this.problemGenerator.pickupFrom(from, parcel.id)
@@ -175,6 +166,7 @@ export class Planner {
 
         if (!plan) {
             console.log('Plan not found for single pickup from', from, ' to ', parcel.position)
+            console.log('', problem.toPddlString())
             return null
         }
 

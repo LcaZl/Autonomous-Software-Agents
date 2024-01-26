@@ -88,6 +88,8 @@ export class AgentInterface{
       //this.showOptions(this.options.getOptions())
       console.log('|- Current intention:', this.intentions.currentIntention.option.toString())
       this.showIntentions(this.intentions.intention_queue.values())
+      if (this.moveType === 'PDDL')
+        console.log(this.beliefs.toPddlString())
       console.log('|------------------------------------|')
       console.log('|                 END                |')
       console.log('|------------------------------------|')

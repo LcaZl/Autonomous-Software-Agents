@@ -22,10 +22,10 @@ export class ProblemGenerator{
      * @param {Object} endTile 
      * @returns {String}
      */
-    go(to) {
+    go(from, to) {
 
         var problem = new PddlProblem(
-            `go_to-${to.x}_${to.y}`,
+            `go_fromTo-${from.x}_${from.y}-${to.x}_${to.y}`,
             this.agent.beliefs.getObjectsWithType(),
             this.agent.beliefs.toPddlString(),
             `at ${this.agent.agentID} t${to.x}_${to.y}`
@@ -44,6 +44,9 @@ export class ProblemGenerator{
      */
     pickupFrom(from, parcelId){
         const goal = `carries ${this.agent.agentID} ${parcelId}`
+        //let clonedBeliefs = this.agent.beliefs.clone()
+        //clonedBeliefs.removeFact(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)
+        //clonedBeliefs.declare(`at ${this.agent.agentID} t${from.x}_${from.y}`)
 
         var problem = new PddlProblem(
             `pickup_from-${from.x}_${from.y}`,
@@ -51,6 +54,9 @@ export class ProblemGenerator{
             this.agent.beliefs.toPddlString(),
             goal
         );
+
+        //clonedBeliefs.removeFact(`at ${this.agent.agentID} t${from.x}_${from.y}`)
+        //clonedBeliefs.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)
 
         return problem
     }
@@ -66,6 +72,10 @@ export class ProblemGenerator{
      */
     deliverFrom(from, parcelId){
         const goal = `not (carries ${this.agent.agentID} ${parcelId})`
+        //let clonedBeliefs = this.agent.beliefs.clone()
+        //clonedBeliefs.removeFact(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)
+        //clonedBeliefs.declare(`at ${this.agent.agentID} t${from.x}_${from.y}`)
+        //clonedBeliefs.declare(`carries ${this.agent.agentID} ${parcelId}`)
 
         var problem = new PddlProblem(
             `deliver_from-${from.x}_${from.y}`,
@@ -73,6 +83,10 @@ export class ProblemGenerator{
             this.agent.beliefs.toPddlString(),
             goal
         );
+
+        //clonedBeliefs.removeFact(`at ${this.agent.agentID} t${from.x}_${from.y}`)
+        //clonedBeliefs.removeFact(`carries ${this.agent.agentID} ${parcelId}`)
+        //clonedBeliefs.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)
 
         return problem
     }

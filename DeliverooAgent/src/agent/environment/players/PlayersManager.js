@@ -78,10 +78,9 @@ export class PlayersManager {
                 player.disappeared();
             }
         });
-
+        if (this.agent.moveType == 'PDDL')
+            this.agent.eventManager.emit('update_players_beliefs')
         if (updates){
-            if (this.agent.moveType == 'PDDL')
-                this.agent.eventManager.emit('update_players_beliefs')
             this.agent.eventManager.emit('update_options')
         }
         else{

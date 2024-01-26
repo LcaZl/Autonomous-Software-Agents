@@ -108,7 +108,13 @@ export class BreadthFirstSearchMove extends Move {
         }        
 
         const movementHandle = async (direction, index) => {
+            const status1 = await this.agent.actualTileCheck(this.positions[index])
             if ( this.stopped ) throw ['stopped']
+
+            if (!status1){     
+                const status2 = await this.agent.move(direction);
+                if (!status2)  throw ['movement_fail']
+            }
 
             if (this.agent.players.playerInView){
                 const freePath = this.isPathFree(index)
@@ -116,14 +122,12 @@ export class BreadthFirstSearchMove extends Move {
                     throw ['path_not_free']
                 }
             }
-            await this.agent.actualTileCheck(this.positions[index])
 
-
-            const status = await this.agent.move(direction);
-            if (!status)  throw ['movement_fail']
+            if ( this.stopped ) throw ['stopped']
         }
 
         const bfsExecutor = new BfsExecutor(
+
             {name: 'right', executor:  (idx) => movementHandle('right', idx)},
             {name: 'left', executor: (idx) => movementHandle('left', idx)},
             {name: 'up', executor: (idx) => movementHandle('up', idx)},
@@ -147,15 +151,16 @@ export class BreadthFirstSearchMove extends Move {
             pathError = false
             this.agent.client.socket.emit( "path", this.positions);
             await bfsExecutor.exec( this.actions ).catch((error) =>{
-                if (error[0] === 'path_not_free' || error[0] === 'movement_fail')
-                    //this.agent.eventManager.emit('update_options')
+                if (error[0] === 'movement_fail'){
+                    updatePlan()
+                    movementFailures += 1
+                    if (movementFailures == 30)
+                        throw error
+                }
+                else if (error[0] === 'path_not_free'){
                     updatePlan()
                     pathError = true
-                    if (error[0] === 'movement_fail'){
-                        movementFailures += 1
-                        if (movementFailures = 3)
-                            throw error
-                    }
+                }
                 else
                     throw error
             })
@@ -167,6 +172,7 @@ export class BreadthFirstSearchMove extends Move {
             await this.agent.pickup()
         if (option.id === 'bfs_delivery' )
             await this.agent.deliver()
+
         return true
     }
 }
@@ -178,10 +184,13 @@ export class PddlMove extends Move {
         return option.id.startsWith('pddl_pickup-') || option.id.startsWith('pddl_delivery') || option.id === 'pddl_patrolling';
     }
 
+    /**
+     * 
+     * @param {PddlOption} option 
+     * @returns 
+     */
     async execute ( option ) {
-
         const updatePlan = async () => {
-
             await option.update(this.agent.currentPosition)
             if ( option.plan === null || option.plan.length === 0 ) throw ['target_not_reachable'];
             this.plan = option.plan.steps
@@ -189,19 +198,23 @@ export class PddlMove extends Move {
         }
 
         const movementHandle = async (direction, index) => {
+            const status1 = await this.agent.actualTileCheck(this.positions[index])
             if ( this.stopped ) throw ['stopped']
 
-            const freePath = this.isPathFree(index)
-            if (!freePath) {
-                //this.agent.eventManager.emit('update_players_beliefs')
-                this.agent.eventManager.emit('update_options')
-                await updatePlan()
-                throw ['path_not_free']
+            if (!status1){     
+                const status2 = await this.agent.move(direction);
+                if (!status2)  throw ['movement_fail']
             }
-            await this.agent.actualTileCheck(this.positions[index])
-            const status = await this.agent.move(direction);
-            if (!status)  throw ['movement_fail']
 
+            if (this.agent.players.playerInView){
+
+                const freePath = this.isPathFree(index)
+                if (!freePath) {
+                    this.agent.eventManager.emit('update_players_beliefs')
+                    await updatePlan()
+                    throw ['path_not_free']
+                }
+            }
         }
 
         const pddlExecutor = new PddlExecutor(
@@ -212,7 +225,7 @@ export class PddlMove extends Move {
             {name: 'deliver', executor: (idx) => this.agent.deliver()},
             {name: 'pickup', executor: (idx) =>  this.agent.pickup()}
         )
-
+        
         if (option.plan !== null && option.startPosition.isEqual(this.agent.currentPosition)){
             this.plan = option.plan.steps
             this.positions = option.plan.positions
@@ -221,18 +234,24 @@ export class PddlMove extends Move {
         else 
             await updatePlan()
 
-
         let pathError = false
+        let movementFailures = 0
         do{
             pathError = false
             this.agent.client.socket.emit( "path", this.positions);
 
             await pddlExecutor.exec( this.plan ).catch((error) =>{
-                if (error[0] !== 'path_not_free')
-                    throw error
-                else
+                if (error[0] === 'path_not_free' || error[0] === 'movement_fail')
                     pathError = true
+                    if (error[0] === 'movement_fail'){
+                        movementFailures += 1
+                        if (movementFailures = 2)
+                            throw error
+                    }
+                else
+                    throw error
             })
+
         }while(pathError)
 
         return true

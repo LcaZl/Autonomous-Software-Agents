@@ -61,7 +61,7 @@ export class Options {
         // For each parcel that can be take, elaborate a plan.
         for(let [_, parcel] of this.agent.parcels.getParcels()){
             const id = `bfs_pickup-${parcel.id}`
-            if ( parcel.isFree() && currentOptionId !== id){
+            if ( parcel.isFree() && parcel.isAccessible() && currentOptionId !== id){
                 //let utility = this.utilityCalcolator.pickUpUtility(this.agent.currentPosition, parcel)
                 const option = new BfsOption(id, parcel, this.agent)
                 if (option.utility > 0)
@@ -86,25 +86,14 @@ export class Options {
         let options = []
         const currentOption = this.agent.intentions.currentIntention.option
 
-        // Elaborate future options
-        const predictOptionsPaths = async () => {
-            const futurePosition = this.agent.intentions.currentIntention.option.finalPosition
-            let updated = 0
-
-            for (let option of options){
-                if (updated < this.agent.lookAhead){
-                    option.updatePlan(futurePosition)
-                    updated++
-                }
-            }
-        }
-
         // Elaborate delivery option
         if (this.agent.parcels.carriedParcels() > 0 && currentOption.id !== 'pddl_delivery'){
             const parcel = this.agent.parcels.getOneOfMyParcels()
             const deliveryOption = new PddlOption('pddl_delivery', parcel, this.agent)
-            if (deliveryOption.utility > 0)
+            if (deliveryOption.utility > 0){
+                //await deliveryOption.update(this.agent.currentPosition)
                 options.push(deliveryOption)
+            }
         }
 
         // Elaborate pick up options
@@ -112,20 +101,17 @@ export class Options {
         for (const parcel of parcelsToTake){
             if (currentOption.id !== `pddl_pickup-${parcel.id}`){
                 const option = new PddlOption(`pddl_pickup-${parcel.id}`, parcel, this.agent)
-                if (option.utility > 0)
+                if (option.utility > 0){
+                    //await option.update(this.agent.currentPosition)
                     options.push(option)
+                }
             }
         }
-
 
         if (options.length > 0) {
             options.sort( (opt1, opt2) => opt1.utility - opt2.utility )
             
-            //if (currentOption.id != 'patrolling')
-              //  await predictOptionsPaths()
-
-            
-            await this.agent.intentions.push( options )
+            this.agent.intentions.push( options )
 
         }
     }

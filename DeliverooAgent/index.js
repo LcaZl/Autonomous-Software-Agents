@@ -7,13 +7,13 @@ const host = "http://localhost:8080" // or https://deliveroojs.onrender.com"
 
 // SINGLE AGENT CONFIGURATION --------------------------------------------------------------------
 const duration  = 300 // (s) Duration of the agent, if not Infinity the value will be used by the agent.
-const moveType = 'PDDL' // BFS or PDDL.
+const moveType = 'BFS' // BFS or PDDL.
 
 // Number of option to calculate the path from the end of the current, based on actual utility order.
-const lookAhead = 0 // ONLY for PDDL.
+const lookAhead = 1 // ONLY for PDDL.
 
 // Do a fast movement to an adiacent tile to take a parcel.
-const fastPick = false //  For both PDDL and BFS.
+const fastPick = true //  For both PDDL and BFS.
 
 // Percentage penality in new option utility, if the actual is stopped for the new one.
 const changingRisk = 0.5 // current_option_utility < (new_option_utility * 0.8)
@@ -67,6 +67,7 @@ process.on('SIGINT', () => {
     agent.finalMetrics()
     process.exit(0)
 });
+
 
 try{
     // Start

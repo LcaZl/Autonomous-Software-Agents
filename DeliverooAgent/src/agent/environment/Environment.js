@@ -78,14 +78,18 @@ export class Environment {
   getRandomPosition() {
     let position;
     do {
-      let idx = Math.round(Math.random() * (this.tiles.length - 1));
-      let tile = this.tiles[idx];
-      position = new Position(tile.x, tile.y);
-    } while (position.isEqual(this.agent.currentPosition));
+        let x = Math.floor(Math.random() * this.mapWidth);
+        let y = Math.floor(Math.random() * this.mapHeight);
 
-    //this.agent.log('[ENVIRONMENT] Random position:', position);
+        // Check if the position is valid (accessible)
+        if (this.fullMap[x][y] !== 0) {
+            position = new Position(x, y);
+        }
+    } while (!position || position.isEqual(this.agent.currentPosition));
+
+    //console.log('[ENVIRONMENT] Random position:', position);
     return position;
-  }
+}
 
   /**
    * Generates a key for caching based on start and end positions.

@@ -60,7 +60,7 @@ export class BfsOption extends Option{
             if (this.id === 'bfs_patrolling'){
                 this.finalPosition = this.agent.environment.getRandomPosition()
                 this.search = this.agent.environment.getShortestPath(startPosition, this.finalPosition);
-                this.utility = 0.1
+                this.utility = 0
             }
             else if (this.id.startsWith('bfs_pickup')){
                 result = this.agent.options.utilityCalcolator.pickUpUtility(this.startPosition, this.parcel)
@@ -72,7 +72,7 @@ export class BfsOption extends Option{
     }
     
     toString() {
-        return `[ID: ${this.id}, Utility: ${this.utility}, S_POS: ${this.startPosition}, F_POS: ${this.finalPosition}, Parcel_id: ${this.parcel ? this.parcel.id : ''}, Search: ${this.search ? this.search.firstPosition : ''}]`;
+        return `[ID: ${this.id}, Utility: ${this.utility}, S_POS: ${this.startPosition}, F_POS: ${this.finalPosition}, Parcel_id: ${this.parcel ? this.parcel.id : ''}, Search: ${this.search ? this.search.startPosition : ''}]`;
     }
 }
 
@@ -100,18 +100,18 @@ export class PddlOption extends Option{
             if (this.id === 'pddl_delivery'){
                 const search = this.agent.environment.getEstimatedNearestDeliveryTile(this.startPosition)
                 this.utility = this.agent.options.utilityCalcolator.simplifiedDeliveryUtility(this.startPosition, search.position, search.distance)
+                this.finalPosition = search.position
             }
             else{
                 this.utility = this.agent.options.utilityCalcolator.simplifiedPickUpUtility(this.startPosition, this.parcel)
+                this.finalPosition = parcel.position
             }
         }
-        else
-            this.utility = 0.1
+        else{
+            this.finalPosition = this.agent.environment.getRandomPosition()
+            this.utility = 0
+        }
 
-        this.updated = this.update(this.agent.currentPosition).catch((error) => {
-                console.log(error)
-                process.exit(0)
-        })
     }
 
     /**
@@ -120,30 +120,38 @@ export class PddlOption extends Option{
      * @param {Position} startPosition 
      */
     async update(startPosition){
-        //console.log('updating single plan for ', this.id)
 
         this.startPosition = startPosition
 
         if (this.id === 'pddl_patrolling'){
+
             this.finalPosition = this.agent.environment.getRandomPosition()
-            this.plan = await this.agent.planner.getPlanFromTo(this.finalPosition)
-            this.utility = 0.1
+
+            const startTime = performance.now();
+            this.plan = await this.agent.planner.getPlanFromTo(this.startPosition, this.finalPosition)
+            this.utility = 0
+            const endTime = performance.now();
+
+            console.log('[',startTime,'][',this.id,']Pat. plan from', this.startPosition, 'to', this.finalPosition, ' in ', endTime - startTime, 'ms' )
+
         }
         else if (this.id === 'pddl_delivery'){
-            this.plan = await this.agent.planner.getDeliveryPlan(this.startPosition, this.parcelId).catch((error) => {
-                console.log(error)
-                process.exit(0)
-            })
+            const startTime = performance.now();
+            this.plan = await this.agent.planner.getDeliveryPlan(this.startPosition, this.parcelId)
+            const endTime = performance.now();
+            console.log('[',startTime,'][',this.id,']Del. plan from', this.startPosition, 'to', this.parcel.position, ' in ', endTime - startTime, 'ms')
+
             if (this.plan != null){
                 this.finalPosition = this.plan.finalPosition
                 this.utility = this.agent.options.utilityCalcolator.simplifiedDeliveryUtility(this.plan.startPosition, this.plan.finalPosition, this.plan.length)
             }
         }
         else if (this.id.startsWith('pddl_pickup-')){
-            this.plan = await this.agent.planner.getPickupPlan(this.startPosition, this.parcel).catch((error) => {
-                console.log(error)
-                process.exit(0)
-            })
+            const startTime = performance.now();
+            this.plan = await this.agent.planner.getPickupPlan(this.startPosition, this.parcel)
+            const endTime = performance.now();
+            console.log('[',startTime,'][',this.id,']Pickup plan from', this.startPosition, 'to', this.parcel.position, ' in ', endTime - startTime, 'ms')
+
             if (this.plan != null){
                 this.finalPosition = this.plan.finalPosition
                 this.utility = this.agent.options.utilityCalcolator.simplifiedPickUpUtility(this.startPosition, this.parcel, this.plan.length)
@@ -154,8 +162,6 @@ export class PddlOption extends Option{
         if (this.plan == null){
             this.utility = 0
         }
-
-        this.updates += 1
     }
 
     toString() {

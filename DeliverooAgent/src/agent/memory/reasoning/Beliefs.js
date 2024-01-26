@@ -11,11 +11,15 @@ export class Beliefs extends Beliefset {
   /**
   * @param {Agent} agent - The agent that this Beliefs object is associated with
   */
-  constructor(agent) {
+  constructor(agent, copy = false) {
     super()
     this.agent = agent
-    this.declareAgent(this.agent.agentID, this.agent.currentPosition)
-    this.initMap()
+    if (!copy){
+      this.declare(`me ${this.agent.agentID}`)
+      this.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)
+      this.initMap()
+    }
+
     console.log('[INIT] Agent beliefs initialized.')
   }
 
@@ -25,36 +29,20 @@ export class Beliefs extends Beliefset {
   activate(){
     this.agent.eventManager.on('update_parcels_beliefs', () => this.updateParcels())
     this.agent.eventManager.on('update_players_beliefs', () => this.updatePlayers())
-    this.agent.eventManager.on('deleted_parcel', (id) => this.deleteParcel(id))
+    this.agent.eventManager.on('deleted_parcel', (id) => this.removeAllObjectReferences(id))
     this.agent.eventManager.on('movement', () => this.updateMyPosition())
-  }
-
-  /**
-   * Declare the belief about the agent.
-  */
-  declareAgent(agentID, position) {
-    this.removeObject(`${agentID}`)
-    this.addObject(`${agentID}`)
-    this.declare(`me ${agentID}`)
-    this.declare(`at ${agentID} t${position.x}_${position.y}`)
   }
 
   /**
    * Updates belief of agent position
   */
   updateMyPosition() {
-    //this.agent.log('[BELIEFSET] My position updated.')
-    this.declareAgent(this.agent.agentID, this.agent.currentPosition)
+    for (let entry of this.entries){
+      if (entry[0].startsWith(`at ${this.agent.agentID}`))
+        this.removeFact(entry[0])
+    }
+    this.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)
   }
-
- /**
-   * Removes a parcel from the belief set.
-   * 
-   * @param {string} id - The ID of the parcel to be removed.
-   */
- deleteParcel(id) {
-  this.removeObject(id);
-}
 
   /**
    * Updates beliefs about other players
@@ -67,9 +55,8 @@ export class Beliefs extends Beliefset {
         this.removeFact(`at ${player.id} t${player.getLastPosition().x}_${player.getLastPosition().y}`)
         this.declare(`at ${player.id} t${player.getCurrentPosition().x}_${player.getCurrentPosition().y}`);
       }
-      else {
+      else
         this.removeFact(`at ${player.id} t${player.getCurrentPosition().x}_${player.getCurrentPosition().y}`)
-       }
     }
   }
 
@@ -79,17 +66,19 @@ export class Beliefs extends Beliefset {
   updateParcels() {
     //this.agent.log('[BELIEFSET] Parcels information updated.')
     for (let [id, parcel] of this.agent.parcels.getParcels()) {
+      this.addObject(parcel.id)
       if (parcel.isMine()) {
-        this.removeFact(`at ${parcel.id} t${parcel.x}_${parcel.y}`)
+        this.removeFact(`at ${parcel.id} t${parcel.position.x}_${parcel.position.y}`)
         this.declare(`carries ${this.agent.agentID} ${parcel.id}`)
       }
       else if (parcel.isTaken()) {
-        this.removeObject(parcel.id)      
+        this.removeFact(`at ${parcel.id} t${parcel.position.x}_${parcel.position.y}`)
+        this.declare(`carries ${parcel.carriedBy} ${parcel.id}`)
       }
-      else if (!this.objects.includes(parcel.id)) {
-        this.addObject(`${parcel.id}`);
+      else{
         this.declare(`at ${parcel.id} t${parcel.position.x}_${parcel.position.y}`);
       }
+
     }
   }
 
@@ -118,6 +107,13 @@ export class Beliefs extends Beliefset {
       objCopy.push(`${obj} - ${type}`);
     }
     return objCopy.join(' ');
+  }
+
+  clone() {
+    const clonedBeliefs = new Beliefs(this.agent, true);
+    const internalState = this.getState();
+    clonedBeliefs.setState(internalState);
+    return clonedBeliefs;
   }
 
   /**

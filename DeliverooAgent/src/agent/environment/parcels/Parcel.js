@@ -79,6 +79,18 @@ export class Parcel {
         return this.carriedBy === null;
     }
 
+    /**
+     * Checks if the parcel tile is occupied.
+     * 
+     * @returns {boolean} True if the parcel is accesible, false otherwise
+     */
+    isAccessible(){
+        for ( let p of this.agent.players.getCurrentPositions())
+            if (p.isEqual(this.position))
+                return false
+        return true        
+    }
+
     toString() {
         return `Parcel ID: ${this.id} (Mine:${this.isMine()}), Position: (${this.position.toString()}), Reward: ${this.reward}, CarriedBy: ${this.carriedBy}`;
     }

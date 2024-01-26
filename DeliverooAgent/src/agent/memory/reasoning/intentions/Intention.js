@@ -41,7 +41,6 @@ export class Intention {
             return this;
         }
         this.#started = true;
-        //this.agent.log('[INTENTION', this.option.id, '] Started - ', this.#started);
 
         for (const planClass of this.agent.planner.getPlanLibrary()) {
             if (this.stopped) break;
@@ -52,13 +51,11 @@ export class Intention {
                 try {
 
                     const plan_res = await this.#current_plan.execute(this.option);
-                    //console.log('[INTENTION', this.option.id, '] Plan', planClass.name, plan_res, 'terminated.');
                     return plan_res;
 
                 } catch ( error ) {
-
-                        this.stop()
-                        throw ['stopped',this.option.toString()]
+                    this.stop()
+                    throw [error,this.option.id]
                 }
             }
         }
