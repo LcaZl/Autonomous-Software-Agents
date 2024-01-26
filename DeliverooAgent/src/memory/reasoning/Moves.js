@@ -154,7 +154,7 @@ export class BreadthFirstSearchMove extends Move {
                 if (error[0] === 'movement_fail'){
                     updatePlan()
                     movementFailures += 1
-                    if (movementFailures == 30)
+                    if (movementFailures == 10)
                         throw error
                 }
                 else if (error[0] === 'path_not_free'){
@@ -229,7 +229,6 @@ export class PddlMove extends Move {
         if (option.plan !== null && option.startPosition.isEqual(this.agent.currentPosition)){
             this.plan = option.plan.steps
             this.positions = option.plan.positions
-            this.agent.lookAheadHits++
         }
         else 
             await updatePlan()

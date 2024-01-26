@@ -24,7 +24,6 @@ export class AgentInterface{
       this.movementAttempts = 0 // Total number of movement attempts
       this.failMovement = 0
       this.score = 0
-      this.lookAheadHits = 0
       this.fastPickMoves = 0
       this.cacheHit = 0
       this.onlineSolverCalls = 0
@@ -88,8 +87,8 @@ export class AgentInterface{
       //this.showOptions(this.options.getOptions())
       console.log('|- Current intention:', this.intentions.currentIntention.option.toString())
       this.showIntentions(this.intentions.intention_queue.values())
-      if (this.moveType === 'PDDL')
-        console.log(this.beliefs.toPddlString())
+      //if (this.moveType === 'PDDL')
+        //console.log(this.beliefs.toPddlString())
       console.log('|------------------------------------|')
       console.log('|                 END                |')
       console.log('|------------------------------------|')
@@ -115,7 +114,6 @@ export class AgentInterface{
 
     console.log(' - Search call', this.environment.searchCalls)
     console.log(' - Cache hits', this.cacheHit)
-    console.log(' - Look ahead hits:', this.lookAheadHits)
     console.log(' - Fast pick moves:', this.fastPickMoves)
     console.log(' - Online solver calls:', this.onlineSolverCalls)
     if (this.multiagent){
@@ -134,7 +132,6 @@ export class AgentInterface{
           map: this.client.config.MAP_FILE,
           moveType : this.moveType,
           fastPick : this.fastPick,
-          lookAHead : this.lookAhead,
           changingRisk : this.changingRisk,
           adjMovementCostWindow : this.adjMovementCostWindow,
           agentName: this.name,
@@ -151,14 +148,13 @@ export class AgentInterface{
           parcelsDelivered: this.parcelsDelivered,
           searchCalls: this.environment.searchCalls,
           cacheHits: this.cacheHit,
-          lookAheadHits: this.lookAheadHits,
           fastPickMoves: this.fastPickMoves,
           onlineSolverCalls: this.onlineSolverCalls,
           teamScore: this.multiagent ? this.teamScore + this.score : undefined
       };
 
       const jsonData = JSON.stringify(performanceData, null, 2);
-      const filePath = `./agentPerformance_${this.client.config.MAP_FILE}.json`;
+      const filePath = `./test/agentPerformance_${this.client.config.MAP_FILE}.json`;
 
       try {
           // Leggere il contenuto corrente del file

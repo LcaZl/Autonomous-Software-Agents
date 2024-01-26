@@ -48,7 +48,7 @@ export class Planner {
 
     async loadDomain() {
         try{
-            this.domain = await this.readFile('./src/agent/memory/pddl/domain.pddl')
+            this.domain = await this.readFile('./src/memory/pddl/domain.pddl')
             console.log('[INIT] Planner Domain loaded')//,this.domain)
         }
         catch(exception){
@@ -166,7 +166,6 @@ export class Planner {
 
         if (!plan) {
             console.log('Plan not found for single pickup from', from, ' to ', parcel.position)
-            console.log('', problem.toPddlString())
             return null
         }
 

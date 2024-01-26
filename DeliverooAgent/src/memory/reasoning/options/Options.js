@@ -48,11 +48,13 @@ export class Options {
      */
     updateOptionsForBfs(){
 
-        const currentOptionId = this.agent.intentions.currentIntention.option.id
+        const currentOption = this.agent.intentions.currentIntention.option
         let options = []
 
         // If the agent is carrying some parcel, evaluate a delivery option
-        if (this.agent.parcels.carriedParcels() > 0){
+        if (this.agent.parcels.carriedParcels() > 0 
+        && currentOption.id !== 'bfs_delivery' 
+        && !this.agent.environment.onDeliveryTile()){
             const option = new BfsOption('bfs_delivery', this.agent.parcels.getOneOfMyParcels(), this.agent)
             if (option.utility > 0)
                 options.push(option) 
@@ -61,7 +63,7 @@ export class Options {
         // For each parcel that can be take, elaborate a plan.
         for(let [_, parcel] of this.agent.parcels.getParcels()){
             const id = `bfs_pickup-${parcel.id}`
-            if ( parcel.isFree() && parcel.isAccessible() && currentOptionId !== id){
+            if ( parcel.isFree() && parcel.isAccessible() && currentOption.id !== id){
                 //let utility = this.utilityCalcolator.pickUpUtility(this.agent.currentPosition, parcel)
                 const option = new BfsOption(id, parcel, this.agent)
                 if (option.utility > 0)
@@ -87,7 +89,9 @@ export class Options {
         const currentOption = this.agent.intentions.currentIntention.option
 
         // Elaborate delivery option
-        if (this.agent.parcels.carriedParcels() > 0 && currentOption.id !== 'pddl_delivery'){
+        if (this.agent.parcels.carriedParcels() > 0
+         && currentOption.id !== 'pddl_delivery'
+         && !this.agent.environment.onDeliveryTile()){
             const parcel = this.agent.parcels.getOneOfMyParcels()
             const deliveryOption = new PddlOption('pddl_delivery', parcel, this.agent)
             if (deliveryOption.utility > 0){

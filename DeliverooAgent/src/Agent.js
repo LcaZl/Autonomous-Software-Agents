@@ -13,7 +13,8 @@ import { Intentions } from "./memory/reasoning/intentions/Intentions.js";
 import { AgentInterface } from "./AgentInterface.js";
 import { Intention } from "./memory/reasoning/intentions/Intention.js";
 import { ProblemGenerator } from "./memory/reasoning/planning/ProblemGenerator.js";
-import { Communication, TeamManager } from "./memory/Communication.js";
+import { Communication } from "./memory/multiagent/Communication.js";
+import { Team } from "./memory/multiagent/team.js";
 /**
  * 
  * Class that contains all components needed by the agent. 
@@ -28,14 +29,13 @@ export class Agent extends AgentInterface{
      * @param {string} token - The token for the agent.
      */
 
-    constructor(host, token, name, duration, moveType, fastPick, lookAhead, changingRisk, adjMovementCostWindow, multiagent, teamNames, teamSize) {
+    constructor(host, token, name, duration, moveType, fastPick, changingRisk, adjMovementCostWindow, multiagent, teamNames, teamSize) {
         super()
 
         // Configuration
         this.duration = duration ? duration * 1000 : Infinity;
         this.moveType = moveType
         this.fastPick = fastPick
-        this.lookAhead = lookAhead
         this.changingRisk = changingRisk
         this.adjMovementCostWindow = adjMovementCostWindow
         this.nextTile = null
@@ -109,19 +109,36 @@ export class Agent extends AgentInterface{
             this.options = new Options(this)
             this.intentions = new Intentions(this)
 
-            // Multiagente components initialization
-            if (this.multiagent){
-                this.teamManager = new TeamManager(this)
+            // multiagent components initialization 
+            if (this.multiagent) { 
+
+                this.team = new Team()
                 this.communication = new Communication(this)
+                console.log('[AGENT][TEAM] Trying to connect to team members ...')
+                
+                while (this.team.TEAM_FORMATION) {
+
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    this.communication.introduceYourself(this.team.myRanking);
+
+                    if (this.team.getNumberOfMembers() == this.team.TEAM_SIZE - 1){
+                        this.team.TEAM_FORMATION = false; 
+                        this.team.insert(this.agentID, this.team.myRanking);
+                    }
+                }
+
+                let master = this.team.getAgentWithHighestRanking()
+
+                master.id === this.agentID ? this.team.MASTER = true : this.team.MASTER = false;
+                this.team.masterId = master.id
+                this.team.MASTER_SET = true
+
+                console.log("[MASTER ELECTED] - id: ", this.team.masterId)
+                console.log("IS MASTER SET? : ", this.team.MASTER_SET)
+                console.log("AM I THE MASTER? : ", this.team.MASTER)
+                
                 this.communication.activate()
-
-                while (!this.teamManager.sincronized) { await new Promise(resolve => setTimeout(resolve, 5)) }
-        
-                console.log(this.teamManager.master)
-                console.log(this.teamManager.team)
             }
-
-            //this.communication.activate()
 
             // Activate the managment of the events
             this.parcels.activate()

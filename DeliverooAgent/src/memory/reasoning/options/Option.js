@@ -139,12 +139,13 @@ export class PddlOption extends Option{
             const startTime = performance.now();
             this.plan = await this.agent.planner.getDeliveryPlan(this.startPosition, this.parcelId)
             const endTime = performance.now();
-            console.log('[',startTime,'][',this.id,']Del. plan from', this.startPosition, 'to', this.parcel.position, ' in ', endTime - startTime, 'ms')
 
             if (this.plan != null){
                 this.finalPosition = this.plan.finalPosition
                 this.utility = this.agent.options.utilityCalcolator.simplifiedDeliveryUtility(this.plan.startPosition, this.plan.finalPosition, this.plan.length)
             }
+            console.log('[',startTime,'][',this.id,']Del. plan from', this.startPosition, 'to ', this.finalPosition,' in ', endTime - startTime, 'ms')
+
         }
         else if (this.id.startsWith('pddl_pickup-')){
             const startTime = performance.now();
