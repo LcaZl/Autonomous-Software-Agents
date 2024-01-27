@@ -432,4 +432,26 @@
   "cacheHits": 666,
   "fastPickMoves": 0,
   "onlineSolverCalls": 0
+},{
+  "map": "challenge_21",
+  "moveType": "BFS",
+  "fastPick": true,
+  "changingRisk": 1,
+  "adjMovementCostWindow": 5000,
+  "agentName": "Harvest_1",
+  "agentID": "e9b6030e535",
+  "activityTime": "05:00 (300057 ms)",
+  "averageTimePerMove": 815.3722826086956,
+  "initialScore": 0,
+  "finalScore": 400,
+  "effectiveScore": 400,
+  "effectiveMovement": 353,
+  "failedMovements": 14,
+  "pickUpActions": 110,
+  "deliveryActions": 19,
+  "parcelsDelivered": 104,
+  "searchCalls": 1155,
+  "cacheHits": 778,
+  "fastPickMoves": 0,
+  "onlineSolverCalls": 0
 }]

@@ -129,7 +129,7 @@ export class Intentions {
                         console.log( '[INTENTIONS_REVISION] Error with intention', intention.option.id, '- Error:', msg )
                         process.exit(0)
                     }
-                    console.log('Current intention stopped, message -> ', msg)
+                    //console.log('Current intention stopped, message -> ', msg)
                 });
                 //console.log('[INTENTIONS] Ended   : ', this.currentIntention.option.id)
 
