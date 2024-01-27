@@ -139,11 +139,11 @@ export class Environment {
     this.searchCalls += 1
 
     if (this.cache.has(cacheKey) && this.isPathSafe(this.cache.get(cacheKey).path.positions)) {
-        this.cache.get(cacheKey).uses++
-        if(this.cache.get(cacheKey).uses >= 0)
+        if(this.cache.get(cacheKey).uses > 0)
           this.cache.delete(cacheKey)
         else{
           this.agent.cacheHit += 1
+          this.cache.get(cacheKey).uses += 1
           return this.cache.get(cacheKey)
         }
     }

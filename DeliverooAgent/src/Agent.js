@@ -72,7 +72,7 @@ export class Agent extends AgentInterface{
             this.agentID = this.client.id
             this.name = this.client.name
             this.active = true
-            this.MAX_PARCELS = this.client.config.PARCELS_MAX == 'infinite' ? 100000 : this.client.config.PARCELS_MAX - 1
+            this.MAX_PARCELS = this.client.config.PARCELS_MAX == 'infinite' ? 100000 : this.client.config.PARCELS_MAX
             this.MOVEMENT_DURATION = this.client.config.MOVEMENT_DURATION
             this.PARCEL_DECADING_INTERVAL = this.client.config.PARCEL_DECADING_INTERVAL == '1s' ? 1000 : Infinity
             this.RANDOM_AGENT_SPEED = parseInt(this.client.config.RANDOM_AGENT_SPEED)

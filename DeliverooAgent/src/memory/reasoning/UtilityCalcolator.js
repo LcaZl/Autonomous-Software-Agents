@@ -107,7 +107,7 @@ export class UtilityCalcolator{
         const deliveryCost = deliveryDistance * this.movementPenality;
         //console.log(this.agent.duration, elapsedTime, (this.agent.duration - elapsedTime), (deliveryCost * this.agent.MOVEMENT_DURATION),deliveryDistance, this.movementPenality)
 
-        if ((this.agent.duration - elapsedTime) < (deliveryDistance * (this.movementTime * 2))) { 
+        if ((this.agent.duration - elapsedTime) < (deliveryDistance * (this.movementTime * 2.5))) { 
             return {value:Infinity, search:search} }
         
         const carriedParcels = this.agent.parcels.carriedParcels()
@@ -135,7 +135,7 @@ export class UtilityCalcolator{
 
         const deliveryCost = deliveryDistance * this.movementPenality
 
-        if ((this.agent.duration - elapsedTime) < (deliveryDistance * (this.movementTime * 2))) {  return Infinity }
+        if ((this.agent.duration - elapsedTime) < (deliveryDistance * (this.movementTime * 2.5))) {  return Infinity }
 
         const carriedParcels = this.agent.parcels.carriedParcels()
 
