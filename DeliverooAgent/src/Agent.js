@@ -191,10 +191,10 @@ export class Agent extends AgentInterface{
      */
     async pickup() { 
 
-        this.pickUpActions += 1
         let pickedUpParcels = await this.client.pickup()
 
         if (pickedUpParcels && pickedUpParcels.length > 0) {
+            this.pickUpActions += 1
 
             this.parcelsPickedUp += pickedUpParcels.length
             console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Picked up', pickedUpParcels.length, 'parcel')
@@ -209,15 +209,12 @@ export class Agent extends AgentInterface{
     */
     async deliver() {
 
-        this.deliveryActions += 1
         let deliveredParcels = await this.client.putdown() 
 
         if (deliveredParcels && deliveredParcels.length > 0){
-
-            const reward = this.parcels.getMyParcelsReward()
+            this.deliveryActions += 1
             this.parcelsDelivered += deliveredParcels.length
-            this.score += reward
-            console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Delivered', deliveredParcels.length ,'parcel(s) for ', this.parcels.getMyParcelsReward(), 'points - Total score: ', this.score - this.initialScore)
+            console.log('[AGENT][Time:', (new Date().getTime() - this.startedAt) / 1000, '/', this.duration / 1000,'s','] Delivered', deliveredParcels.length ,'parcel(s) - Score: ', this.score - this.initialScore)
 
             this.eventManager.emit('delivered_parcels', deliveredParcels)
         }
@@ -261,6 +258,7 @@ export class Agent extends AgentInterface{
                     const direction = directions.find(dir => parcel.position.isEqual(dir.pos));
                     
                     if (direction) {
+                        this.fastPickMoves += 1
                         await this.client.move( direction.name )
                         await this.pickup()
                         if (!nextPosition.isEqual(direction.pos)){

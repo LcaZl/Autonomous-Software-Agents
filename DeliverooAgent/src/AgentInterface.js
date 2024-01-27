@@ -114,7 +114,6 @@ export class AgentInterface{
 
     console.log(' - Search call', this.environment.searchCalls)
     console.log(' - Cache hits', this.cacheHit)
-    console.log(' - Fast pick moves:', this.fastPickMoves)
     console.log(' - Online solver calls:', this.onlineSolverCalls)
     if (this.multiagent){
       console.log(' - Team score: ', this.teamScore + this.score)
@@ -148,7 +147,6 @@ export class AgentInterface{
           parcelsDelivered: this.parcelsDelivered,
           searchCalls: this.environment.searchCalls,
           cacheHits: this.cacheHit,
-          fastPickMoves: this.fastPickMoves,
           onlineSolverCalls: this.onlineSolverCalls,
           teamScore: this.multiagent ? this.teamScore + this.score : undefined
       };

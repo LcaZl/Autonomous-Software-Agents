@@ -18,7 +18,7 @@ export const configurations = [
         fastPick : false, //  For both PDDL and BFS.
 
         // Percentage penality in new option utility, if the actual is stopped for the new one.
-        changingRisk : 1, // current_option_utility < (new_option_utility * 0.8)
+        changingRisk : 0.5, // current_option_utility < (new_option_utility * 0.8)
 
         // Time window to adjust the movemnt penality, used to calcul,ate the utility of each option.
         adjustMovementCostWindow : 5000 // (ms)

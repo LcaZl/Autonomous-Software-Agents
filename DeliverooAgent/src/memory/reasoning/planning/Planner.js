@@ -68,7 +68,7 @@ export class Planner {
             let plan = null
             //console.log(this.agent.beliefs.toPddlString())
             plan = await onlineSolver( this.domain, problem.toPddlString() );
-            this.agent.onlineSolverCalls++
+            this.agent.onlineSolverCalls += 1
             if (!plan || plan.length == 0){
                 return null
             }
