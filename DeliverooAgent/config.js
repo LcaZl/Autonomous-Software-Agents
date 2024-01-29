@@ -4,7 +4,7 @@ export const host = "http://localhost:8080" // or https://deliveroojs.onrender.c
 
 // // ----------------------------------------------- Multi-agent parameters ----------------------------------------------------
 export const multiagent = false // Enable the multiagent functionalities
-export const teamSize = 0 // Size of the team
+export const teamSize = 2 // Size of the team
 
 export const configurations = [
 
@@ -18,7 +18,7 @@ export const configurations = [
         fastPick : false, //  For both PDDL and BFS.
 
         // Percentage penality in new option utility, if the actual is stopped for the new one.
-        changingRisk : 0.5, // current_option_utility < (new_option_utility * 0.8)
+        changingRisk : 0.0, // current_option_utility < (new_option_utility * 0.8)
 
         // Time window to adjust the movemnt penality, used to calcul,ate the utility of each option.
         adjustMovementCostWindow : 5000 // (ms)

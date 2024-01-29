@@ -8,8 +8,8 @@ let teamNames = new Set()
 
 if (multiagent){
     currentConfigurationIndex = process.argv[2] - 1
-
-    if (!currentConfigurationIndex){
+    console.log(currentConfigurationIndex)
+    if (currentConfigurationIndex != 0 && currentConfigurationIndex != 1 && currentConfigurationIndex != 2){
         console.error('The agent configuration id must be specified with multiagent True. Use -> node index.js [ConfigurationIndex]\n Available agents: 1,2 and 3.')
         process.exit(1)}
     // The other configurations in config.js are the one used by other agents

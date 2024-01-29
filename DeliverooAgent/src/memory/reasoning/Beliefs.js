@@ -14,6 +14,7 @@ export class Beliefs extends Beliefset {
   constructor(agent, copy = false) {
     super()
     this.agent = agent
+    this.positionUpdate = 0
     if (!copy){
       this.declare(`me ${this.agent.agentID}`)
       this.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)
@@ -42,6 +43,18 @@ export class Beliefs extends Beliefset {
         this.removeFact(entry[0])
     }
     this.declare(`at ${this.agent.agentID} t${this.agent.currentPosition.x}_${this.agent.currentPosition.y}`)
+  
+    // Multi agent only
+    if(this.agent.multiagent){ 
+      if(this.positionUpdate % 5 === 0){
+        if(!this.agent.team.MASTER){
+          this.agent.communication.positionUpdate(this.agent.currentPosition)
+        } else {
+          this.agent.communication.updateAgentPosition(this.agent.agentID, this.agent.currentPosition)
+        }
+      }
+    } 
+
   }
 
   /**
@@ -53,7 +66,12 @@ export class Beliefs extends Beliefset {
       if (!player.isLost()) {
         this.addObject(`${player.id}`)
         this.removeFact(`at ${player.id} t${player.getLastPosition().x}_${player.getLastPosition().y}`)
-        this.declare(`at ${player.id} t${player.getCurrentPosition().x}_${player.getCurrentPosition().y}`);
+        const fact = `at ${player.id} t${player.getCurrentPosition().x}_${player.getCurrentPosition().y}`
+        this.declare(fact);
+
+        // Multi-agent only
+        if(this.agent.multiagent)
+          this.agent.communication.updatePlayerBeliefSet(player.id, fact, "add")
       }
       else
         this.removeFact(`at ${player.id} t${player.getCurrentPosition().x}_${player.getCurrentPosition().y}`)
@@ -69,14 +87,26 @@ export class Beliefs extends Beliefset {
       this.addObject(parcel.id)
       if (parcel.isMine()) {
         this.removeFact(`at ${parcel.id} t${parcel.position.x}_${parcel.position.y}`)
-        this.declare(`carries ${this.agent.agentID} ${parcel.id}`)
+        
+        const fact = `carries ${this.agent.agentID} ${parcel.id}` 
+        this.declare(fact)
+
+        if(this.agent.multiagent)
+          this.agent.communication.updateParcelBeliefSet(parcel.id, fact, "add")
+        
       }
       else if (parcel.isTaken()) {
         this.removeFact(`at ${parcel.id} t${parcel.position.x}_${parcel.position.y}`)
         this.declare(`carries ${parcel.carriedBy} ${parcel.id}`)
+
+        if(this.agent.multiagent)
+          this.agent.communication.updateParcelBeliefSet(parcel.id, "fact", "remove") 
       }
       else{
+        const fact = `at ${parcel.id} t${parcel.position.x}_${parcel.position.y}` 
         this.declare(`at ${parcel.id} t${parcel.position.x}_${parcel.position.y}`);
+        if(this.agent.multiagent)
+          this.agent.communication.updateParcelBeliefSet(parcel.id, fact, "add")
       }
 
     }

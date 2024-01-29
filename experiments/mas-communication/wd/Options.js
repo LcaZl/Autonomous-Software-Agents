@@ -20,7 +20,6 @@ export class Options {
         console.log('[INIT] Options initialized.')
     }
 
-
     /**
      * Activates the event manager to listen for relevant events.
      */

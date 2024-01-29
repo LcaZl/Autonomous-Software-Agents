@@ -11,6 +11,7 @@ export class Player {
      * @param {Object} player - Initial information about the player.
      */
     constructor(agent, player) {
+        console.log(player)
         this.agent = agent;
         this.id = player.id[0] == 'a' ? player.id : 'a' + player.id;
         this.name = player.name;
@@ -23,6 +24,13 @@ export class Player {
         console.log('[AGENT][NEW_PLAYER]', this.name, ' entered in tile', this.currentPosition.toString());
     }
 
+    getMessageversion(){
+        return {id: this.id, 
+            x: this.currentPosition.x, 
+            y: this.currentPosition.y, 
+            name: this.name, 
+            score: this.score}
+    }
     /**
      * Updates the player's state with new information.
      * 

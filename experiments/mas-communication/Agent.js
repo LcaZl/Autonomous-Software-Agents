@@ -146,7 +146,6 @@ export class Agent extends AgentInterface{
             this.communication.activate()
         }
 
-        //this.communication.activate()
         // Start the agent
         this.intentions.loop()
 

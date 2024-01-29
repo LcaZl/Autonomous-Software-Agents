@@ -150,4 +150,31 @@ export class UtilityCalcolator{
 
         return utility
     }
+
+    computeDistance(startPosition, endPosition) {
+        return Math.abs(startPosition.X - endPosition.X) + Math.abs(startPosition.Y - endPosition.Y);
+    }
+    
+    simplifiedPickUpUtilityMas(parcelId, parcelReward, startPosition, finalPosition){
+        const actualReward = this.agent.parcels.getMyParcelsReward()
+        const carriedParcels = this.agent.parcels.carriedParcels()
+
+        // temporarily use a manhattan distance , TO FIX. 
+        //console.log("START POSITION : ") 
+        //console.log(startPosition)
+        //console.log("FINAL POSITION : ")
+        //console.log(finalPosition)
+        const pickupDistance = this.computeDistance(startPosition, finalPosition)
+        const pickupCost = pickupDistance * this.movementPenality
+        
+        const deliverySearch = this.agent.environment.getEstimatedNearestDeliveryTile(new Position(finalPosition.X, finalPosition.Y))
+        const deliveryCost = deliverySearch.distance * this.movementPenality;  
+
+        const cost = pickupCost + deliveryCost;
+
+        const utility = (actualReward + parcelReward) - cost * (carriedParcels + 1)
+
+        return utility
+    }
+
 }

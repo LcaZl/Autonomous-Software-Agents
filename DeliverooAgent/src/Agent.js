@@ -141,17 +141,19 @@ export class Agent extends AgentInterface{
             }
 
             // Activate the managment of the events
-            this.parcels.activate()
-            this.players.activate()
             if (this.moveType === 'PDDL')
                 this.beliefs.activate()
             this.options.activate()
+            this.parcels.activate()
+            this.players.activate()
+
+            // Start the agent
+            this.intentions.loop()
 
             this.info()
             console.log('[INIT] Initialization Ended Succesfully.\n\n')
 
-            // Start the agent
-            await this.intentions.loop()
+
     }
 
     /**

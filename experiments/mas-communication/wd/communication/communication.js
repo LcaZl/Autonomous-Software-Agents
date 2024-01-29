@@ -2,6 +2,7 @@
 import MessageType from './messageTypes.js';
 import { Team , MasterIdPool} from './team.js';
 import { sharedIntentionQueue } from './planning/sharedIntentionQueue.js'
+import { Position } from '../../../../DeliverooAgent/src/utils/Position.js';
 
 let execTimes = 0  
 
@@ -22,11 +23,22 @@ export class Communication{
         });
     }
 
+    /**
+     * 
+     * 1 - Logica gestine del passaggio di opzioni tra agenti.
+     * 2 - Condivisione dei dati dell'ambiente tra agenti.
+     * 3 - Uso activate ?
+     * 
+     * 
+     * 
+     * 
+     */
 
     activate(){
         this.agent.eventManager.on('picked_up_parcels', (pickedUpParcels) => this.pickedUpParcels(pickedUpParcels)  )
         this.agent.eventManager.on('parcels_percept', (parcels) => { this.handleParcelsSensing(parcels); });
         this.agent.eventManager.on('players_percept', (sensedPlayers) => this.handlePlayersSensing(sensedPlayers));
+        this.agent.eventManager.on('updated_parcels_beliefset', (sensedPlayers) => this.handleUpdatedBeliefset(sensedPlayers));
         this.agent.eventManager.on('updated_parcels_beliefset', (sensedPlayers) => this.handleUpdatedBeliefset(sensedPlayers));
     }
 
@@ -256,8 +268,8 @@ export class Communication{
     }
 
     updateAgentPosition(agentId, newPosition) {
-        agentId = this.standardizeId(agentId)
-        let positionObject = { x: newPosition.x, y: newPosition.y };
+        //agentId = this.standardizeId(agentId)
+        let positionObject = new Position(newPosition.x, newPosition.y);
         let positions = this.tempBeliefSet.get('positions');
         positions[agentId] = positionObject; // Update or set the agent's position
         this.tempBeliefSet.set('positions', positions); // Update the positions in the belief set
@@ -265,7 +277,7 @@ export class Communication{
 
     // Method to retrieve the position of an agent
     getAgentPosition(agentId) {
-        agentId = this.standardizeId(agentId)
+        //agentId = this.standardizeId(agentId)
         let positions = this.tempBeliefSet.get('positions');
         return positions ? positions[agentId] : null;
     }    

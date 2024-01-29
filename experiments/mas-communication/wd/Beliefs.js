@@ -52,8 +52,7 @@ export class Beliefs extends Beliefset {
         if(!this.agent.team.MASTER){
           this.agent.communication.positionUpdate(this.agent.currentPosition)
         } else {
-          let id = this.agent.communication.standardizeId(this.agent.agentID)
-          this.agent.communication.updateAgentPosition(id, this.agent.currentPosition)
+          this.agent.communication.updateAgentPosition(this.agent.agentID, this.agent.currentPosition)
         }
       } 
     }

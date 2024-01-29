@@ -26,6 +26,13 @@ export class Parcel {
         }
     }
 
+    getMessageVersion(){
+        return {id: this.id, 
+            x: this.position.x, 
+            y: this.position.y, 
+            carriedBy: this.carriedBy, 
+            reward: this.reward}
+    }
     /**
      * Decays the reward of the parcel over time.
      */
