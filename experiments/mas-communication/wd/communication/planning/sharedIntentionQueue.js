@@ -186,9 +186,6 @@ export class sharedIntentionQueue {
 
     // is the bestOption still valid? should we select more than one? 
     async createPlanForAgent(agentId, bestOption){
-        //console.log("MASTER HAS TO GENERATE PLAN FOR " + agentId)
-        //console.log("GIVEN OPTION: ")
-        //console.log(bestOption)
         try {
         let wrappedPlan = null
         if (bestOption.ID.startsWith('bfs_pickup')) {

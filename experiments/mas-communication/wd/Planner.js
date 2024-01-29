@@ -180,6 +180,7 @@ export class Planner {
     async getPickupPlanMas( from, parcelId, parcelPosition){
         //console.log("[getPickupPlanMas] : " + parcelId)
         //console.log("[getPickupPlanMas] : " + parcelPosition)
+        from = new Position(from.X, from.Y)
         const cacheId = `${from.x}_${from.y}-${parcelPosition.x}_${parcelPosition.y}`
         const cachedPlan = this.checkCache(cacheId, 'pickup', parcelId)
         if (cachedPlan != null) {
@@ -187,8 +188,8 @@ export class Planner {
         }
 
         let problem = null
-        problem = this.problemGenerator.pickupFrom(from,parcelId)
-
+        problem = this.problemGenerator.pickupFrom(from, parcelId)
+        console.log(problem)
         const plan = await this.requestPlan(problem)
 
         if (!plan) {
