@@ -1,316 +1,281 @@
-import { PddlProblem } from '@unitn-asa/pddl-client';
-import { Agent } from '../../../agent.js';
-import { BreadthFirstSearchMove, Patrolling, PddlMove } from '../Moves.js';
+import { PddlProblem } from '@unitn-asa/pddl-client'
+import { Agent } from '../../../agent.js'
+import { BreadthFirstSearchMove, ParcelsSharingMovement, Patrolling, PddlMove, PddlMultiagentMove } from '../Moves.js'
 import fs from 'fs'
-import { onlineSolver } from "@unitn-asa/pddl-client";
-import { Position } from '../../../utils/Position.js';
-import { ProblemGenerator } from './ProblemGenerator.js';
-import { Parcel } from '../../../Environment/Parcels/Parcel.js';
-import { performance } from 'perf_hooks';
+import { onlineSolver } from "@unitn-asa/pddl-client"
+import { Position } from '../../../utils/Position.js'
+import { ProblemGenerator } from './ProblemGenerator.js'
+import { Parcel } from '../../../Environment/Parcels/Parcel.js'
+import { performance } from 'perf_hooks'
 
 /**
- * Classe used to manage the selection of the next action of the agent
+ * Manages the plan generation.
  */
 export class Planner {
-
     /**
-     * @param {Brain} brain - The brain
-     * @param {Agent} agent
-    */
-   
+     * Initializes the planner with a reference to the agent and sets up the planning library based on the agent's configuration.
+     * 
+     * @param {Agent} agent - The agent
+     */
     constructor(agent) {
-
         this.agent = agent
-        this.library = []
-        this.library.push( Patrolling )
-
+        this.library = [Patrolling] // Default plan library, starting with Patrolling
+        this.positionMap = new Map() // Vocabulary from PDDL position in string to Position object
+        this.problemGenerator = new ProblemGenerator(agent) // Initializes the problem generator for PDDL planning
+        this.cache = new Map() // Cache for storing planning results to optimize performance
         this.regex = /(\d+)/g
-        this.positionMap = new Map()
-        this.problemGenerator = new ProblemGenerator(agent)
 
-        switch (agent.moveType){
+        // Configure the planning library based on the agent's movement type
+        switch (agent.moveType) {
             case 'BFS':
-                this.library.push( BreadthFirstSearchMove )
-                break;
+                this.library.push(BreadthFirstSearchMove) // Add BFS planning strategy
+                break
+            case 'PDDL_1':
             case 'PDDL':
-                this.library.push( PddlMove )
-                this.library.push( BreadthFirstSearchMove )
-                break;
+                this.library.push(PddlMove) // Add PDDL planning strategy
+                break
         }
-        this.cache = new Map()
+
+        // Add multi-agent strategies to the planning library if applicable
+        if (agent.multiagent) {
+            if (this.agent.moveType === 'PDDL_1')
+                this.library.push(PddlMultiagentMove)
+            this.library.push(ParcelsSharingMovement)
+        }
 
         console.log('[INIT] Planner Initialized.')
     }
 
-    getDomain(){ return this.domain }
-
-    getPlanLibrary() {return this.library }
-
-    async getPickupPlanMas( from, parcelId, parcelPosition){
-        //console.log("[getPickupPlanMas] : " + parcelId)
-        //console.log("[getPickupPlanMas] : " + parcelPosition)
-        from = new Position(from.X, from.Y)
-        const cacheId = `${from.x}_${from.y}-${parcelPosition.x}_${parcelPosition.y}`
-        const cachedPlan = this.checkCache(cacheId, 'pickup', parcelId)
-        if (cachedPlan != null) {
-            return cachedPlan
-        }
-
-        let problem = null
-        problem = this.problemGenerator.pickupFrom(from, parcelId)
-        console.log(problem)
-        const plan = await this.requestPlan(problem)
-
-        if (!plan) {
-            console.log('Plan not found for single pickup from', from, ' to ', parcelPosition)
-            return null
-        }
-
-        const wrappedPlan = this.wrapPlan(plan)
-        return wrappedPlan
-
-    }
-    
-    async loadDomain() {
-        try{
-            this.domain = await this.readFile('./src/memory/pddl/domain.pddl')
-            console.log('[INIT] Planner Domain loaded')//,this.domain)
-        }
-        catch(exception){
-            console.error("[INIT] Planner ininitalization error.\n", exception)
-            process.exit(0)
-        }
+    /**
+     * Returns the plan library
+     * 
+     * @returns {Array} The plan library.
+     */
+    getPlanLibrary() {
+        return this.library
     }
 
     /**
-     * Manage the request for a plan to the online solver.
+     * Loads the PDDL domain from a file.
+     */
+    async loadDomain() {
+        function readFile ( path ) {
+            return new Promise( (res, rej) => {
+            
+                fs.readFile( path, 'utf8', (err, data) => {
+                    if (err) rej(err)
+                    else res(data)
+                })
+            
+            })
+        }
+
+        try {
+            // Assuming readFile is a defined method or utility that reads file contents
+            this.domain = await readFile('./src/memory/pddl/domain.pddl')
+            console.log('[INIT] Planner Domain loaded')
+        } catch (exception) {
+            console.error("[INIT] Planner initialization error.\n", exception)
+            process.exit(0) // Consider handling the error without exiting if possible
+        }
+    }
+
+
+    
+    /**
+     * Requests a plan from an online PDDL solver given a PDDL problem description.
      * 
-     * @param {PddlProblem} pddlProblem 
-     * @returns 
-    */
-    async requestPlan(problem){
-        try{
-            let plan = null
-            //console.log(this.agent.beliefs.toPddlString())
-            plan = await onlineSolver( this.domain, problem.toPddlString() );
-            this.agent.onlineSolverCalls += 1
-            if (!plan || plan.length == 0){
+     * @param {PddlProblem} problem - The PDDL problem instance.
+     * @returns {Promise<Array>|null} A promise that resolves to the plan or null if no plan is found or an error occurs.
+     */
+    async requestPlan(problem) {
+        try {
+            let plan = await onlineSolver(this.domain, problem.toPddlString())
+            this.agent.onlineSolverCalls++ // Track the number of solver calls for diagnostics
+
+            if (!plan || plan.length === 0) {
+                //console.log("Problem PDDL:", problem.toPddlString()) // Optionally log the problem for debugging
                 return null
             }
+
             return plan
-        }
-        catch (error){
-            console.log('Error while requesting plan. Error:\n', error)
+        } catch (error) {
+            console.log('Error while requesting plan:', error)
             return null
         }
     }
-
+        
     /**
-     * Get a plan from agent current position to a specified location.
-     * Used for: Patrolling.
+     * Generates or retrieves from cache a plan for moving the agent from one location to another.
      * 
-     * @param {Position} from 
-     * @param {Position} to 
-     * @returns 
+     * @param {Position} from - The starting position.
+     * @param {Position} to - The destination position.
+     * @returns {Promise<Object|null>} A promise that resolves to the wrapped plan object or null if no plan is found.
      */
-    async getPlanFromTo(from, to){
-
+    async getPlanFromTo(from, to) {
         const cacheId = `${from.x}_${from.y}-${to.x}_${to.y}`
         const cachedPlan = this.checkCache(cacheId, null, null)
-        if (cachedPlan != null) {
-            return cachedPlan
+        if (cachedPlan !== null) {
+            return cachedPlan // Return cached plan if available
         }
 
-        const problem = this.problemGenerator.go(from, to)
-        const plan = await this.requestPlan(problem)
+        const problem = this.problemGenerator.go(from, to) // Generate problem definition
+        const plan = await this.requestPlan(problem) // Request plan from solver
 
         if (!plan) {
-            console.log('Plan not found for go from', this.agent.currentPosition, ' to ', to)
+            //console.log('Plan not found for go from', from, 'to', to, problem.toPddlString())
             return null
         }
 
-        const wrappedPlan = this.wrapPlan(plan)
+        const wrappedPlan = this.wrapPlan(plan) // Wrap the raw plan for agent's use
         return wrappedPlan
-
     }
 
     /**
-     * Get a delivery plan from start position to the nearest delivery tile.
-     * The specified id will be used to set the parcel to deliver. Anyway when the
-     * agent will deliverm, he will drop all carried parcels.
+     * Generates or retrieves from cache a delivery plan to the nearest delivery tile from the start position.
      * 
-     * Used for: Pddl delivery.
-     * 
-     * @param {Position} startPosition 
-     * @param {String} parcelId 
-     * @returns 
+     * @param {Position} startPosition - The position from where the delivery starts.
+     * @param {String} parcelId - The identifier of the parcel to be delivered.
+     * @returns {Promise<Object|null>} A promise that resolves to the wrapped delivery plan or null if no plan is found.
      */
-    async getDeliveryPlan(startPosition, parcelId){
-
-        //const cacheId = `${startPosition.x}_${startPosition.y}-delivery`
-        //const cachedPlan = this.checkCache(cacheId, 'deliver', parcelId)
-        //if (cachedPlan != null) {
-         //   return cachedPlan
-        //}
-
-        const problem = this.agent.problemGenerator.deliverFrom(startPosition, parcelId)
-        const plan = await this.requestPlan(problem)
-
-        if (!plan){
-            console.log('Plan not found for delivery from', startPosition, ' with ', parcelId)
-            return null
+    async getDeliveryPlan(startPosition, parcelId) {
+        const cacheId = `${startPosition.x}_${startPosition.y}-delivery`
+        const cachedPlan = this.checkCache(cacheId, 'deliver', parcelId)
+        if (cachedPlan !== null) {
+            return cachedPlan // Return cached plan if available
         }
 
-        const wrappedPlan = this.wrapPlan(plan, startPosition)
-        this.cache.set(`${startPosition.x}_${startPosition.y}-delivery`, wrappedPlan)
-        return wrappedPlan
-
-    }
-
-    /**
-     * Get a plan to pick a parcel from the specified position.
-     * 
-     * Used for: pddl pickup.
-     * 
-     * @param {Position} from 
-     * @param {Parcel} parcel 
-     * @returns 
-     */
-    async getPickupPlan( from, parcel){
-
-        //const cacheId = `${from.x}_${from.y}-${parcel.position.x}_${parcel.position.y}`
-        //const cachedPlan = this.checkCache(cacheId, 'pickup', parcel.id)
-        //if (cachedPlan != null) {
-            //return cachedPlan
-        //}
-
-        let problem = null
-        problem = this.problemGenerator.pickupFrom(from, parcel.id)
-
-        const plan = await this.requestPlan(problem)
+        const problem = this.problemGenerator.deliverFrom(startPosition, parcelId) // Generate delivery problem
+        const plan = await this.requestPlan(problem) // Request plan from solver
 
         if (!plan) {
-            console.log('Plan not found for single pickup from', from, ' to ', parcel.position)
+            //console.log('Plan not found for delivery from', startPosition, 'with', parcelId)
             return null
         }
 
-        const wrappedPlan = this.wrapPlan(plan)
+        const wrappedPlan = this.wrapPlan(plan, startPosition) // Wrap the raw plan for agent's use
         return wrappedPlan
-
     }
 
     /**
-     * Check the cache for element with cacheId. Then:
-     * - if type is delivery, add a final delivery action on the last position of the founded plan;
-     * - if type is pickup, add a final pickup action as above.
+     * Generates or retrieves from cache a plan for picking up a specified parcel.
      * 
-     * @param {String} cacheId 
-     * @param {String} type 
-     * @param {String} parcelId 
-     * @returns 
+     * @param {Position} from - The agent's current position.
+     * @param {Parcel} parcel - The parcel to be picked up.
+     * @returns {Promise<Object|null>} A promise that resolves to the wrapped pickup plan or null if no plan is found.
      */
-    checkCache(cacheId, type , parcelId){
+    async getPickupPlan(from, parcel) {
+        const cacheId = `${from.x}_${from.y}-${parcel.position.x}_${parcel.position.y}`
+        const cachedPlan = this.checkCache(cacheId, 'pickup', parcel.id)
+        if (cachedPlan !== null) {
+            return cachedPlan // Return cached plan if available
+        }
 
-        if (this.cache.has(cacheId)){
+        const problem = this.problemGenerator.pickupFrom(from, parcel.id) // Generate pickup problem
+        const plan = await this.requestPlan(problem) // Request plan from solver
+
+        if (!plan) {
+            //console.log('Plan not found for pickup from', from, 'to', parcel.position)
+            return null
+        }
+
+        const wrappedPlan = this.wrapPlan(plan) // Wrap the raw plan for agent's use
+        return wrappedPlan
+    }
+
+    /**
+     * Retrieves a cached plan based on the cache ID and optionally appends a final action based on the type.
+     * 
+     * @param {String} cacheId - The unique identifier for the cached plan.
+     * @param {String} type - The type of action to append to the plan, 'delivery' or 'pickup'.
+     * @param {String} parcelId - The identifier of the parcel associated with the final action.
+     * @returns {Object|null} The cached plan with the optional final action appended, or null if no cache hit.
+     */
+    checkCache(cacheId, type, parcelId) {
+        if (this.cache.has(cacheId)) {
             let cacheHit = this.cache.get(cacheId)
+
+            // Dynamically append final action based on the type if provided
             if (type !== null) {
                 cacheHit.actions.push(type)
-
-                // Here the last action is dinamically added based on type
                 cacheHit.steps.push({
-                    parallel : false,
-                    action : type,
-                    args : [this.agent.agentID, parcelId, cacheHit.steps[cacheHit.steps.length - 1].args[2]]
+                    parallel: false,
+                    action: type,
+                    args: [this.agent.agentID, parcelId, cacheHit.steps[cacheHit.steps.length - 1].args[2]]
                 })
             }
-            this.cache.delete(cacheId)
-            this.agent.cacheHit++
+
+            this.cache.delete(cacheId) // Remove the plan from cache after retrieval
+            this.agent.cacheHit++ // Increment cache hit counter for the agent
             return cacheHit
         }
 
-        return null
+        return null // Return null if no cache hit
     }
 
     /**
-     * Extract a Position object from a pddl string.
+     * Extracts a Position object from a given PDDL string.
      * 
-     * @param {String} str 
-     * @returns 
+     * @param {String} str - The PDDL string containing position information.
+     * @returns {Position} The extracted position from the PDDL string.
      */
-    exractTilePositionFromPDDL(str){
-        if(this.positionMap.has(str)) return this.positionMap.get(str)
-        const numbers = str.match(this.regex).map(Number)
+    extractTilePositionFromPDDL(str) {
+        if (this.positionMap.has(str)) {
+            return this.positionMap.get(str) // Return cached position if available
+        }
+
+        const numbers = str.match(this.regex).map(Number) // Extract numerical values from the string
         const position = new Position(numbers[0], numbers[1])
-        this.positionMap.set(str, position)
+        this.positionMap.set(str, position) // Cache the extracted position for future use
+
         return position
     }
 
     /**
-     * The cache will use indexes based only on initial and final position.
-     * Takes two positions and based on the value of endposition returns the appropriate index.
+     * Wraps a raw plan from the online solver into a more structured object and caches all subpaths.
      * 
-     * @param {Position} startPosition 
-     * @param {Position} endPosition 
-     * @returns 
+     * @param {Array} plan - The raw plan returned by the online solver.
+     * @returns {Object} The wrapped plan with structured information and cached subpaths.
      */
-    generateCacheId(startPosition, endPosition){
-
-        if (endPosition === 'delivery') return `${startPosition.x}_${startPosition.y}-delivery`
-        else return `${startPosition.x}_${startPosition.y}-${parcel.position.x}_${parcel.position.y}`
-    }
-
-      
-
-    /**
-     * Takes in input the plan returned by the online solver and wrap it into a more
-     * structured object. While doing this it saves all the subpath into the cache.
-     * Returns the same plan but wrapped.
-     * @param {Dict} plan 
-     * @returns 
-     */
-    wrapPlan(plan){
-
-        const startPosition = this.exractTilePositionFromPDDL(plan[0].args[1])
+    wrapPlan(plan) {
+        const startPosition = this.extractTilePositionFromPDDL(plan[0].args[1])
         let wrappedPlan = {
-            steps : [],
-            actions : [],
-            positions : [this.exractTilePositionFromPDDL(plan[0].args[1])],
-            startPosition : startPosition,
-            finalPosition : this.exractTilePositionFromPDDL(plan[plan.length - 1].args[2]),
-            length : 0
+            steps: [],
+            actions: [],
+            positions: [startPosition],
+            startPosition: startPosition,
+            finalPosition: this.extractTilePositionFromPDDL(plan[plan.length - 1].args[2]),
+            length: 0
         }
 
-        let cacheActions = []
-        let cacheSteps = []
-        let cachePositions = []
+        let cacheActions = [], cacheSteps = [], cachePositions = []
         let length = 0
 
-        for (const [index, step] of plan.entries()){
-            const stepPosition = this.exractTilePositionFromPDDL(step.args[2])
+        for (const [index, step] of plan.entries()) {
+            const stepPosition = this.extractTilePositionFromPDDL(step.args[2])
             wrappedPlan.steps.push(step)
             wrappedPlan.positions.push(stepPosition)
 
-            if (step.action.startsWith('move')){
+            if (step.action.startsWith('move')) {
                 wrappedPlan.actions.push(step.action.split('_').at(1))
-                length += 1
+                length++
 
-                // caching path
+                // Cache the subpath
                 cacheSteps.push(step)
                 cacheActions.push(step.action.split('_').at(1))
                 cachePositions.push(stepPosition)
-                const key = `${startPosition.x}_${startPosition.y}-${stepPosition.x}_${stepPosition.y}` 
+                const key = `${startPosition.x}_${startPosition.y}-${stepPosition.x}_${stepPosition.y}`
                 const subPlan = {
-                    steps : [...cacheSteps], 
-                    startPosition : startPosition,
-                    finalPosition : stepPosition, 
-                    positions : [...cachePositions],
-                    actions : [...cacheActions],
-                    length : length,
-                    uses : 0
+                    steps: [...cacheSteps],
+                    startPosition: startPosition,
+                    finalPosition: stepPosition,
+                    positions: [...cachePositions],
+                    actions: [...cacheActions],
+                    length: length,
+                    uses: 0
                 }
                 this.cache.set(key, subPlan)
-            }
-            else{
+            } else {
                 wrappedPlan.actions.push(step.action)
             }
         }
@@ -318,15 +283,83 @@ export class Planner {
         wrappedPlan.length = length
         return wrappedPlan
     }
-    
-    readFile ( path ) {
-        return new Promise( (res, rej) => {
+
+    /**
+     * Generates a multi-agent plan for a master and slave agent based on their respective options.
+     * 
+     * @param {Object} masterOption - The option representing the master agent's task.
+     * @param {Object} slaveOption - The option representing the slave agent's task.
+     * @returns {Object|null} An object containing the plans for both master and slave agents, or null if no plan could be generated.
+     */
+    async getMultiagentPlan(masterOption, slaveOption){
+
+        let masterPlan = []
+        let slavePlan = []
+        let plan = null
+        const problem = this.problemGenerator.multiagentProblem(masterOption, slaveOption)
         
-            fs.readFile( path, 'utf8', (err, data) => {
-                if (err) rej(err)
-                else res(data)
-            })
-        
-        })
+        if (problem === null){
+            console.log('Error with problem', problem.toPddlString())
+            process.exit(0)
+        }
+
+        const masterCacheId = problem.master.name
+        const slaveCacheId = problem.slave.name
+        //console.log('Cache ids: master:', masterCacheId, 'slave:',slaveCacheId)
+
+        let masterCachedPlan = null
+        if (masterCacheId.endsWith('delivery'))
+            masterCachedPlan = this.checkCache(masterCacheId, 'deliver', masterOption.parcel.id)
+        else
+            masterCachedPlan = this.checkCache(masterCacheId, 'pickup', masterOption.parcel.id)
+
+        let slaveCachedPlan = null
+        if (slaveCacheId.endsWith('delivery'))
+            slaveCachedPlan = this.checkCache(slaveCacheId, 'deliver', slaveOption.parcel.id)
+        else
+            slaveCachedPlan = this.checkCache(slaveCacheId, 'pickup', slaveOption.parcel.id)
+
+        //console.log('master cached plan:', masterCachedPlan)
+        //console.log('slave cached plan', slaveCachedPlan)
+
+        if (masterCachedPlan === null && slaveCachedPlan === null){
+            plan = await this.requestPlan(problem.total)
+            if (!plan) {
+                //console.log('Plan not found for', problem.total.toPddlString())
+                return null
+            }
+
+            for (const el of plan){
+                if (el.args[0] === ('a' + this.agent.agentID))
+                    masterPlan.push(el)
+                else
+                    slavePlan.push(el)
+            }
+
+            masterPlan = this.wrapPlan(masterPlan)
+            slavePlan = this.wrapPlan(slavePlan)
+
+        }
+        else if (masterCachedPlan === null){
+            slavePlan = slaveCachedPlan
+            plan = await this.requestPlan(problem.master)
+            if (!plan) {
+                //console.log('Plan not found for', problem.master.name)
+                return null
+            }
+            masterPlan = this.wrapPlan(plan)
+        }
+        else{
+            masterPlan = masterCachedPlan
+            plan = await this.requestPlan(problem.slave)
+            if (!plan) {
+                //console.log('Plan not found for', problem.slave.name)
+                return null
+            }
+            slavePlan = this.wrapPlan(plan)
+        }
+
+        return {master : masterPlan, slave: slavePlan}
+
     }
 }

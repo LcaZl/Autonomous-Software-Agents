@@ -1,17 +1,17 @@
 export class PriorityQueue {
     constructor() {
-        this.heap = [];
+        this.heap = []
     }
 
     flush(){
-        this.heap = [];
+        this.heap = []
     }
     /**
      * Get the size of the queue.
      * @returns {number}
      */
     size() {
-        return this.heap.length;
+        return this.heap.length
     }
 
     /**
@@ -19,7 +19,7 @@ export class PriorityQueue {
      * @returns {boolean}
      */
     isEmpty() {
-        return this.size() === 0;
+        return this.size() === 0
     }
 
     /**
@@ -29,7 +29,7 @@ export class PriorityQueue {
      */
     has(id) {
         if (this.size() > 0)
-            return this.heap.some(item => item.data.id === id);
+            return this.heap.some(item => item.data.id === id)
         return false
     }
 
@@ -41,7 +41,7 @@ export class PriorityQueue {
     searchByIdSubstring(searchString) {
         return this.heap
             .filter(item => item.data.id.toString().includes(searchString))
-            .map(item => item.data.id);
+            .map(item => item.data.id)
     }
 
     /**
@@ -50,12 +50,12 @@ export class PriorityQueue {
      * @param {number} newPriority - The new priority to set.
      */
     updatePriority(id, newPriority) {
-        const index = this.heap.findIndex(item => item.data.id === id);
-        if (index === -1) return; // Element not found
+        const index = this.heap.findIndex(item => item.data.id === id)
+        if (index === -1) return // Element not found
 
-        this.heap[index].priority = newPriority;
-        this.siftDown(index);
-        this.siftUp(index);
+        this.heap[index].priority = newPriority
+        this.siftDown(index)
+        this.siftUp(index)
     }
 
     /**
@@ -63,7 +63,7 @@ export class PriorityQueue {
      * @returns {Object}
      */
     peek() {
-        return this.heap[0];
+        return this.heap[0]
     }
 
     /**
@@ -72,9 +72,9 @@ export class PriorityQueue {
      * @param {number} priority - The utility or priority of the item.
      */
     push(data, priority = 0) {        
-        const item = { 'data':data, 'priority':priority };
-        this.heap.push(item);
-        this.siftUp();
+        const item = { 'data':data, 'priority':priority }
+        this.heap.push(item)
+        this.siftUp()
     }
 
     /**
@@ -82,12 +82,12 @@ export class PriorityQueue {
      * @returns {Object}
      */
     pop() {
-        const poppedValue = this.peek();
-        const bottom = this.size() - 1;
-        if (bottom > 0) this.swap(0, bottom);
-        this.heap.pop();
-        this.siftDown();
-        return poppedValue.data;
+        const poppedValue = this.peek()
+        const bottom = this.size() - 1
+        if (bottom > 0) this.swap(0, bottom)
+        this.heap.pop()
+        this.siftDown()
+        return poppedValue.data
     }
 
     /**
@@ -95,15 +95,15 @@ export class PriorityQueue {
      * @param {number} id - The ID of the item.
      */
     removeById(id) {
-        const index = this.heap.findIndex(item => item.data.id === id);
-        if (index === -1) return; // Elemento non trovato
+        const index = this.heap.findIndex(item => item.data.id === id)
+        if (index === -1) return // Elemento non trovato
 
-        const lastElement = this.heap.pop();
+        const lastElement = this.heap.pop()
 
         if (index !== this.size()) { // Se l'elemento rimosso non era l'ultimo elemento
-            this.heap[index] = lastElement;
-            this.siftDown(index);
-            this.siftUp(index);
+            this.heap[index] = lastElement
+            this.siftDown(index)
+            this.siftUp(index)
         }
     }
 
@@ -113,8 +113,8 @@ export class PriorityQueue {
      * @returns {Object|null} The item with the given ID, or null if not found.
      */
     getById(id) {
-        let item = this.heap.find(entry => entry.data.id === id);
-        return item ? item.data : null;
+        let item = this.heap.find(entry => entry.data.id === id)
+        return item ? item.data : null
     }
     
     /**
@@ -122,7 +122,7 @@ export class PriorityQueue {
      * @returns {Array<Object>}
      */
     values() {
-        return [...this.heap].map(item => item.data);
+        return [...this.heap].map(item => item.data)
     }
     
     /**
@@ -130,41 +130,41 @@ export class PriorityQueue {
      * @returns {Array<Object>}
      */
     valuesWithPriority() {
-        return [...this.heap].map(item => item);
+        return [...this.heap].map(item => item)
     }
 
     // Helper methods:
 
     parent(i) {
-        return Math.floor((i - 1) / 2);
+        return Math.floor((i - 1) / 2)
     }
 
     left(i) {
-        return 2 * i + 1;
+        return 2 * i + 1
     }
 
     right(i) {
-        return 2 * i + 2;
+        return 2 * i + 2
     }
 
     hasHigherPriority(i, j) {
-        return this.heap[i].priority > this.heap[j].priority;
+        return this.heap[i].priority > this.heap[j].priority
     }
 
     swap(i, j) {
-        [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+        [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]]
     }
 
     siftUp() {
-        let node = this.size() - 1;
+        let node = this.size() - 1
         while (node > 0 && this.hasHigherPriority(node, this.parent(node))) {
-            this.swap(node, this.parent(node));
-            node = this.parent(node);
+            this.swap(node, this.parent(node))
+            node = this.parent(node)
         }
     }
 
     siftDown() {
-        let node = 0;
+        let node = 0
         while (this.left(node) < this.size() && 
               (this.hasHigherPriority(this.left(node), node) || 
               (this.right(node) < this.size() && this.hasHigherPriority(this.right(node), this.left(node))))) {
@@ -172,10 +172,10 @@ export class PriorityQueue {
             const highestPriorityChild = 
                 (this.right(node) < this.size() && this.hasHigherPriority(this.right(node), this.left(node))) 
                 ? this.right(node) 
-                : this.left(node);
+                : this.left(node)
             
-            this.swap(node, highestPriorityChild);
-            node = highestPriorityChild;
+            this.swap(node, highestPriorityChild)
+            node = highestPriorityChild
         }
     }
 }

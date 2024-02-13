@@ -1,216 +1,249 @@
-import { Position } from '../../utils/Position.js';
-import { Parcel } from './Parcel.js';
+import { Position } from '../../utils/Position.js'
+import { Parcel } from './Parcel.js'
 
 /**
- * Manages all parcels within the game, handling their creation, updates, and deletion.
+ * Manages all parcels within the game, including tracking, updates and coordination among agents.
  */
 export class ParcelsManager {
     /**
-     * Constructs a new instance of ParcelsManager.
+     * Initializes the parcels manager for an agent, setting up containers for tracking parcels.
      * 
-     * @param {Agent} agent - The agent managing the parcels.
+     * @param {Agent} agent - The agent.
      */
     constructor(agent) {
-        this.agent = agent;
-        this.parcels = new Map(); // All available parcels
-        this.myParcels = new Set(); // Parcel that the agent is carring
-        this.deletedParcels = new Set(); // Parcel no more available or not reachable 
-        console.log('[INIT] Parcels Manager Initialized.');
+        this.agent = agent
+        this.parcels = new Map() // Tracks all parcels by their ID
+        this.myParcels = new Set() // Parcels currently being carried by the agent
+        this.deletedParcels = new Set() // Parcels that are no longer available
+        console.log('[INIT] Parcels Manager Initialized.')
     }
 
     /**
-     * Activates the parcel manager by setting up event listeners.
+     * Sets up event listeners for parcel-related events to manage parcel tracking and state updates.
      */
     activate() {
-        this.agent.eventManager.on('parcels_percept', (parcels) => { this.handleParcelsSensing(parcels); });
-        this.agent.eventManager.on('picked_up_parcels', (parcels) => { this.handleParcelsPickUp(parcels); });
-        this.agent.eventManager.on('delivered_parcels', (parcels) => { this.handleParcelsDelivery(parcels); });
+        // Listen for parcel perceptions and update local tracking accordingly
+        this.agent.eventManager.on('parcels_percept', parcels => this.handleParcelsSensing(parcels))
+
+        // Update parcel tracking when parcels are picked up, lefted or delivered
+        this.agent.eventManager.on('picked_up_parcels', parcels => this.handleParcelsPickUp(parcels))
+        this.agent.eventManager.on('delivered_parcels', parcels => this.handleParcelsDelivery(parcels))
+        this.agent.eventManager.on('left_parcels', parcels => this.handleParcelsLeft(parcels))
+
+        // In multi-agent setups, listen for parcel perceptions shared by team members
+        if (this.agent.multiagent) {
+            this.agent.eventManager.on('parcels_percept_from_team', parcels => this.handleParcelsSensing(parcels, true))
+        }
     }
 
     /**
-     * Retrieves all parcels.
-     * 
-     * @returns {Map} A map of all parcels.
+     * Clears all parcels currently marked as carried by the agent.
      */
-    getParcels() { return this.parcels; }
-
-    /**
-     * Retrieves all parcels.
-     * 
-     * @returns {Map} A map of all parcels.
-     */
-    getMyParcels() { 
-        let myParcels = []
-        this.parcels.forEach(p => {
-            if(this.myParcels.has(p.id))
-                myParcels.push(p)
-        }); 
-        return myParcels
-    }
-
-    /**
-     * Counts the number of parcels currently carried by the agent.
-     * 
-     * @returns {Number} The count of carried parcels.
-     */
-    carriedParcels() { return this.myParcels.size; }
-
-    /**
-     * Validates if a parcel can be picked up.
-     * 
-     * @param {String} id - The parcel's identifier.
-     * @returns {Boolean} True if the parcel can be picked up, otherwise false.
-     */
-    isValidPickUp(id) {
-        return this.parcels.has(id) && !this.deletedParcels.has(id) && !this.myParcels.has(id);
-    }
-
-    /**
-     * Returns the parcle object associated with the first parcel id of my parcels.
-     * 
-     * @returns {Parcel} - One of my parcel
-     */
-    getOneOfMyParcels(){
-        let p = this.parcels.get(this.myParcels.values().next().value)
-        if (p) 
-            return p
-        p = this.agent.intentions.currentIntention.option.parcelId
-        return p
-    }
-    /**
-     * Validates if a parcel can be picked up.
-     * 
-     * @returns {Array} - Available parcels
-     */
-    getFreeParcels(){
-        let freeParcels = []
-        this.parcels.forEach(p => {
-            if (p.isFree() && p.isAccessible())
-                freeParcels.push(p)
+    handleParcelsLeft() {
+        this.myParcels.forEach(id => {
+            this.parcels.get(id).carriedBy = null
+            this.myParcels.delete(id)
         })
-        return freeParcels
+
+        if (this.agent.moveType === 'PDDL') {
+            this.agent.eventManager.emit('update_parcels_beliefs')
+        }
     }
+
     /**
-     * Deletes a parcel from the manager.
+     * Processes the delivery of specified parcels, removing them from tracking.
      * 
-     * @param {String} id - The identifier of the parcel to delete.
+     * @param {string[]} parcelIds - IDs of parcels that have been delivered.
+     */
+    handleParcelsDelivery(parcelIds) {
+        parcelIds.forEach(id => this.deleteParcel(id))
+
+        if (this.agent.moveType === 'PDDL') {
+            this.agent.eventManager.emit('update_parcels_beliefs')
+        }
+        this.agent.eventManager.emit('update_options')
+    }
+
+    /**
+     * Updates parcel ownership when a teammate picks up parcels.
+     * 
+     * @param {string} agentId - The ID of the agent picking up the parcels.
+     * @param {string[]} ids - The IDs of the parcels picked up.
+     */
+    handleTeammatePickup(agentId, ids) {
+        ids.forEach(id => {
+            if (this.parcels.has(id)) {
+                this.parcels.get(id).carriedBy = agentId
+            }
+        })
+
+        if (this.agent.moveType === 'PDDL') {
+            this.agent.eventManager.emit('update_parcels_beliefs')
+        }
+        this.agent.eventManager.emit('update_options')
+    }
+
+    /**
+     * Marks specified parcels as picked up by the agent and updates their carried status.
+     * 
+     * @param {string[]} parcelIds - IDs of parcels that have been picked up.
+     */
+    handleParcelsPickUp(parcelIds) {
+        parcelIds.forEach(id => {
+            if (!this.deletedParcels.has(id)) {
+                this.parcels.get(id).carriedBy = this.agent.agentID
+                this.myParcels.add(id)
+            }
+        })
+
+        if (this.agent.moveType === 'PDDL') {
+            this.agent.eventManager.emit('update_parcels_beliefs')
+        }
+    }
+
+    /**
+     * Removes a parcel from management, marking it as deleted.
+     * 
+     * @param {string} id - The ID of the parcel to remove.
      */
     deleteParcel(id) {
-        this.parcels.delete(id);
-        if (this.myParcels.has(id)) {
-            this.myParcels.delete(id);
-        }
-        this.deletedParcels.add(id);
-        this.agent.eventManager.emit('deleted_parcel', id);
+        this.parcels.delete(id)
+        this.myParcels.delete(id)
+        this.deletedParcels.add(id)
+        this.agent.eventManager.emit('deleted_parcel', id)
     }
 
     /**
-     * Retrieves the positions of all non-carried parcels.
-     * 
-     * @returns {Position[]} An array of positions.
-     */
-    getPositions() {
-        let positions = [];
-        for (let [id, parcel] of this.parcels) {
-            if (!this.myParcels.has(id)) {
-                positions.push(parcel.position);
-            }
-        }
-        return positions;
-    }
-
-    /**
-     * Calculates the total reward of parcels carried by the agent.
-     * 
-     * @returns {Number} Total reward.
-     */
-    getMyParcelsReward() {
-        let val = 0;
-        this.myParcels.forEach(id => val += this.parcels.get(id).reward);
-        return val;
-    }
-
-
-    /**
-     * Handles the delivery of parcels.
-     * 
-     * @param {Object[]} deliveredParcels - An array of parcels that have been delivered.
-     */
-    handleParcelsDelivery(deliveredParcels) {
-        for (let p of deliveredParcels) {
-            this.deleteParcel(p.id);
-        }
-    }
-
-    /**
-     * Handles the pick-up of parcels.
-     * 
-     * @param {Object[]} pickedUpParcels - An array of parcels that have been picked up.
-     */
-    handleParcelsPickUp(pickedUpParcels) {
-        for (let p of pickedUpParcels) {
-            if (!this.deletedParcels.has(p.id)) {
-                this.parcels.get(p.id).carriedBy = this.agent.agentID;
-                this.myParcels.add(p.id);
-            }
-        }
-        if (this.agent.moveType == 'PDDL')
-            this.agent.eventManager.emit('update_parcels_beliefs');
-    }
-    
-    /**
-     * Handles the sensing of parcels in the environment.
+     * Handles the sensing of parcels in the environment, updating or adding parcels as necessary.
+     * Flags updates to parcel data and triggers relevant events for significant changes.
      * 
      * @param {Object[]} sensedParcels - An array of parcels detected in the environment.
+     * @param {Boolean} fromCommunication - Indicates if sensing is from communication in a multi-agent setup.
      * @returns {Boolean} True if there were updates to the parcels, false otherwise.
      */
-    handleParcelsSensing(sensedParcels) {
-        let updates = false;
-    
-        // A set to track the IDs of sensed parcels for this iteration
-        let sensedIds = new Set();
+    handleParcelsSensing(sensedParcels, fromCommunication = false) {
+        let updates = false
 
         for (const p of sensedParcels) {
-            if (p.x % 1 === 0 && p.y % 1 === 0) {
-                sensedIds.add(p.id);
-                let wrapP;
+            // Validate parcel position and check if it's not deleted or excluded based on specific game config
+            if (p.x % 1 === 0 && p.y % 1 === 0 && !this.deletedParcels.has(p.id) &&
+                !(this.agent.client.config.MAP_FILE === 'challenge_32' && p.x !== this.agent.currentPosition.x)) {
+                let parcel
 
-                // Check if the parcel is already known
                 if (this.parcels.has(p.id)) {
-                    wrapP = this.parcels.get(p.id);
-    
-                    // Check if there's a significant change (reward, carrier, or position)
-                    if (wrapP.carriedBy !== p.carriedBy || !wrapP.position.isEqual(new Position(p.x,p.y))) {
-                        wrapP.update(p);
-                        updates = true;
-                        if (!wrapP.isAccessible())
-                            this.parcels.delete(wrapP.id)
-                    }
-    
+                    parcel = this.parcels.get(p.id)
+                    // Update existing parcel and check for changes
+                    updates = parcel.update(p) || updates
                 } else {
-                    // New parcel detected -> Create new instance
-                    wrapP = new Parcel(p, this.agent);
-                    if (wrapP.isAccessible()){
-                        this.parcels.set(wrapP.id, wrapP);
-                        updates = true;
-                    }
-                }
-    
-                if (wrapP.isMine() && !this.myParcels.has(wrapP.id)) {
-                    this.myParcels.add(wrapP.id);
-                } else if (!wrapP.isMine() && this.myParcels.has(wrapP.id)) {
-                    this.myParcels.delete(wrapP.id);
+                    // Create and track a new parcel instance
+                    parcel = new Parcel(p, this.agent)
+                    this.parcels.set(parcel.id, parcel)
+                    updates = true
                 }
 
+                // If the agent carries this parcel and it's not already tracked, add it
+                if (parcel.isMine() && !this.myParcels.has(parcel.id)) {
+                    this.myParcels.add(parcel.id)
+                    updates = true
+                }
             }
         }
-    
-        // Send update notification if there are significant changes
-        if (this.agent.moveType == 'PDDL')
-            this.agent.eventManager.emit('update_parcels_beliefs');
+
+        // Trigger update events if any significant changes occurred
         if (updates) {
-            this.agent.eventManager.emit('update_options');
+            if (this.agent.moveType === 'PDDL') {
+                this.agent.eventManager.emit('update_parcels_beliefs')
+            }
+            this.agent.eventManager.emit('update_options')
+            if (!fromCommunication) {
+                this.agent.eventManager.emit('new_parcels_info')
+            }
         }
+
+        return updates
+    }
+    /**
+     * Extracts and returns raw data of all managed parcels.
+     * For multi-agent communication.
+     * 
+     * @returns {Array} Array of parcels' raw data.
+     */
+    getRawParcels() {
+        return Array.from(this.parcels.values()).map(p => p.raw())
     }
 
+    /**
+     * Return the map of all parcels managed by the agent.
+     * 
+     * @returns {Map} Map of all parcels.
+     */
+    getParcels() {
+        return this.parcels
+    }
+
+    /**
+     * Retrieves all parcels currently carried by the agent.
+     * 
+     * @returns {Array} Array of parcels carried by the agent.
+     */
+    getMyParcels() {
+        return Array.from(this.myParcels).map(id => this.parcels.get(id))
+    }
+
+    /**
+     * Counts the parcels currently being carried by the agent.
+     * 
+     * @returns {number} Count of carried parcels.
+     */
+    carriedParcels() {
+        return this.myParcels.size
+    }
+
+    /**
+     * Checks if a parcel is available for pickup.
+     * 
+     * @param {string} id - The ID of the parcel to check.
+     * @returns {boolean} True if the parcel is available for pickup, false otherwise.
+     */
+    isValidPickUp(id) {
+        return this.parcels.has(id) && !this.deletedParcels.has(id) && !this.myParcels.has(id)
+    }
+
+    /**
+     * Retrieves one of the parcels currently carried by the agent.
+     * 
+     * @returns {Parcel|null} A parcel carried by the agent or null if none are carried.
+     */
+    getOneOfMyParcels() {
+        const firstParcelId = this.myParcels.values().next().value
+        return firstParcelId ? this.parcels.get(firstParcelId) : null
+    }
+
+    /**
+     * Filters and returns all free and accessible parcels.
+     * 
+     * @returns {Array} Array of free and accessible parcels.
+     */
+    getFreeParcels() {
+        return Array.from(this.parcels.values()).filter(p => p.isFree() && p.isAccessible())
+    }
+
+    /**
+     * Retrieves positions of all free parcels.
+     * 
+     * @returns {Position[]} Array of positions for free parcels.
+     */
+    getPositions() {
+        return Array.from(this.parcels.values()).filter(p => p.isFree()).map(p => p.position)
+    }
+
+    /**
+     * Summarizes the total reward of all parcels currently carried by the agent.
+     * 
+     * @returns {number} The sum of rewards for carried parcels.
+     */
+    getMyParcelsReward() {
+        return Array.from(this.myParcels)
+            .reduce((total, id) => total + this.parcels.get(id).reward, 0)
+    }
 }

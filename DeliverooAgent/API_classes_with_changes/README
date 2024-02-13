@@ -1,0 +1,3 @@
+These classes are the modified classes of the API.
+They correspond to the actual classes available in node_modules and used by the agent.
+If npm install or an update is performed, this files must replace the new ones in the API for the agent to work.

@@ -1,0 +1,23 @@
+[{
+  "map": "default_map",
+  "multiagent": false,
+  "moveType": "BFS",
+  "fastPick": true,
+  "changingRisk": 0.5,
+  "adjMovementCostWindow": 1000,
+  "agentName": "Harvest_A",
+  "agentID": "7ed8b5f232d",
+  "activityTime": "05:00 (300001 ms)",
+  "averageTimePerMove": 226.2450980392157,
+  "initialScore": 0,
+  "finalScore": 3244,
+  "effectiveScore": 3244,
+  "effectiveMovement": 1316,
+  "failedMovements": 9,
+  "pickUpActions": 119,
+  "deliveryActions": 79,
+  "parcelsDelivered": 119,
+  "searchCalls": 2115,
+  "cacheHits": 1069,
+  "onlineSolverCalls": 0
+}]
